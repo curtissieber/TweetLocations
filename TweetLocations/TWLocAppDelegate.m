@@ -8,6 +8,7 @@
 
 #import "TWLocAppDelegate.h"
 
+#import <SystemConfiguration/SystemConfiguration.h>
 #import "TWLocMasterViewController.h"
 
 @implementation TWLocAppDelegate
@@ -26,10 +27,12 @@
         
         UINavigationController *masterNavigationController = splitViewController.viewControllers[0];
         TWLocMasterViewController *controller = (TWLocMasterViewController *)masterNavigationController.topViewController;
+        self.masterViewController = controller; //CRS
         controller.managedObjectContext = self.managedObjectContext;
     } else {
         UINavigationController *navigationController = (UINavigationController *)self.window.rootViewController;
         TWLocMasterViewController *controller = (TWLocMasterViewController *)navigationController.topViewController;
+        self.masterViewController = controller; //CRS
         controller.managedObjectContext = self.managedObjectContext;
     }
     return YES;
@@ -55,6 +58,21 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+    SCNetworkReachabilityFlags flags;
+    BOOL receivedFlags;
+    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithName(CFAllocatorGetDefault(), [@"google.com" UTF8String]);
+    receivedFlags = SCNetworkReachabilityGetFlags(reachability, &flags);
+    CFRelease(reachability);
+    if (!receivedFlags || (flags & kSCNetworkReachabilityFlagsIsWWAN) != 0) {
+        NSLog(@"Cannot do nothing on cell network, that's a very bad idea");
+        [TWLocMasterViewController setNetworkAccessAllowed:NO];
+        [[_masterViewController statusLabel] setBackgroundColor:[UIColor yellowColor]];
+    } else {
+        [TWLocMasterViewController setNetworkAccessAllowed:YES];
+        [[_masterViewController statusLabel] setBackgroundColor:[UIColor whiteColor]];
+        NSLog(@"Network access is allowed, YAY!");
+    }
+
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -119,7 +137,10 @@
     
     NSError *error = nil;
     _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error]) {
+    NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
+                             [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
+                             [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption, nil];
+    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
         /*
          Replace this implementation with code to handle the error appropriately.
          
@@ -144,9 +165,15 @@
          
          */
         NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-        abort();
-    }    
-    
+        [[NSFileManager defaultManager] removeItemAtURL:storeURL error:nil];
+        NSLog(@"removed file at %@ due to error",[storeURL description]);
+        [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setObject:[[NSString alloc]initWithFormat:@"%d",-1] forKey:@"twitterIDMax"];
+        [defaults setObject:[[NSString alloc]initWithFormat:@"%d",-1] forKey:@"twitterIDMin"];
+        [defaults synchronize];
+        [_masterViewController killMax];
+    }
     return _persistentStoreCoordinator;
 }
 

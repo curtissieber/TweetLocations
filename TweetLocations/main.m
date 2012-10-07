@@ -7,12 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "TWLocApplication.h"
 #import "TWLocAppDelegate.h"
 
 int main(int argc, char *argv[])
 {
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([TWLocAppDelegate class]));
+        return UIApplicationMain(argc, argv, @"TWLocApplication",
+                                 NSStringFromClass([TWLocAppDelegate class]));
     }
 }
