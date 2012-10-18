@@ -29,6 +29,8 @@
 #define ALERT_NOTWITTER (666)
 #define ALERT_SELECTACCOUNT (1776)
 
+static int queuedTasks = 0;
+
 #pragma mark image
 
 - (void)STATUS:(NSString*)thestatus
@@ -279,6 +281,7 @@ static bool NetworkAccessAllowed = NO;
                 maxTweetsToGet = NUMTWEETSTOGET;
                 GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self];
                 [_theQueue setSuspended:NO];
+                queuedTasks++;  [_activityView startAnimating];
                 [_theQueue addOperation:getTweetOp];
             }
         }
@@ -342,6 +345,7 @@ static bool NetworkAccessAllowed = NO;
                     maxTweetsToGet = NUMTWEETSTOGET;
                     GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self];
                     [_theQueue setSuspended:NO];
+                    queuedTasks++;  [_activityView startAnimating];
                     [_theQueue addOperation:getTweetOp];
                 }
                 
@@ -369,7 +373,7 @@ static bool NetworkAccessAllowed = NO;
         if (twitterIDMax > 0)
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",twitterIDMax] forKey:@"since_id"];
         [params setObject:@"50" forKey:@"count"];
-        if (twitterIDMin > 0)
+        if (twitterIDMin > 0 && twitterIDMin != twitterIDMax)
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",twitterIDMin] forKey:@"max_id"];
         
         //  The endpoint that we wish to call
@@ -410,6 +414,7 @@ static bool NetworkAccessAllowed = NO;
                          NSLog(@"adding storetweet size=%d to the Queue", [timeline count]);
                          StoreTweetOperation* storeTweetOp = [[StoreTweetOperation alloc] initWithMaster:self timeline:timeline];
                          [_theQueue setSuspended:NO];
+                         queuedTasks++;  [_activityView startAnimating];
                          [_theQueue addOperation:storeTweetOp];
                      }
 
@@ -514,21 +519,22 @@ static bool NetworkAccessAllowed = NO;
                 Tweet *tweet = Nil;
                 if (!duplicate) {
                     //NSLog(@"New tweet %@",theID);
-                    tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
-                                                                 inManagedObjectContext:context];
-                    [tweet setTweetID:theID];
-                    [tweet setFavorite:favorited];
-                    [tweet setTimestamp:timestamp];
-                    [tweet setUsername:username];
-                    [tweet setTweet:theText];
-                    [tweet setLatitude:[NSNumber numberWithDouble:latitude]];
-                    [tweet setLongitude:[NSNumber numberWithDouble:longitude]];
-                    [tweet setUrl:theUrl];
-                    [tweet setOrigURL:theUrl];
-                    [tweet setOrigHTML:Nil];
-                    [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
-                    [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
-                    
+                    if ([theUrl length] > 4) {
+                        tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
+                                                              inManagedObjectContext:context];
+                        [tweet setTweetID:theID];
+                        [tweet setFavorite:favorited];
+                        [tweet setTimestamp:timestamp];
+                        [tweet setUsername:username];
+                        [tweet setTweet:theText];
+                        [tweet setLatitude:[NSNumber numberWithDouble:latitude]];
+                        [tweet setLongitude:[NSNumber numberWithDouble:longitude]];
+                        [tweet setUrl:theUrl];
+                        [tweet setOrigURL:theUrl];
+                        [tweet setOrigHTML:Nil];
+                        [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
+                        [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
+                    }
                     [_idSet addObject:theID];
                     storedTweets++;
                 } else {
@@ -560,6 +566,7 @@ static bool NetworkAccessAllowed = NO;
             NSLog(@"adding another getTweet to the Queue");
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self];
             [_theQueue setSuspended:NO];
+            queuedTasks++;  [_activityView startAnimating];
             [_theQueue addOperation:getTweetOp];
         } else {
             [_theQueue addOperationWithBlock:^{
@@ -623,6 +630,7 @@ static bool NetworkAccessAllowed = NO;
     filePath = [[NSBundle mainBundle] pathForResource:@"redX" ofType:@"png"];
     self.redX = [[UIImage alloc] initWithContentsOfFile:filePath];
     
+    queuedTasks = 0;
     _theQueue = [[NSOperationQueue alloc] init];
     [_theQueue setMaxConcurrentOperationCount:1];
     self->imageDictLock = [[NSLock alloc] init];
@@ -732,7 +740,8 @@ static bool NetworkAccessAllowed = NO;
             NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:0];
             Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
             if ([[tweet locationFromPic] boolValue] == NO &&
-                [[tweet favorite] boolValue] == NO) {
+                [[tweet favorite] boolValue] == NO &&
+                [[tweet hasBeenRead] boolValue] == YES) {
                 //NSLog(@"removing %d tweet %@",i,tweet);
                 [context deleteObject:tweet];
             }
@@ -1018,6 +1027,7 @@ static bool NetworkAccessAllowed = NO;
         TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                               index:indexPath
                                                masterViewController:self];
+        queuedTasks++;  [_activityView startAnimating];
         [_theQueue addOperation:top];
         [_theQueue setSuspended:NO];
     }
@@ -1100,7 +1110,7 @@ static bool NetworkAccessAllowed = NO;
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
-    [self setQueuePriority:NSOperationQueuePriorityNormal];
+    [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
 
@@ -1115,6 +1125,7 @@ static bool NetworkAccessAllowed = NO;
                                                                                index:self->index
                                                                 masterViewController:self->master];
     NSOperationQueue* queue = [NSOperationQueue currentQueue];
+    queuedTasks++;  [[self->master activityView] startAnimating];
     [queue addOperation:imageOperation];
 }
 
@@ -1165,6 +1176,8 @@ static bool NetworkAccessAllowed = NO;
         [context processPendingChanges];
     }];
 
+    if (--queuedTasks == 0)
+        [[self->master activityView] stopAnimating];
     executing = NO; finished = YES;
 }
 
@@ -1180,7 +1193,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
-    [self setQueuePriority:NSOperationQueuePriorityLow];
+    [self setQueuePriority:NSOperationQueuePriorityVeryLow];
     return self;
 }
 
@@ -1254,6 +1267,8 @@ masterViewController:(TWLocMasterViewController*)theMaster
         [context processPendingChanges];
     }];
     
+    if (--queuedTasks == 0)
+        [[self->master activityView] stopAnimating];
     executing = NO; finished = YES;
 }
 
@@ -1266,7 +1281,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     self = [super init];
     executing = finished = NO;
     master = theMaster;
-    [self setQueuePriority:NSOperationQueuePriorityLow];
+    [self setQueuePriority:NSOperationQueuePriorityNormal];
     return self;
 }
 
@@ -1279,6 +1294,8 @@ masterViewController:(TWLocMasterViewController*)theMaster
     executing = YES;
     [master setNextIDMax:-1];
     [master getTweets];
+    if (--queuedTasks == 0)
+        [[self->master activityView] stopAnimating];
     executing = NO; finished = YES;
 }
 
@@ -1303,6 +1320,8 @@ masterViewController:(TWLocMasterViewController*)theMaster
 {
     executing = YES;
     [master storeTweets:timeline];
+    if (--queuedTasks == 0)
+        [[self->master activityView] stopAnimating];
     executing = NO; finished = YES;
 }
 

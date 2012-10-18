@@ -28,6 +28,7 @@
 @property (nonatomic)     long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
 
 @property (strong, nonatomic) IBOutlet UILabel* statusLabel;
+@property (strong, nonatomic) IBOutlet UIActivityIndicatorView* activityView;
 
 @property (strong, nonatomic) TWLocDetailViewController *detailViewController;
 
