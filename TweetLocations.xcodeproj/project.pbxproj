@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E91D81731634448C00ED4283 /* next day Twitter.JSON.data.json in Resources */ = {isa = PBXBuildFile; fileRef = E91D81701634448C00ED4283 /* next day Twitter.JSON.data.json */; };
+		E91D81741634448C00ED4283 /* bad max Twitter.JSON.data.json in Resources */ = {isa = PBXBuildFile; fileRef = E91D81711634448C00ED4283 /* bad max Twitter.JSON.data.json */; };
+		E91D81751634448C00ED4283 /* old Twitter.JSON.data.json in Resources */ = {isa = PBXBuildFile; fileRef = E91D81721634448C00ED4283 /* old Twitter.JSON.data.json */; };
+		E91D817716345F6400ED4283 /* Twitter.JSON.data.txt in Resources */ = {isa = PBXBuildFile; fileRef = E91D817616345F6300ED4283 /* Twitter.JSON.data.txt */; };
 		E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = E91D95CA15EAB60C00717A95 /* TWLocApplication.m */; };
 		E91D95D115EAC13200717A95 /* LocPin.png in Resources */ = {isa = PBXBuildFile; fileRef = E91D95D015EAC13200717A95 /* LocPin.png */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
@@ -50,6 +54,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E91D81701634448C00ED4283 /* next day Twitter.JSON.data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "next day Twitter.JSON.data.json"; sourceTree = "<group>"; };
+		E91D81711634448C00ED4283 /* bad max Twitter.JSON.data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "bad max Twitter.JSON.data.json"; sourceTree = "<group>"; };
+		E91D81721634448C00ED4283 /* old Twitter.JSON.data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "old Twitter.JSON.data.json"; sourceTree = "<group>"; };
+		E91D817616345F6300ED4283 /* Twitter.JSON.data.txt */ = {isa = PBXFileReference; explicitFileType = text.json; fileEncoding = 4; path = Twitter.JSON.data.txt; sourceTree = "<group>"; };
 		E91D95C915EAB60C00717A95 /* TWLocApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TWLocApplication.h; sourceTree = "<group>"; };
 		E91D95CA15EAB60C00717A95 /* TWLocApplication.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TWLocApplication.m; sourceTree = "<group>"; };
 		E91D95D015EAC13200717A95 /* LocPin.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LocPin.png; sourceTree = "<group>"; };
@@ -62,7 +70,7 @@
 		E98FAEB516063E1C00CA371A /* Default-Landscape~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Default-Landscape~ipad.png"; path = "../Default-Landscape~ipad.png"; sourceTree = "<group>"; };
 		E98FAEB716063E2300CA371A /* Default-Portrait@2x~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Default-Portrait@2x~ipad.png"; path = "../Default-Portrait@2x~ipad.png"; sourceTree = "<group>"; };
 		E98FAEB916063E2700CA371A /* Default-Landscape@2x~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Default-Landscape@2x~ipad.png"; path = "../Default-Landscape@2x~ipad.png"; sourceTree = "<group>"; };
-		E9909DF1161F2658007CDA4D /* TweetLocations 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = file; path = "TweetLocations 3.xcdatamodel"; sourceTree = "<group>"; };
+		E9909DF1161F2658007CDA4D /* TweetLocations 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 3.xcdatamodel"; sourceTree = "<group>"; };
 		E9909DF3161F26D2007CDA4D /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
 		E9909DF4161F26D2007CDA4D /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E9942A3E15F2ECD2000E2FA3 /* redX.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = redX.png; sourceTree = "<group>"; };
@@ -126,6 +134,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E91D816E1634447F00ED4283 /* samples */ = {
+			isa = PBXGroup;
+			children = (
+				E91D817616345F6300ED4283 /* Twitter.JSON.data.txt */,
+				E91D81701634448C00ED4283 /* next day Twitter.JSON.data.json */,
+				E91D81711634448C00ED4283 /* bad max Twitter.JSON.data.json */,
+				E91D81721634448C00ED4283 /* old Twitter.JSON.data.json */,
+				E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */,
+			);
+			name = samples;
+			sourceTree = "<group>";
+		};
 		E9A159CE15EA700B00630EE4 /* icons */ = {
 			isa = PBXGroup;
 			children = (
@@ -198,7 +218,7 @@
 				E9B4680815EAAB460021F674 /* URLFetcher.m */,
 				E9A159CE15EA700B00630EE4 /* icons */,
 				E9DE580215E94407005D75F6 /* Supporting Files */,
-				E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */,
+				E91D816E1634447F00ED4283 /* samples */,
 			);
 			path = TweetLocations;
 			sourceTree = "<group>";
@@ -294,6 +314,10 @@
 				E98FAEB616063E1C00CA371A /* Default-Landscape~ipad.png in Resources */,
 				E98FAEB816063E2300CA371A /* Default-Portrait@2x~ipad.png in Resources */,
 				E98FAEBA16063E2700CA371A /* Default-Landscape@2x~ipad.png in Resources */,
+				E91D81731634448C00ED4283 /* next day Twitter.JSON.data.json in Resources */,
+				E91D81741634448C00ED4283 /* bad max Twitter.JSON.data.json in Resources */,
+				E91D81751634448C00ED4283 /* old Twitter.JSON.data.json in Resources */,
+				E91D817716345F6400ED4283 /* Twitter.JSON.data.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

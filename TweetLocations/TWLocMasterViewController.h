@@ -18,11 +18,11 @@
         <NSFetchedResultsControllerDelegate,
          UIAlertViewDelegate>
 {
-    NSString* twitterAccountName;
-    ACAccount* twitterAccount;
-    long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
     NSMutableDictionary* imageDict;
     NSLock* imageDictLock;
+    NSString* twitterAccountName;
+    ACAccount* twitterAccount;
+    //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
 }
 
 @property (nonatomic)     long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;

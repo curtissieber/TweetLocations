@@ -134,33 +134,77 @@
 {
     if (self.mapView.hidden == NO)
         return;
-    float height = [self.mapView frame].size.height;
+    CGRect totalFrame = [[self view] frame];
+    CGRect detailFrame = [_detailDescriptionLabel frame];
+    CGRect mapFrame = [_mapView frame];
+    CGRect textFrame = [_textView frame];
+    CGRect scrollFrame = [_scrollView frame];
+    CGRect bigFrame = [_bigLabel frame];
+    
+    // detail sits at the bottom
+    detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
+    // map sits above the detail
+    mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
+    // big label sits above the map
+    bigFrame.origin.y = mapFrame.origin.y - bigFrame.size.height;
+    //scroll sits above the map and resizes for such
+    scrollFrame.size.height = mapFrame.origin.y;
+    scrollFrame.origin.y = 0;
+    //text is the same as scrollframe
+    textFrame.size.height = mapFrame.origin.y;
+    textFrame.origin.y = 0;
+    
+    [_bigLabel setFrame:bigFrame];
+    [_scrollView setFrame:scrollFrame];
+    [_textView setFrame:textFrame];
+    [_mapView setFrame:mapFrame];
+    [_detailDescriptionLabel setFrame:detailFrame];
+    
+    /*float height = [self.mapView frame].size.height;
     CGRect scrollFrame = [self.scrollView frame];
-    NSLog(@"Scroll frame %.0fx%.0f @ %0.f,%.0f",
-          scrollFrame.size.width, scrollFrame.size.height,
-          scrollFrame.origin.x, scrollFrame.origin.y);
     scrollFrame.size.height -= height;
     [self.scrollView setFrame:scrollFrame];
-    NSLog(@"Scroll frame decreased by %.0f %.0fx%.0f @ %0.f,%.0f",
-          height,
-          scrollFrame.size.width, scrollFrame.size.height,
-          scrollFrame.origin.x, scrollFrame.origin.y);
+    CGRect textFrame = [self.bigLabel frame];
+    textFrame.origin.y = scrollFrame.origin.y + scrollFrame.size.height - textFrame.size.height;
+    [self.bigLabel setFrame:textFrame];*/
 }
 - (void)resizeWithoutMap
 {
     if (self.mapView.hidden == YES)
         return;
-    float height = [self.mapView frame].size.height;
+    CGRect totalFrame = [[self view] frame];
+    CGRect detailFrame = [_detailDescriptionLabel frame];
+    CGRect mapFrame = [_mapView frame];
+    CGRect textFrame = [_textView frame];
+    CGRect scrollFrame = [_scrollView frame];
+    CGRect bigFrame = [_bigLabel frame];
+    
+    // detail sits at the bottom
+    detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
+    // map sits above the detail, but is hidden
+    mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
+    // big label sits above the detail
+    bigFrame.origin.y = detailFrame.origin.y - bigFrame.size.height;
+    //scroll sits above the detail and resizes for such
+    scrollFrame.size.height = detailFrame.origin.y;
+    scrollFrame.origin.y = 0;
+    //text is the same as scrollframe
+    textFrame.size.height = detailFrame.origin.y;
+    textFrame.origin.y = 0;
+    
+    [_bigLabel setFrame:bigFrame];
+    [_scrollView setFrame:scrollFrame];
+    [_textView setFrame:textFrame];
+    [_mapView setFrame:mapFrame];
+    [_detailDescriptionLabel setFrame:detailFrame];
+    
+    /*float height = [self.mapView frame].size.height;
     CGRect scrollFrame = [self.scrollView frame];
-    NSLog(@"Scroll frame %.0fx%.0f @ %0.f,%.0f",
-          scrollFrame.size.width, scrollFrame.size.height,
-          scrollFrame.origin.x, scrollFrame.origin.y);
     scrollFrame.size.height += height;
     [self.scrollView setFrame:scrollFrame];
-    NSLog(@"Scroll frame increased by %.0f %.0fx%.0f @ %0.f,%.0f",
-          height,
-          scrollFrame.size.width, scrollFrame.size.height,
-          scrollFrame.origin.x, scrollFrame.origin.y);
+    CGRect textFrame = [self.bigLabel frame];
+    textFrame.origin.y = scrollFrame.origin.y + scrollFrame.size.height - textFrame.size.height;
+    [self.bigLabel setFrame:textFrame];*/
 }
 
 - (void)handleURL:(NSString*)url
@@ -262,14 +306,23 @@
                                   options:NSRegularExpressionCaseInsensitive
                                   error:&err];
     NSArray* matches = [regex matchesInString:html options:0 range:NSMakeRange(0, [html length])];*/
+    NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     NSDataDetector* detector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:Nil];
-    NSArray* matches = [detector matchesInString:html options:0 range:NSMakeRange(0, [html length])];
+    [detector enumerateMatchesInString:html options:0 range:NSMakeRange(0, [html length]) usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+        if ([result resultType] == NSTextCheckingTypeLink) {
+            NSString* urlStr = [[result URL] absoluteString];
+            if ([urlStr compare:@"tel:" options:0 range:NSMakeRange(0, 4)] != NSOrderedSame)
+                [strResults addObject:urlStr];
+        }
+    }];
+    return strResults;
     
+    NSArray* matches = [detector matchesInString:html options:0 range:NSMakeRange(0, [html length])];
+        
     //NSLog(@"got %d link matches", [matches count]);
     
     NSEnumerator* e = [matches objectEnumerator];
     NSTextCheckingResult* current;
-    NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     
     while ((current = [e nextObject]) != Nil) {
         if ([current resultType] == NSTextCheckingTypeLink) {
@@ -494,9 +547,18 @@ static bool isRetinaDisplay = NO;
         isRetinaDisplay = NO; // non-Retina display
     }
 
+    UIPanGestureRecognizer* panGesture = [[UIPanGestureRecognizer alloc]
+                                          initWithTarget:self
+                                          action:@selector(panBigLabel:)];
+    [panGesture setCancelsTouchesInView:YES];
+    [panGesture setDelaysTouchesBegan:YES];
+    [self.bigLabel addGestureRecognizer:panGesture];
+
     [self addGestures:self.textView];
     [self addGestures:self.scrollView];
     [self addGestures:self.detailDescriptionLabel];
+    [self addGestures:self.bigLabel];
+    
     UISwipeGestureRecognizer* swipeGesture = [[UISwipeGestureRecognizer alloc]
                                               initWithTarget:self
                                               action:@selector(handleSwipeUp:)];
@@ -511,6 +573,8 @@ static bool isRetinaDisplay = NO;
                                       target:self
                                       action:@selector(doSomething:)];
     self.navigationItem.rightBarButtonItem = doSomethingButton;
+    
+    [self resizeWithoutMap];
 }
 
 - (void)addGestures:(UIView*)theView
@@ -627,6 +691,26 @@ static bool isRetinaDisplay = NO;
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             [self.scrollView setHidden:YES];
         }
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+}
+
+- (IBAction)panBigLabel:(UIGestureRecognizer *)gestureRecognizer
+{
+    static CGRect origFrame;
+    @try {
+        if (! [[gestureRecognizer class] isSubclassOfClass:[UIPanGestureRecognizer class]])
+            return;
+        UIPanGestureRecognizer* panGest = (UIPanGestureRecognizer*)gestureRecognizer;
+        if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+            origFrame = [self.bigLabel frame];
+        }
+        CGPoint move = [panGest translationInView:[self view]];
+        CGRect newFrame = [self.bigLabel frame];
+        //newFrame.origin.x = origFrame.origin.x + move.x;
+        newFrame.origin.y = origFrame.origin.y + move.y;
+        [self.bigLabel setFrame:newFrame];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
     }
