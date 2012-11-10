@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "GoogleReader.h"
 
 @class TWLocDetailViewController;
 
@@ -23,14 +24,19 @@
     NSString* twitterAccountName;
     ACAccount* twitterAccount;
     //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
+    
+    NSDictionary* lists;
 }
 
 @property (nonatomic)     long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
 
 @property (strong, nonatomic) IBOutlet UILabel* statusLabel;
-@property (strong, nonatomic) IBOutlet UIActivityIndicatorView* activityView;
+@property (strong, nonatomic) IBOutlet UILabel* queueLabel;
+@property (nonatomic) BOOL tweetLibrary;
+@property (nonatomic) BOOL googleReaderLibrary;
 
 @property (strong, nonatomic) TWLocDetailViewController *detailViewController;
+@property (retain, nonatomic) GoogleReader* googleReader;
 
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSManagedObjectContext *managedObjectContext;
@@ -77,16 +83,18 @@ masterViewController:(TWLocMasterViewController*)theMaster;
 
 @interface GetTweetOperation : NSOperation {
     TWLocMasterViewController* master;
+    NSNumber* listID;
     BOOL executing, finished;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster;
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster andList:(NSNumber*)theListID;
 
 @end
 @interface StoreTweetOperation : NSOperation {
     TWLocMasterViewController* master;
+    NSNumber* listID;
     BOOL executing, finished;
     NSArray* timeline;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline;
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID;
 
 @end

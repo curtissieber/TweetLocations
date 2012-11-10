@@ -343,7 +343,10 @@
     NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:url];
     //[_detailItem setOrigHTML:html];
     if (replace != Nil) {
-        [self openURL:[NSURL URLWithString:replace]];
+        if ([TWLocDetailViewController imageExtension:replace])
+            [self openURL:[NSURL URLWithString:replace]];
+        else 
+            [self handleURL:replace];
     } else {
         [self.textView setText:html];
         [_activityView stopAnimating];
@@ -358,7 +361,9 @@
     NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     
     while ((current = [e nextObject]) != Nil) {
-        if ([self imageExtension:current])
+        if ([TWLocDetailViewController imageExtension:current])
+            [strResults addObject:current];
+        else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             [strResults addObject:current];
     }
     //NSLog(@"only %d links are images",[strResults count]);
@@ -366,6 +371,10 @@
     [strResults sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         NSMutableString* str1 = [[NSMutableString alloc] initWithString:obj1];
         NSMutableString* str2 = [[NSMutableString alloc] initWithString:obj2];
+        if ([str1 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+            return NSOrderedAscending;
+        if ([str2 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+            return NSOrderedDescending;
         [str1 deleteCharactersInRange:NSMakeRange([str1 length]-4,4)];
         [str2 deleteCharactersInRange:NSMakeRange([str2 length]-4,4)];
         
@@ -553,7 +562,14 @@ static bool isRetinaDisplay = NO;
     [panGesture setCancelsTouchesInView:YES];
     [panGesture setDelaysTouchesBegan:YES];
     [self.bigLabel addGestureRecognizer:panGesture];
-
+    
+    UITapGestureRecognizer* statusTouch = [[UITapGestureRecognizer alloc]
+                                          initWithTarget:self
+                                          action:@selector(touchedStatus:)];
+    [statusTouch setCancelsTouchesInView:YES];
+    [statusTouch setDelaysTouchesBegan:YES];
+    [_activityLabel addGestureRecognizer:statusTouch];
+    
     [self addGestures:self.textView];
     [self addGestures:self.scrollView];
     [self addGestures:self.detailDescriptionLabel];
@@ -640,6 +656,11 @@ static bool isRetinaDisplay = NO;
         [self.master prevTweet];
         //[self configureView];
     }
+}
+
+- (IBAction)touchedStatus:(id)sender
+{
+    [_activityLabel setHidden:YES];
 }
 
 - (IBAction)handleTap:(UIGestureRecognizer *)gestureRecognizer

@@ -6,6 +6,16 @@
 	<array>
 		<dict>
 			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Google Reader Library</string>
+			<key>Key</key>
+			<string>googleLibrary</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>Type</key>
 			<string>PSTextFieldSpecifier</string>
 			<key>Title</key>
 			<string>Twitter ID Max</string>
@@ -41,6 +51,26 @@
 			<string>Twitter Account</string>
 			<key>Type</key>
 			<string>PSTextFieldSpecifier</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Google Account</string>
+			<key>Key</key>
+			<string>googleAccount</string>
+			<key>DefaultValue</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Google Password</string>
+			<key>Key</key>
+			<string>googlePassword</string>
+			<key>DefaultValue</key>
+			<string></string>
 		</dict>
 	</array>
 	<key>StringsTable</key>

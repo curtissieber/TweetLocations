@@ -27,6 +27,7 @@
 @property (retain, nonatomic) IBOutlet UIButton *sizeButton;
 
 @property (strong, nonatomic) IBOutlet UIActivityIndicatorView* activityView;
+@property (strong, nonatomic) IBOutlet UILabel* activityLabel;
 
 @property (retain, nonatomic) TWLocMasterViewController* master;
 
@@ -34,4 +35,5 @@
 + (NSMutableArray*)staticGetURLs:(NSString*)html;
 + (NSString*)staticFindJPG:(NSString*)html theUrlStr:(NSString*)url;
 - (BOOL)openURL:(NSURL *)url;
+- (IBAction)touchedStatus:(id)sender;
 @end
