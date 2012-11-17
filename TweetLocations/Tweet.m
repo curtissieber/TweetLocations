@@ -2,7 +2,7 @@
 //  Tweet.m
 //  TweetLocations
 //
-//  Created by Curtis Sieber on 10/5/12.
+//  Created by Curtis Sieber on 11/17/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
@@ -16,12 +16,13 @@
 @dynamic latitude;
 @dynamic locationFromPic;
 @dynamic longitude;
+@dynamic origHTML;
 @dynamic origURL;
 @dynamic timestamp;
 @dynamic tweet;
 @dynamic tweetID;
 @dynamic url;
 @dynamic username;
-@dynamic origHTML;
+@dynamic listID;
 
 @end

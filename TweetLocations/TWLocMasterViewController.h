@@ -26,6 +26,8 @@
     //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
     
     NSDictionary* lists;
+    NSMutableDictionary* maxIDEachList;
+    NSMutableArray* queueGetArray;
 }
 
 @property (nonatomic)     long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;

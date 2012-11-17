@@ -2,7 +2,7 @@
 //  Tweet.h
 //  TweetLocations
 //
-//  Created by Curtis Sieber on 10/5/12.
+//  Created by Curtis Sieber on 11/17/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
@@ -17,12 +17,13 @@
 @property (nonatomic, retain) NSNumber * latitude;
 @property (nonatomic, retain) NSNumber * locationFromPic;
 @property (nonatomic, retain) NSNumber * longitude;
+@property (nonatomic, retain) NSString * origHTML;
 @property (nonatomic, retain) NSString * origURL;
 @property (nonatomic, retain) NSString * timestamp;
 @property (nonatomic, retain) NSString * tweet;
 @property (nonatomic, retain) NSNumber * tweetID;
 @property (nonatomic, retain) NSString * url;
 @property (nonatomic, retain) NSString * username;
-@property (nonatomic, retain) NSString * origHTML;
+@property (nonatomic, retain) NSNumber * listID;
 
 @end

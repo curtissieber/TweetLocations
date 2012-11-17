@@ -7,17 +7,16 @@
 //
 
 #import "TWLocMasterViewController.h"
-
 #import "TWLocDetailViewController.h"
+#import "Tweet.h"
+#import "URLFetcher.h"
+#import "GoogleReader.h"
 
 #import <Accounts/Accounts.h>
 #import <Twitter/Twitter.h>
 #import <ImageIO/ImageIO.h>
 #import <SystemConfiguration/SystemConfiguration.h>
-#import "Tweet.h"
-#import "URLFetcher.h"
 #import <CoreData/NSFetchedResultsController.h>
-#import "GoogleReader.h"
 
 @interface TWLocMasterViewController ()
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath;
@@ -29,7 +28,7 @@
 #define ALERT_DUMMY (1)
 #define ALERT_NOTWITTER (666)
 #define ALERT_SELECTACCOUNT (1776)
-#define ALERT_REFRESH (2001)
+#define ALERT_SETALLREAD (1999)
 
 static int queuedTasks = 0;
 static UILabel* staticQueueLabel = Nil;
@@ -47,8 +46,12 @@ static UILabel* staticQueueLabel = Nil;
 
 - (void)STATUS:(NSString*)thestatus
 {
-    NSLog(@"%@",thestatus);
-    [_statusLabel setText:thestatus];
+    @try {
+        NSLog(@"%@",thestatus);
+        [_statusLabel setText:thestatus];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 
 static bool NetworkAccessAllowed = NO;
@@ -63,7 +66,11 @@ static bool NetworkAccessAllowed = NO;
     return NO;
 }
 
-- (void)killMax { _twitterIDMax = _twitterIDMin = -1; }
+- (void)killMax {
+    _twitterIDMax = _twitterIDMin = -1;
+    self->maxIDEachList = [[NSMutableDictionary alloc] initWithCapacity:1];
+    [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:[NSNumber numberWithLongLong:0]];
+}
 
 - (NSData*)imageData:(NSString*)url
 {
@@ -272,20 +279,22 @@ static bool NetworkAccessAllowed = NO;
              // inspect the contents of error
              NSLog(@"FAVORITE err=%@", error);
              [tweet setFavorite:[NSNumber numberWithBool:YES]];
-             NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
-             NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-             [context processPendingChanges];
-             UITableViewCell* cell =[self.tableView cellForRowAtIndexPath:selected];
-             [cell setNeedsDisplay];
-             
-             // Save the context.  But I keep having the queue stop dead at this point BOO
-             if (![context save:&error]) {
-                 // Replace this implementation with code to handle the error appropriately.
-                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
-             }
-             NSLog(@"Got a chance to save, YAY!");
-
+             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                 NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
+                 NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+                 [context processPendingChanges];
+                 UITableViewCell* cell =[self.tableView cellForRowAtIndexPath:selected];
+                 [cell setNeedsDisplay];
+                 
+                 NSError* error2 = [[NSError alloc] init];
+                 // Save the context.  But I keep having the queue stop dead at this point BOO
+                 if (![context save:&error2]) {
+                     // Replace this implementation with code to handle the error appropriately.
+                     // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                     NSLog(@"Unresolved error saving the context %@, %@", error2, [error2 userInfo]);
+                 }
+                 NSLog(@"Got a chance to save, YAY!");
+             }];
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -344,21 +353,35 @@ static bool NetworkAccessAllowed = NO;
             _maxTweetsToGet = NUMTWEETSTOGET;
             _twitterIDMax = -1;
             _twitterIDMin = -1;
+            
             if (listID == Nil) {
-                [_idSet enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-                    long long theID = [(NSNumber*)obj longLongValue];
-                    if (theID > _twitterIDMax)
-                        _twitterIDMax = theID;
+                NSDictionary* listNames = self->lists;
+                [[[listNames keyEnumerator] allObjects] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                    NSNumber* listID = [self->lists objectForKey:(NSString*)obj];
+                    NSLog(@"adding list %@ to the getQueue",listID);
+                    [self->queueGetArray addObject:listID];
                 }];
-            } else {
-                [_idSet enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-                    long long theID = [(NSNumber*)obj longLongValue];
-                    if (theID < _twitterIDMax || _twitterIDMax < 1)
-                        _twitterIDMax = theID;
-                }];
+                
+                if ([self.fetchedResultsController fetchedObjects] != Nil) {
+                    NSLog(@"queue FETCH is %d tweets",[[self.fetchedResultsController fetchedObjects] count]);
+                    NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
+                    Tweet* tweet;
+                    while ((tweet = [e nextObject]) != Nil) {
+                        long long maxIDlocal = [self getMaxTweetID:[tweet listID]];
+                        if ([[tweet tweetID] longLongValue] > maxIDlocal)
+                            [self setMaxTweetID:[[tweet tweetID] longLongValue] forList:[tweet listID]];
+                    }
+                    NSLog(@"done setting up the ID array");
+                } else NSLog(@"NO TWEETS FETCHED! IS THE DB EMPTY?");
             }
+
+            _twitterIDMax = [self getMaxTweetID:listID];
+            if (_twitterIDMax == -1)
+                _twitterIDMax = [self getMaxTweetID:Nil];
+            
             _nextIDMax = _twitterIDMax;
-            [self deleteTweetDataFile]; 
+            if (listID == Nil)
+                [self deleteTweetDataFile];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:listID];
             [_theQueue setSuspended:NO];
             [TWLocMasterViewController incrementTasks];
@@ -367,6 +390,26 @@ static bool NetworkAccessAllowed = NO;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+}
+- (long long)getMaxTweetID:(NSNumber*)theListID
+{
+    long long __block retval = -1;
+    if (theListID == Nil)
+        theListID = [NSNumber numberWithLongLong:0];
+    [self->maxIDEachList enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        if (key != Nil && [[key class] isSubclassOfClass:[NSNumber class]])
+            if ([theListID compare:(NSNumber*)key] == NSOrderedSame)
+                if (obj != Nil && [[obj class] isSubclassOfClass:[NSNumber class]])
+                    retval = [(NSNumber*)obj longLongValue];
+    }];
+    
+    return retval;
+}
+- (void)setMaxTweetID:(long long)theMax forList:(NSNumber*)theListID
+{
+    if (theListID == Nil)
+        theListID = [NSNumber numberWithLongLong:0];
+    [self->maxIDEachList setObject:[NSNumber numberWithLongLong:theMax] forKey:theListID];
 }
 
 - (void)chooseTwitterAccount:(NSArray*)accountArray
@@ -385,7 +428,7 @@ static bool NetworkAccessAllowed = NO;
                     self->twitterAccount = account;
             }
             
-            [self queueTweetGet:Nil];
+            [self getTwitterLists];
         }
         
         if (self->twitterAccount != Nil)
@@ -444,21 +487,17 @@ static bool NetworkAccessAllowed = NO;
                         self->twitterAccount = account;
                 }
                 
-                [self queueTweetGet:Nil];
+                [self getTwitterLists];
             }
         }
-        if ([alertView tag] == ALERT_REFRESH) {
-            NSString* refreshName = [alertView buttonTitleAtIndex:buttonIndex];
-            if ([refreshName isEqualToString:@"TIMELINE"]) {
-                [self checkForMaxTweets];
-                [self queueTweetGet:Nil];
-            } else {
-                NSString* listname = [alertView buttonTitleAtIndex:buttonIndex];
-                NSNumber* listID = [self->lists objectForKey:listname];
-                NSLog(@"hit button %@ which should be ID %@",listname,listID);
-                [self queueTweetGet:listID];
+        if ([alertView tag] == ALERT_SELECTACCOUNT) {
+            NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
+            if ([buttonNameHit isEqualToString:@"CANCEL"])
+                NSLog(@"don't set all to read");
+            else {
+                NSLog(@"YES set all to read");
+                [self allTweetsNeedToBeSetToRead];
             }
-            [self getTwitterLists]; // will refresh the lists
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -654,6 +693,10 @@ static bool NetworkAccessAllowed = NO;
                         [tweet setOrigHTML:Nil];
                         [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
                         [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
+                        if (theListID != Nil)
+                            [tweet setListID:theListID];
+                        else
+                            [tweet setListID:[NSNumber numberWithLongLong:0]];
                     }
                     [_idSet addObject:theID];
                     storedTweets++;
@@ -681,15 +724,6 @@ static bool NetworkAccessAllowed = NO;
                 if (keys != Nil && [keys count] > 0)
                     listname = [keys objectAtIndex:0];
             }
-            /*UIAlertView* alert = [[UIAlertView alloc]
-                                  initWithTitle:listname
-                                  message:[NSString stringWithFormat:@"Retrieved %d new (%d old) tweets from the %@ area",storedTweets,[timeline count]-storedTweets,listname]
-                                  delegate:self
-                                  cancelButtonTitle:@"OKAY"
-                                  otherButtonTitles: nil];
-            [alert setTag:ALERT_DUMMY];
-            [alert show];*/
-            
             NSString* status = [[self.detailViewController activityLabel] text];
             [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nRetrieved %d new (%d old) tweets from the %@ area",status,storedTweets,[timeline count]-storedTweets,listname]];
         }];
@@ -716,10 +750,29 @@ static bool NetworkAccessAllowed = NO;
                 [defaults synchronize];
             }
             [self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
-            
+
             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                [self getTwitterLists]; // important later
+                [self.tableView setNeedsDisplay];
+                [context processPendingChanges];
+                // Save the context.  But I keep having the queue stop dead at this point BOO
+                NSError *error = [[NSError alloc] init];
+                if (![context save:&error]) {
+                    // Replace this implementation with code to handle the error appropriately.
+                    // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                    NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+                }
+                NSLog(@"Got a chance to save, YAY!");
+                [self.tableView reloadData];
             }];
+            
+            // now, let us do the next item in the queue
+            if ([self->queueGetArray count] > 0) {
+                NSLog(@"Done with current list %@",theListID);
+                NSNumber* nextListID = [self->queueGetArray objectAtIndex:0];
+                [self->queueGetArray removeObjectAtIndex:0];
+                NSLog(@"queueing the next list %@",nextListID);
+                [self queueTweetGet:nextListID];
+            }
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -780,29 +833,47 @@ static bool NetworkAccessAllowed = NO;
                              NSDictionary* aList = obj;
                              NSString* listName = [NSString stringWithFormat:@"%@ (%@)",[aList objectForKey:@"name"],[aList objectForKey:@"member_count"]];
                              NSNumber* listID = [aList objectForKey:@"id"];
-                             if (listName != Nil && listID != Nil)
+                             if (listName != Nil && listID != Nil) {
                                  [returnDict setObject:listID forKey:listName];
-                             
-                             NSLog(@"Adding list %@ ID=%@",listName,listID);
+                                 [self newList:listID name:listName];
+                                 NSLog(@"Adding list %@ ID=%@",listName,listID);
+                             }
                          } @catch (NSException *eee) {
                              NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                          }
                      }];
              }
-             if (self->lists == Nil || [self->lists count] == 0) {
-                 // first lists I've gotten, I should queue them up for a grab
-                 [[returnDict allKeys] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                     NSNumber* theListID = [returnDict valueForKey:(NSString*)obj];
-                     [self queueTweetGet:theListID];
-                     NSLog(@"queued a get for list %@ id=%@",obj,theListID);
-                 }];
-             }
              self->lists = returnDict;
+             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                 [self queueTweetGet:Nil];
+             }];
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     return returnDict;
+}
+
+- (void)newList:(NSNumber*)theListID name:(NSString*)theListName
+{
+    @try {
+        if (self->maxIDEachList == Nil)
+            self->maxIDEachList = [[NSMutableDictionary alloc] initWithCapacity:0];
+        BOOL __block found = NO;
+        [self->maxIDEachList enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            if (key != Nil && [[key class] isSubclassOfClass:[NSNumber class]]) {
+                NSNumber* listID = key;
+                if ([theListID compare:listID] == NSOrderedSame)
+                    found = YES;
+            }
+        }];
+        if (!found) {
+            NSLog(@"Adding list tracker for %@ list (%@)",theListName,theListID);
+            [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:theListID];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 
 - (void)noTwitterAlert
@@ -855,14 +926,18 @@ static bool NetworkAccessAllowed = NO;
 }
 - (void)deleteTweetDataFile
 {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString* filename = [documentsDirectory
-                          stringByAppendingPathComponent:
-                          @"Twitter.JSON.data.txt"];
-    NSLog(@"Deleting %@",filename);
-    if (![[NSFileManager defaultManager] createFileAtPath:filename contents:Nil attributes:Nil]) {
-        NSLog(@"blew it! cannot create %@", filename);
+    @try {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSString* filename = [documentsDirectory
+                              stringByAppendingPathComponent:
+                              @"Twitter.JSON.data.txt"];
+        NSLog(@"Deleting %@",filename);
+        if (![[NSFileManager defaultManager] createFileAtPath:filename contents:Nil attributes:Nil]) {
+            NSLog(@"blew it! cannot create %@", filename);
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
 
@@ -886,11 +961,11 @@ static bool NetworkAccessAllowed = NO;
                                       target:self
                                       action:@selector(refreshTweets:)];
     self.navigationItem.rightBarButtonItem = refreshButton;
-    UIBarButtonItem *setAllReadButton = [[UIBarButtonItem alloc]
+    UIBarButtonItem *allRead = [[UIBarButtonItem alloc]
                                       initWithBarButtonSystemItem:UIBarButtonSystemItemTrash
                                       target:self
-                                      action:@selector(setAllRead:)];
-    self.navigationItem.leftBarButtonItem = setAllReadButton;
+                                      action:@selector(setAllTweetsRead:)];
+    self.navigationItem.leftBarButtonItem = allRead;
     self.detailViewController = (TWLocDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
     [self.detailViewController setMaster:self];
     [[self.detailViewController activityLabel] setHidden:YES];
@@ -907,6 +982,7 @@ static bool NetworkAccessAllowed = NO;
     
     queuedTasks = 0;
     staticQueueLabel = _queueLabel;
+    self->queueGetArray = [[NSMutableArray alloc] initWithCapacity:0];
     _theQueue = [[NSOperationQueue alloc] init];
     [_theQueue setMaxConcurrentOperationCount:1];
     self->imageDictLock = [[NSLock alloc] init];
@@ -941,6 +1017,7 @@ static bool NetworkAccessAllowed = NO;
         _twitterIDMax = [idMaxStr longLongValue];
         _nextIDMax = _twitterIDMax;
         _twitterIDMin = -1; // for the grab, make certain to grab it all
+        [self killMax];
         [self getTwitterAccount];
     }
     
@@ -948,24 +1025,28 @@ static bool NetworkAccessAllowed = NO;
         _googleReader = [[GoogleReader alloc] init];
         [_googleReader authenticate:YES];
     }
-
-NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:3.0
-                                                                      sinceDate:[NSDate date]]
-                                          interval:0.7
-                                            target:self
-                                          selector:@selector(timerFireMethod:)
-                                          userInfo:Nil
-                                           repeats:YES];
-[[NSRunLoop mainRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
+    
+    NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:3.0
+                                                                          sinceDate:[NSDate date]]
+                                              interval:0.7
+                                                target:self
+                                              selector:@selector(timerFireMethod:)
+                                              userInfo:Nil
+                                               repeats:YES];
+    [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
 }
 
 - (void)timerFireMethod:(NSTimer*)theTimer
 {
-    [_queueLabel setText:[NSString stringWithFormat:@"%d tasks",queuedTasks]];
-    if (queuedTasks > 0)
-        [self setTitle:[NSString stringWithFormat:@"Twitter %d",queuedTasks]];
-    else
-        [self setTitle:@"Twitter"];
+    @try {
+        [_queueLabel setText:[NSString stringWithFormat:@"%d tasks",queuedTasks]];
+        if (queuedTasks > 0)
+            [self setTitle:[NSString stringWithFormat:@"Twitter %d",queuedTasks]];
+        else
+            [self setTitle:@"Twitter"];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 
 - (void)didReceiveMemoryWarning
@@ -984,110 +1065,36 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
     }
 }
 
-- (void)setAllRead:(id)sender
+- (void)setAllTweetsRead:(id)sender
 {
-    NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-    NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
-    NSError* theError;
-    NSFetchRequest* fetchRequest = [[NSFetchRequest alloc] initWithEntityName:[entity name]];
-    [fetchRequest setPredicate:[NSPredicate predicateWithFormat:@"tweetID > 0"]];
-    NSArray* results = Nil;
-    @try {
-        results = [context executeFetchRequest:fetchRequest error:&theError];
-    } @catch (NSException* eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
-    Tweet* tweet = Nil;
-    NSEnumerator* e = [results objectEnumerator];
-    while ((tweet = [e nextObject]) != Nil) {
-        if ([[tweet hasBeenRead] boolValue] == NO)
-            [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
-    }
-    [self.tableView setNeedsDisplay];
-    [context processPendingChanges];
-    // Save the context.  But I keep having the queue stop dead at this point BOO
-    NSError *error = [[NSError alloc] init];
-    if (![context save:&error]) {
-        // Replace this implementation with code to handle the error appropriately.
-        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-        NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
-    }
-    NSLog(@"Got a chance to save, YAY!");
-    [self.tableView reloadData];
-}
-
-- (void)refreshTweets:(id)sender
-{
-    NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-    [self.tableView setNeedsDisplay];
-    [context processPendingChanges];
-    // Save the context.  But I keep having the queue stop dead at this point BOO
-    NSError *error = [[NSError alloc] init];
-    if (![context save:&error]) {
-        // Replace this implementation with code to handle the error appropriately.
-        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-        NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
-    }
-    NSLog(@"Got a chance to save, YAY!");
-    [self.tableView reloadData];
-    
-    [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
-    [self checkForMaxTweets];
-    [self queueTweetGet:Nil];
-    NSDictionary* listNames = self->lists;
-    [[[listNames keyEnumerator] allObjects] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        NSNumber* listID = [self->lists objectForKey:(NSString*)obj];
-        NSLog(@"Refresh=%@",obj);
-        [self queueTweetGet:listID];
-    }];
-
-    return;
-
-    UIAlertView* alert = [[UIAlertView alloc] init];
-    [alert setTitle:@"Refresh Twitter Contents"];
-    [alert setMessage:@"Get the tweets from which area?"];
-    [alert setDelegate:self];
-    [alert setCancelButtonIndex:1];
-    [alert addButtonWithTitle:@"TIMELINE"];
-    [[[listNames keyEnumerator] allObjects] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        [alert addButtonWithTitle:(NSString*)obj];
-        NSLog(@"Title=%@",obj);
-    }];
-    [alert setTag:ALERT_REFRESH];
-    NSLog(@"Showing options for refresh");
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"All Done?" message:@"Do you really want to set all the tweets to a 'READ' state?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"YES", nil];
+    [alert setTag:ALERT_SETALLREAD];
     [alert show];
+    return; // don't delete, don't set things to "read" state
 }
-
-- (void)checkForMaxTweets
+- (void)allTweetsNeedToBeSetToRead
 {
-    NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-    NSArray* sections = [self.fetchedResultsController sections];
-    id<NSFetchedResultsSectionInfo> section = [sections objectAtIndex:0];
-    int rows = [section numberOfObjects];
-    NSLog(@"sections=%d row[0]=%d",[sections count],rows);
-    if (rows > MAXTWEETS) {
-        NSLog(@"More than %d tweets, going to remove some", MAXTWEETS);
-        for (int i = rows-1; i > MAXTWEETS; i--) {
-            NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:0];
-            Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
-            if ([[tweet locationFromPic] boolValue] == NO &&
-                [[tweet favorite] boolValue] == NO &&
-                [[tweet hasBeenRead] boolValue] == YES) {
-                //NSLog(@"removing %d tweet %@",i,tweet);
-                [context deleteObject:tweet];
-                [_idSet removeObject:[tweet tweetID]];
-            }
-        }
-    }
-    
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        [context processPendingChanges];
-        [self.tableView reloadData];
-        NSString* status = [[NSString alloc] initWithFormat: @"Tweet Count = %d", [self.tableView numberOfRowsInSection:0]];
-        [self STATUS:status];
-
-        // Save the context.  But I keep having the queue stop dead at this point BOO
+    @try {
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+        NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
+        NSError* theError;
+        NSFetchRequest* fetchRequest = [[NSFetchRequest alloc] initWithEntityName:[entity name]];
+        [fetchRequest setPredicate:[NSPredicate predicateWithFormat:@"tweetID > 0"]];
+        NSArray* results = Nil;
+        @try {
+            results = [context executeFetchRequest:fetchRequest error:&theError];
+        } @catch (NSException* eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
+        Tweet* tweet = Nil;
+        NSEnumerator* e = [results objectEnumerator];
+        while ((tweet = [e nextObject]) != Nil) {
+            if ([[tweet hasBeenRead] boolValue] == NO)
+                [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+        }
+        [self.tableView setNeedsDisplay];
+        [context processPendingChanges];
+        // Save the context.  But I keep having the queue stop dead at this point BOO
         NSError *error = [[NSError alloc] init];
         if (![context save:&error]) {
             // Replace this implementation with code to handle the error appropriately.
@@ -1095,6 +1102,81 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
             NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
         }
         NSLog(@"Got a chance to save, YAY!");
+        [self.tableView reloadData];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+
+- (void)refreshTweets:(id)sender
+{
+    @try {
+        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+        [self.tableView setNeedsDisplay];
+        [context processPendingChanges];
+        // Save the context.  But I keep having the queue stop dead at this point BOO
+        NSError *error = [[NSError alloc] init];
+        if (![context save:&error]) {
+            // Replace this implementation with code to handle the error appropriately.
+            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+        }
+        NSLog(@"Got a chance to save, YAY!");
+        [self.tableView reloadData];
+        
+        [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
+        [self checkForMaxTweets];
+        [self getTwitterLists];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+
+- (void)checkForMaxTweets
+{
+    @try {
+        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+        NSArray* sections = [self.fetchedResultsController sections];
+        id<NSFetchedResultsSectionInfo> section = [sections objectAtIndex:0];
+        int rows = [section numberOfObjects];
+        NSLog(@"sections=%d row[0]=%d",[sections count],rows);
+        if (rows > MAXTWEETS) {
+            NSLog(@"More than %d tweets, going to remove some", MAXTWEETS);
+            for (int i = rows-1; i > MAXTWEETS; i--) {
+                NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:0];
+                Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
+                if ([[tweet locationFromPic] boolValue] == NO &&
+                    [[tweet favorite] boolValue] == NO &&
+                    [[tweet hasBeenRead] boolValue] == YES) {
+                    //NSLog(@"removing %d tweet %@",i,tweet);
+                    [context deleteObject:tweet];
+                    [_idSet removeObject:[tweet tweetID]];
+                }
+            }
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+        @try {
+            NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+            [context processPendingChanges];
+            [self.tableView reloadData];
+            NSString* status = [[NSString alloc] initWithFormat: @"Tweet Count = %d", [self.tableView numberOfRowsInSection:0]];
+            [self STATUS:status];
+            
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
     }];
 }
 
@@ -1134,10 +1216,16 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
-    
-    [self configureCell:cell atIndexPath:indexPath];
-    return cell;
+    @try {
+        // sometimes an assertion failure DEAD DEAD DEAD
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
+        
+        [self configureCell:cell atIndexPath:indexPath];
+        return cell;
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return Nil;
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
@@ -1218,24 +1306,32 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
-    if ([[segue identifier] isEqualToString:@"showDetail"]) {
-        NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
-        Tweet *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
-        [object setHasBeenRead:[NSNumber numberWithBool:YES]];
-        [[segue destinationViewController] setDetailItem:object];
-        self.detailViewController = [segue destinationViewController];
-        [self.detailViewController setMaster:self];
+    @try {
+        if ([[segue identifier] isEqualToString:@"showDetail"]) {
+            NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
+            Tweet *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
+            [object setHasBeenRead:[NSNumber numberWithBool:YES]];
+            [[segue destinationViewController] setDetailItem:object];
+            self.detailViewController = [segue destinationViewController];
+            [self.detailViewController setMaster:self];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        // Save the context.  But I keep having the queue stop dead at this point BOO
-        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-        NSError *error = [[NSError alloc] init];
-        if (![context save:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+        @try {
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
-        NSLog(@"Got a chance to save, YAY!");
     }];
 }
 
@@ -1243,47 +1339,52 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
 
 - (NSFetchedResultsController *)fetchedResultsController
 {
-    if (_fetchedResultsController == Nil) {
-        
-        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
-        // Edit the entity name as appropriate.
-        NSEntityDescription *entity = [NSEntityDescription entityForName:@"Tweet" inManagedObjectContext:self.managedObjectContext];
-        [fetchRequest setEntity:entity];
-        
-        // Set the batch size to a suitable number.
-        [fetchRequest setFetchBatchSize:20];
-        
-        // Edit the sort key as appropriate.
-        NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"tweetID" ascending:NO];
-        NSArray *sortDescriptors = @[sortDescriptor];
-        
-        [fetchRequest setSortDescriptors:sortDescriptors];
-        
-        // Edit the section name key path and cache name if appropriate.
-        // nil for section name key path means "no sections".
-        NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:self.managedObjectContext sectionNameKeyPath:nil cacheName:@"Master"];
-        aFetchedResultsController.delegate = self;
-        self.fetchedResultsController = aFetchedResultsController;
-        
-        NSError *error = nil;
-        if (![self.fetchedResultsController performFetch:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            abort();
+    @try {
+        if (_fetchedResultsController == Nil) {
+            
+            NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+            // Edit the entity name as appropriate.
+            NSEntityDescription *entity = [NSEntityDescription entityForName:@"Tweet" inManagedObjectContext:self.managedObjectContext];
+            [fetchRequest setEntity:entity];
+            
+            // Set the batch size to a suitable number.
+            [fetchRequest setFetchBatchSize:20];
+            
+            // Edit the sort key as appropriate.
+            NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"tweetID" ascending:NO];
+            NSArray *sortDescriptors = @[sortDescriptor];
+            
+            [fetchRequest setSortDescriptors:sortDescriptors];
+            
+            // Edit the section name key path and cache name if appropriate.
+            // nil for section name key path means "no sections".
+            NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:self.managedObjectContext sectionNameKeyPath:nil cacheName:@"Master"];
+            aFetchedResultsController.delegate = self;
+            self.fetchedResultsController = aFetchedResultsController;
+            
+            NSError *error = nil;
+            if (![self.fetchedResultsController performFetch:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+                abort();
+            }
+            
+            _idSet = [[NSMutableSet alloc] initWithCapacity:1000];
+            
+            if ([self.fetchedResultsController fetchedObjects] != Nil) {
+                NSLog(@"Initital FETCH is %d tweets",[[self.fetchedResultsController fetchedObjects] count]);
+                [self saveTweetDebugToFile:[NSString stringWithFormat:@"Initital FETCH is %d tweets\n",[[self.fetchedResultsController fetchedObjects] count]]];
+                NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
+                Tweet* tweet;
+                while ((tweet = [e nextObject]) != Nil)
+                    [_idSet addObject:[tweet tweetID]];
+                NSLog(@"done setting up the ID array");
+            } else NSLog(@"NO TWEETS FETCHED! IS THE DB EMPTY?");
         }
-
-        _idSet = [[NSMutableSet alloc] initWithCapacity:1000];
-        
-        if ([self.fetchedResultsController fetchedObjects] != Nil) {
-            NSLog(@"Initital FETCH is %d tweets",[[self.fetchedResultsController fetchedObjects] count]);
-            [self saveTweetDebugToFile:[NSString stringWithFormat:@"Initital FETCH is %d tweets\n",[[self.fetchedResultsController fetchedObjects] count]]];
-            NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
-            Tweet* tweet;
-            while ((tweet = [e nextObject]) != Nil)
-                [_idSet addObject:[tweet tweetID]];
-            NSLog(@"done setting up the ID array");
-        } else NSLog(@"NO TWEETS FETCHED! IS THE DB EMPTY?");
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        return Nil;
     }
     
     return _fetchedResultsController;
@@ -1351,19 +1452,24 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath
 {
-    Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
-    
-    [self cellSetup:cell forTweet:tweet];
-    
-    if (_theQueue != Nil && NetworkAccessAllowed &&
+    @try {
+        Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
+        
+        [self cellSetup:cell forTweet:tweet];
+        
+        if (_theQueue != Nil && NetworkAccessAllowed &&
             [[tweet hasBeenRead] boolValue] == NO) {
-        TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
-                                                              index:indexPath
-                                               masterViewController:self];
-        [TWLocMasterViewController incrementTasks];
-        [_theQueue addOperation:top];
-        [_theQueue setSuspended:NO];
+            TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
+                                                                  index:indexPath
+                                                   masterViewController:self];
+            [TWLocMasterViewController incrementTasks];
+            [_theQueue addOperation:top];
+            [_theQueue setSuspended:NO];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+
 }
 
 - (void)cellSetup:(UITableViewCell *)cell forTweet:(Tweet*)tweet
@@ -1371,63 +1477,64 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
     if (cell == Nil || tweet == Nil)
         return;
     
-    cell.textLabel.text = [[NSString alloc] initWithFormat:@"[%@]:%@",
-                           [tweet username], [tweet tweet] ];
-    UIFont* font = [[cell textLabel] font];
-    CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font
-                                               constrainedToSize:[cell textLabel].frame.size
-                                                   lineBreakMode:[[cell textLabel] lineBreakMode]];
-    CGRect frame = [cell.textLabel frame];
-    frame.size.height = descriptionHeight.height;
-    [cell.textLabel setFrame:frame];
-    CGRect detailFrame = [cell.detailTextLabel frame];
-    detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
-    [cell.detailTextLabel setFrame:detailFrame];
-    CGRect cellFrame = [cell frame];
-    cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
-    [cell setFrame:cellFrame];
-    [cell setTag:cellFrame.size.height];
-    
-    NSMutableString* detail = [[NSMutableString alloc] initWithCapacity:100];
-    if ([[tweet url] length] > 4)
-        [detail appendFormat:@"[%@]", [tweet url]];
-    double latitude = [[tweet latitude] doubleValue];
-    double longitude = [[tweet longitude] doubleValue];
-    if (latitude > -900 && longitude > -900) {
-        [detail appendFormat:@"[%0.1lf,%0.1lf]",latitude,longitude];
-    } else [cell.imageView setHidden:YES];
-    cell.detailTextLabel.text = detail;
-    if ([[tweet favorite] boolValue] == YES) {
-        [cell.contentView setBackgroundColor:[UIColor cyanColor]];
-        [cell.textLabel setBackgroundColor:[UIColor cyanColor]];
-        [cell.detailTextLabel setBackgroundColor:[UIColor cyanColor]];
-    } else if ([[tweet hasBeenRead] boolValue] == YES) {
-        [cell.contentView setBackgroundColor:[UIColor lightGrayColor]];
-        [cell.textLabel setBackgroundColor:[UIColor lightGrayColor]];
-        [cell.detailTextLabel setBackgroundColor:[UIColor lightGrayColor]];
-    } else {
-        [cell.contentView setBackgroundColor:[UIColor clearColor]];
-        [cell.textLabel setBackgroundColor:[UIColor clearColor]];
-        [cell.detailTextLabel setBackgroundColor:[UIColor clearColor]];
-    }
-    
-    if (latitude > -900 && longitude > -900) {
-        [cell.imageView setHidden:NO];
-        if ([[tweet url] length] > 4) {
-            if ([[tweet locationFromPic] boolValue] == YES)
-                [cell.imageView setImage:self.pinLinkPinImage];
-            else
-                [cell.imageView setImage:self.pinLinkImage];
-        } else
-            [cell.imageView setImage:self.pinImage];
-    } else {
-        [cell.imageView setHidden:YES];
-        [cell.imageView setImage:Nil];
-        /*NSData* data = [self imageData:[tweet url]];
-         if (data != Nil)
-            [cell.imageView setImage:[UIImage imageWithData:data]];
-         else
-            [cell.imageView setImage:self.redX];*/
+    @try {
+        cell.textLabel.text = [[NSString alloc] initWithFormat:@"[%@]:%@",
+                               [tweet username], [tweet tweet] ];
+        UIFont* font = [[cell textLabel] font];
+        CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font
+                                                   constrainedToSize:[cell textLabel].frame.size
+                                                       lineBreakMode:[[cell textLabel] lineBreakMode]];
+        CGRect frame = [cell.textLabel frame];
+        frame.size.height = descriptionHeight.height;
+        [cell.textLabel setFrame:frame];
+        CGRect detailFrame = [cell.detailTextLabel frame];
+        detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
+        [cell.detailTextLabel setFrame:detailFrame];
+        CGRect cellFrame = [cell frame];
+        cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
+        [cell setFrame:cellFrame]; //died once DEAD DEAD DEAD
+        [cell setTag:cellFrame.size.height];
+        
+        NSMutableString* detail = [[NSMutableString alloc] initWithCapacity:100];
+        if ([[tweet url] length] > 4)
+            [detail appendFormat:@"[%@]", [tweet url]];
+        double latitude = [[tweet latitude] doubleValue];
+        double longitude = [[tweet longitude] doubleValue];
+        if (latitude > -900 && longitude > -900) {
+            [detail appendFormat:@"[%0.1lf,%0.1lf]",latitude,longitude];
+        } else [cell.imageView setHidden:YES];
+        cell.detailTextLabel.text = detail;
+        if ([[tweet favorite] boolValue] == YES) {
+            [cell.textLabel setTextColor:[UIColor redColor]];
+            [cell.detailTextLabel setTextColor:[UIColor redColor]];
+        } else if ([[tweet hasBeenRead] boolValue] == YES) {
+            [cell.textLabel setTextColor:[UIColor lightGrayColor]];
+            [cell.detailTextLabel setTextColor:[UIColor lightGrayColor]];
+        } else {
+            [cell.textLabel setTextColor:[UIColor blackColor]];
+            [cell.detailTextLabel setTextColor:[UIColor blackColor]];
+        }
+        
+        if (latitude > -900 && longitude > -900) {
+            [cell.imageView setHidden:NO];
+            if ([[tweet url] length] > 4) {
+                if ([[tweet locationFromPic] boolValue] == YES)
+                    [cell.imageView setImage:self.pinLinkPinImage];
+                else
+                    [cell.imageView setImage:self.pinLinkImage];
+            } else
+                [cell.imageView setImage:self.pinImage];
+        } else {
+            [cell.imageView setHidden:YES];
+            [cell.imageView setImage:Nil];
+            /*NSData* data = [self imageData:[tweet url]];
+             if (data != Nil)
+             [cell.imageView setImage:[UIImage imageWithData:data]];
+             else
+             [cell.imageView setImage:self.redX];*/
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
 
@@ -1466,59 +1573,69 @@ NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:
 - (void)main
 {
     executing = YES;
-
-    if (([tweet url] == Nil) ||
-        ([[tweet url] length] < 4) ||
-        ([master imageData:[tweet url]] != Nil) ) {
-        [TWLocMasterViewController decrementTasks];
-        executing = NO; finished = YES;
-        return;
-    }
-    if ([TWLocDetailViewController imageExtension:[tweet url]]) {
-        [self tryImage];
-    } else {
-        NSURL* url = [NSURL URLWithString:[tweet url]];
-        NSURLRequest* request = [NSURLRequest requestWithURL:url
-                                                 cachePolicy:NSURLRequestReturnCacheDataElseLoad
-                                             timeoutInterval:15];
-        NSURLResponse* response=nil;
-        NSError* error=nil;
-        NSData* data=[NSURLConnection sendSynchronousRequest:request
-                                           returningResponse:&response
-                                                       error:&error];
-        if (data == Nil) {
-            NSLog(@"failed to get %@ in background",[tweet url]);
+    
+    @try {
+        if (([tweet url] == Nil) ||
+            ([[tweet url] length] < 4) ||
+            ([master imageData:[tweet url]] != Nil) ) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        NSMutableString* html = [[NSMutableString alloc] initWithData:data
-                                                  encoding:NSStringEncodingConversionAllowLossy];
-        if (html != Nil) {
-            NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
-            //[tweet setOrigHTML:html];
-            if (replace != Nil) {
-                [tweet setUrl:replace];
-                NSLog(@"URL_REPLACE %@",replace);
-                if ([TWLocDetailViewController imageExtension:[tweet url]])
-                    [self tryImage];
-                else {
-                    TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
-                                                                          index:index
-                                                           masterViewController:master];
-                    [TWLocMasterViewController incrementTasks];
-                    [[master theQueue] addOperation:top];
-                    [[master theQueue] setSuspended:NO];
+        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+            [self tryImage];
+        } else {
+            NSURL* url = [NSURL URLWithString:[tweet url]];
+            NSURLRequest* request = [NSURLRequest requestWithURL:url
+                                                     cachePolicy:NSURLRequestReturnCacheDataElseLoad
+                                                 timeoutInterval:15];
+            NSURLResponse* response=nil;
+            NSError* error=nil;
+            NSData* data=[NSURLConnection sendSynchronousRequest:request
+                                               returningResponse:&response
+                                                           error:&error];
+            if (data == Nil) {
+                NSLog(@"failed to get %@ in background",[tweet url]);
+                [TWLocMasterViewController decrementTasks];
+                executing = NO; finished = YES;
+                return;
+            }
+            NSMutableString* html = [[NSMutableString alloc] initWithData:data
+                                                                 encoding:NSStringEncodingConversionAllowLossy];
+            if (html != Nil) {
+                NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
+                //[tweet setOrigHTML:html];
+                if (replace != Nil) {
+                    [tweet setUrl:replace];
+                    NSLog(@"URL_REPLACE %@",replace);
+                    if ([TWLocDetailViewController imageExtension:[tweet url]])
+                        [self tryImage];
+                    else {
+                        TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
+                                                                              index:index
+                                                               masterViewController:master];
+                        [TWLocMasterViewController incrementTasks];
+                        [[master theQueue] addOperation:top];
+                        [[master theQueue] setSuspended:NO];
+                    }
+                    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                        [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
+                    }];
                 }
-                [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
             }
         }
+        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            @try {
+                NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
+                [context processPendingChanges];
+            } @catch (NSException *eee) {
+                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            }
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
-        [context processPendingChanges];
-    }];
 
     [TWLocMasterViewController decrementTasks];
     executing = NO; finished = YES;
@@ -1547,70 +1664,86 @@ masterViewController:(TWLocMasterViewController*)theMaster
 
 - (void)tryImage
 {
-    NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[tweet url]]
-                                             cachePolicy:NSURLRequestReturnCacheDataElseLoad
-                                         timeoutInterval:30];
-    NSURLResponse* response=nil;
-    NSError* error=nil;
-    NSData* imageData=[NSURLConnection sendSynchronousRequest:request
-                                            returningResponse:&response
-                                                        error:&error];
-    if (imageData == Nil) {
-        NSLog(@"BAD IMAGE CONNECTION to %@",[tweet url]);
-        return;
-    } else {
-        NSLog(@"background imagedata size %d %@",[imageData length],[tweet url]);
+    @try {
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[tweet url]]
+                                                 cachePolicy:NSURLRequestReturnCacheDataElseLoad
+                                             timeoutInterval:30];
+        NSURLResponse* response=nil;
+        NSError* error=nil;
+        NSData* imageData=[NSURLConnection sendSynchronousRequest:request
+                                                returningResponse:&response
+                                                            error:&error];
+        if (imageData == Nil) {
+            NSLog(@"BAD IMAGE CONNECTION to %@",[tweet url]);
+            return;
+        } else {
+            NSLog(@"background imagedata size %d %@",[imageData length],[tweet url]);
+        }
+        
+        CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
+        NSDictionary* metadataNew = (__bridge NSDictionary *) CGImageSourceCopyPropertiesAtIndex(source,0,NULL);
+        
+        NSDictionary* gpsInfo = [metadataNew objectForKey:@"{GPS}"];
+        id latitude = [gpsInfo objectForKey:@"Latitude"];
+        id latitudeRef = [gpsInfo objectForKey:@"LatitudeRef"];
+        id longitude = [gpsInfo objectForKey:@"Longitude"];
+        id longitudeRef = [gpsInfo objectForKey:@"LongitudeRef"];
+        float lat = -1000;
+        float lon = -1000;
+        if (latitude != Nil && latitudeRef != Nil &&
+            longitude != Nil && longitudeRef != Nil) {
+            lat = [(NSNumber*)latitude floatValue];
+            if ([(NSString*)latitudeRef compare:@"S"] == NSOrderedSame)
+                lat = 0-lat;
+            lon = [(NSNumber*)longitude floatValue];
+            if ([(NSString*)longitudeRef compare:@"W"] == NSOrderedSame)
+                lon = 0-lon;
+        }
+        if (lat > -900 && lon > -900) {
+            [tweet setLocationFromPic:[NSNumber numberWithBool:YES]];
+            [tweet setLatitude:[NSNumber numberWithDouble:lat]];
+            [tweet setLongitude:[NSNumber numberWithDouble:lon]];
+            NSLog(@" @ %0.1f,%01f",lat,lon);
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
+            }];
+        }
+        [master imageData:imageData forURL:[tweet url]];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-    
-    CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
-    NSDictionary* metadataNew = (__bridge NSDictionary *) CGImageSourceCopyPropertiesAtIndex(source,0,NULL);
-    
-    NSDictionary* gpsInfo = [metadataNew objectForKey:@"{GPS}"];
-    id latitude = [gpsInfo objectForKey:@"Latitude"];
-    id latitudeRef = [gpsInfo objectForKey:@"LatitudeRef"];
-    id longitude = [gpsInfo objectForKey:@"Longitude"];
-    id longitudeRef = [gpsInfo objectForKey:@"LongitudeRef"];
-    float lat = -1000;
-    float lon = -1000;
-    if (latitude != Nil && latitudeRef != Nil &&
-        longitude != Nil && longitudeRef != Nil) {
-        lat = [(NSNumber*)latitude floatValue];
-        if ([(NSString*)latitudeRef compare:@"S"] == NSOrderedSame)
-            lat = 0-lat;
-        lon = [(NSNumber*)longitude floatValue];
-        if ([(NSString*)longitudeRef compare:@"W"] == NSOrderedSame)
-            lon = 0-lon;
-    }
-    if (lat > -900 && lon > -900) {
-        [tweet setLocationFromPic:[NSNumber numberWithBool:YES]];
-        [tweet setLatitude:[NSNumber numberWithDouble:lat]];
-        [tweet setLongitude:[NSNumber numberWithDouble:lon]];
-        NSLog(@" @ %0.1f,%01f",lat,lon);
-        [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
-    }
-    [master imageData:imageData forURL:[tweet url]];
 }
 
 - (void)main
 {
     executing = YES;
     
-    if (([tweet url] == Nil) ||
-        ([[tweet url] length] < 4) ||
-        ([master imageData:[tweet url]] != Nil) ) {
-        [TWLocMasterViewController decrementTasks];
-        executing = NO; finished = YES;
-        return;
+    @try {
+        if (([tweet url] == Nil) ||
+            ([[tweet url] length] < 4) ||
+            ([master imageData:[tweet url]] != Nil) ) {
+            [TWLocMasterViewController decrementTasks];
+            executing = NO; finished = YES;
+            return;
+        }
+        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+            [self tryImage];
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
+            }];
+        }
+        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            @try {
+                NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
+                [context processPendingChanges];
+            } @catch (NSException *eee) {
+                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            }
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-    if ([TWLocDetailViewController imageExtension:[tweet url]]) {
-        [self tryImage];
-        [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
-    }
-    
-    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
-        [context processPendingChanges];
-    }];
     
     [TWLocMasterViewController decrementTasks];
     executing = NO; finished = YES;

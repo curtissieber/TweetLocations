@@ -27,7 +27,7 @@
 @property (retain, nonatomic) IBOutlet UIButton *sizeButton;
 
 @property (strong, nonatomic) IBOutlet UIActivityIndicatorView* activityView;
-@property (strong, nonatomic) IBOutlet UILabel* activityLabel;
+@property (strong, nonatomic) IBOutlet UITextView* activityLabel;
 
 @property (retain, nonatomic) TWLocMasterViewController* master;
 
