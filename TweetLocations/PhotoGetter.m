@@ -141,7 +141,16 @@
     [iview setFrame:frame];
     [iview setTransform:CGAffineTransformIdentity];
     [iview setContentMode:UIViewContentModeScaleAspectFit];
-    [iview setImage:image];
+    
+    //[iview setImage:image];
+    [UIView transitionWithView:sview
+                      duration:0.4
+                       options:UIViewAnimationOptionTransitionCrossDissolve
+                    animations:^{
+                        iview.image = image;
+                    }
+                    completion:Nil];
+    
     //[iview sizeToFit];
     [sview setContentScaleFactor:1];
     [sview setContentOffset:CGPointMake(0, 0)];

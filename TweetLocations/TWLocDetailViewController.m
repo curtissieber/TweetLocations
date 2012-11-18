@@ -12,6 +12,8 @@
 #import "URLFetcher.h"
 #import <ImageIO/CGImageDestination.h>
 #import <AssetsLibrary/AssetsLibrary.h>
+#import <QuartzCore/CAAnimation.h>
+#import <QuartzCore/CAMediaTimingFunction.h>
 
 @interface TWLocDetailViewController ()
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
@@ -24,21 +26,25 @@
 
 - (void)setDetailItem:(id)newDetailItem
 {
-    if ( newDetailItem != Nil &&
-        [[newDetailItem class] isSubclassOfClass:[Tweet class]] /*&&
-        _detailItem != newDetailItem*/) {
-        _detailItem = newDetailItem;
+    @try {
+        if ( newDetailItem != Nil &&
+            [[newDetailItem class] isSubclassOfClass:[Tweet class]] ) {
+            _detailItem = newDetailItem;
+            
+            // Update the view.
+            [self configureView];
+            [_detailItem setHasBeenRead:[NSNumber numberWithBool:YES]];
+            NSManagedObjectContext *context = [_master.fetchedResultsController managedObjectContext];
+            [context processPendingChanges];
+        }
         
-        // Update the view.
-        [self configureView];
-        [_detailItem setHasBeenRead:[NSNumber numberWithBool:YES]];
-        NSManagedObjectContext *context = [_master.fetchedResultsController managedObjectContext];
-        [context processPendingChanges];
+        if (self.masterPopoverController != nil) {
+            [self.masterPopoverController dismissPopoverAnimated:YES];
+        }
+    } @catch (NSException *eee) {
+        [_activityView stopAnimating];
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
-    if (self.masterPopoverController != nil) {
-        [self.masterPopoverController dismissPopoverAnimated:YES];
-    }        
 }
 
 - (void)configureView
@@ -62,14 +68,19 @@
             
             [self.detailDescriptionLabel setText:detail];
             if ([[tweet hasBeenRead] boolValue] == YES)
-                [self.detailDescriptionLabel setBackgroundColor:[UIColor lightGrayColor]];
+                [self.detailDescriptionLabel setTextColor:[UIColor darkGrayColor]];
             else
-                [self.detailDescriptionLabel setBackgroundColor:[UIColor clearColor]];
+                [self.detailDescriptionLabel setTextColor:[UIColor whiteColor]];
             [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
             
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
                                           [tweet tweet], [tweet username]];
-            [self.bigLabel setText:bigDetail];
+            CATransition* textTrans = [CATransition animation];
+            textTrans.duration = 0.8;
+            textTrans.type = kCATransitionFade;
+            textTrans.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+            [self.bigLabel.layer addAnimation:textTrans forKey:@"changeTextTransition"];
+            self.bigLabel.text = bigDetail;
             
             if (latitude > -900 && longitude > -900) {
                 [self resizeForMap];
@@ -89,6 +100,7 @@
                 thisImageData = imageData;
                 UIImage *image = [[UIImage alloc] initWithData:imageData];
                                 
+                [self.scrollView setHidden:NO];
                 [PhotoGetter setupImage:image
                                   iview:self.imageView
                                   sview:self.scrollView
@@ -101,19 +113,16 @@
                                  lon:longitude];
                 } 
                 
-                [self.scrollView setHidden:NO];
                 [_activityView stopAnimating];
             } else if ([[tweet url] length] > 4) {
                 [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                 [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
                 [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
-                /*if ([_detailItem origHTML] != Nil) {
-                    [_textView setText:[_detailItem origHTML]];
-                    [_activityView stopAnimating];
-                } else*/
-                    [self handleURL:[tweet url]];
+                [self handleURL:[tweet url]];
             } else {
-                [self.scrollView setHidden:YES];
+                [UIView animateWithDuration:0.4 animations:^{
+                    self.scrollView.hidden = YES;
+                }];
                 NSMutableString* nonono = [[NSMutableString alloc]initWithCapacity:500];
                 for (int i=0; i < 5; i++)
                     [nonono appendString:@"NO URL NO URL NO URL NO URL\n"];
@@ -154,19 +163,13 @@
     textFrame.size.height = mapFrame.origin.y;
     textFrame.origin.y = 0;
     
-    [_bigLabel setFrame:bigFrame];
-    [_scrollView setFrame:scrollFrame];
-    [_textView setFrame:textFrame];
-    [_mapView setFrame:mapFrame];
-    [_detailDescriptionLabel setFrame:detailFrame];
-    
-    /*float height = [self.mapView frame].size.height;
-    CGRect scrollFrame = [self.scrollView frame];
-    scrollFrame.size.height -= height;
-    [self.scrollView setFrame:scrollFrame];
-    CGRect textFrame = [self.bigLabel frame];
-    textFrame.origin.y = scrollFrame.origin.y + scrollFrame.size.height - textFrame.size.height;
-    [self.bigLabel setFrame:textFrame];*/
+    [UIView animateWithDuration:0.4 animations:^{
+        [_bigLabel setFrame:bigFrame];
+        [_scrollView setFrame:scrollFrame];
+        [_textView setFrame:textFrame];
+        [_mapView setFrame:mapFrame];
+        [_detailDescriptionLabel setFrame:detailFrame];
+    }];
 }
 - (void)resizeWithoutMap
 {
@@ -192,19 +195,13 @@
     textFrame.size.height = detailFrame.origin.y;
     textFrame.origin.y = 0;
     
-    [_bigLabel setFrame:bigFrame];
-    [_scrollView setFrame:scrollFrame];
-    [_textView setFrame:textFrame];
-    [_mapView setFrame:mapFrame];
-    [_detailDescriptionLabel setFrame:detailFrame];
-    
-    /*float height = [self.mapView frame].size.height;
-    CGRect scrollFrame = [self.scrollView frame];
-    scrollFrame.size.height += height;
-    [self.scrollView setFrame:scrollFrame];
-    CGRect textFrame = [self.bigLabel frame];
-    textFrame.origin.y = scrollFrame.origin.y + scrollFrame.size.height - textFrame.size.height;
-    [self.bigLabel setFrame:textFrame];*/
+    [UIView animateWithDuration:0.4 animations:^{
+        [_bigLabel setFrame:bigFrame];
+        [_scrollView setFrame:scrollFrame];
+        [_textView setFrame:textFrame];
+        [_mapView setFrame:mapFrame];
+        [_detailDescriptionLabel setFrame:detailFrame];
+    }];
 }
 
 - (void)handleURL:(NSString*)url
@@ -660,7 +657,9 @@ static bool isRetinaDisplay = NO;
 
 - (IBAction)touchedStatus:(id)sender
 {
-    [_activityLabel setHidden:YES];
+    [UIView animateWithDuration:0.4 animations:^{
+        _activityLabel.hidden = YES;
+    }];
 }
 
 - (IBAction)handleTap:(UIGestureRecognizer *)gestureRecognizer
@@ -710,7 +709,14 @@ static bool isRetinaDisplay = NO;
 {
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
-            [self.scrollView setHidden:YES];
+            self.textView.alpha = 0.0;
+            [UIView animateWithDuration:0.6 delay:0.01 options:UIViewAnimationOptionCurveLinear animations:^{
+                self.scrollView.alpha = 0.0;
+                self.textView.alpha = 1.0;
+            } completion:^(BOOL finished) {
+                self.scrollView.hidden = YES;
+                self.scrollView.alpha = 1.0;
+            }];
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );

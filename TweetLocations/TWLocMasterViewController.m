@@ -346,7 +346,9 @@ static bool NetworkAccessAllowed = NO;
     @try {
         if (_theQueue) {
             if ([[self.detailViewController activityLabel] isHidden]) {
-                [[self.detailViewController activityLabel] setHidden:NO];
+                [UIView animateWithDuration:0.4 animations:^{
+                    [self.detailViewController activityLabel].hidden = NO;
+                }];
                 [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
             }
 
@@ -490,7 +492,7 @@ static bool NetworkAccessAllowed = NO;
                 [self getTwitterLists];
             }
         }
-        if ([alertView tag] == ALERT_SELECTACCOUNT) {
+        if ([alertView tag] == ALERT_SETALLREAD) {
             NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
             if ([buttonNameHit isEqualToString:@"CANCEL"])
                 NSLog(@"don't set all to read");
