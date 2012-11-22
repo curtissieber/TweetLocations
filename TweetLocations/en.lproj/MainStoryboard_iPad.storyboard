@@ -8,7 +8,10 @@
         <scene sceneID="14">
             <objects>
                 <navigationController modalPresentationStyle="currentContext" id="3" sceneMemberID="viewController">
-                    <navigationBar key="navigationBar" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" id="6">
+                    <simulatedStatusBarMetrics key="simulatedStatusBarMetrics" statusBarStyle="blackTranslucent"/>
+                    <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" barStyle="blackOpaque" prompted="NO"/>
+                    <navigationBar key="navigationBar" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" barStyle="blackOpaque" id="6">
+                        <rect key="frame" x="0.0" y="-44" width="0.0" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <connections>
@@ -39,7 +42,7 @@
                             <label clipsSubviews="YES" contentMode="scaleToFill" lineBreakMode="tailTruncation" numberOfLines="4" minimumFontSize="10" id="27">
                                 <rect key="frame" x="20" y="635" width="663" height="70"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                 <string key="text">1
 2
 3
@@ -84,7 +87,7 @@
                             <label opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" alpha="0.5" contentMode="bottomLeft" lineBreakMode="tailTruncation" numberOfLines="5" baselineAdjustment="alignBaselines" minimumFontSize="9" id="Et5-xA-bXz">
                                 <rect key="frame" x="10" y="218" width="680" height="155"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
-                                <color key="backgroundColor" red="0.98823535439999999" green="0.85098046059999999" blue="1" alpha="1" colorSpace="deviceRGB"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                 <string key="text">tweet
 TWEET
 [username]</string>
@@ -226,7 +229,10 @@ TWEET
         <scene sceneID="50">
             <objects>
                 <navigationController modalPresentationStyle="currentContext" id="42" sceneMemberID="viewController">
-                    <navigationBar key="navigationBar" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" id="43">
+                    <simulatedStatusBarMetrics key="simulatedStatusBarMetrics" statusBarStyle="blackTranslucent"/>
+                    <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" barStyle="blackOpaque" prompted="NO"/>
+                    <navigationBar key="navigationBar" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" barStyle="blackOpaque" id="43">
+                        <rect key="frame" x="0.0" y="-44" width="0.0" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <connections>
@@ -241,6 +247,36 @@ TWEET
     <resources>
         <image name="LocPin.png" width="100" height="100"/>
     </resources>
+    <classes>
+        <class className="TWLocDetailViewController" superclassName="UIViewController">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocDetailViewController.h"/>
+            <relationships>
+                <relationship kind="action" name="doSave:"/>
+                <relationship kind="action" name="handleSwipeLeft:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleSwipeRight:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleSwipeUp:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleTap:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="panBigLabel:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="touchedStatus:"/>
+                <relationship kind="outlet" name="activityLabel" candidateClass="UITextView"/>
+                <relationship kind="outlet" name="activityView" candidateClass="UIActivityIndicatorView"/>
+                <relationship kind="outlet" name="bigLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="detailDescriptionLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="imageView" candidateClass="UIImageView"/>
+                <relationship kind="outlet" name="mapView" candidateClass="MKMapView"/>
+                <relationship kind="outlet" name="scrollView" candidateClass="UIScrollView"/>
+                <relationship kind="outlet" name="sizeButton" candidateClass="UIButton"/>
+                <relationship kind="outlet" name="textView" candidateClass="UITextView"/>
+            </relationships>
+        </class>
+        <class className="TWLocMasterViewController" superclassName="UITableViewController">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocMasterViewController.h"/>
+            <relationships>
+                <relationship kind="outlet" name="queueLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="statusLabel" candidateClass="UILabel"/>
+            </relationships>
+        </class>
+    </classes>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
         <simulatedStatusBarMetrics key="statusBar" statusBarStyle="blackTranslucent"/>
         <simulatedOrientationMetrics key="orientation"/>
