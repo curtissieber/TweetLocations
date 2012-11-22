@@ -68,22 +68,6 @@
                                     <outlet property="delegate" destination="4" id="HUE-sB-lR0"/>
                                 </connections>
                             </scrollView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="0eb-rf-ck8">
-                                <rect key="frame" x="502" y="624" width="201" height="61"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="28"/>
-                                <state key="normal" title="0000 x 0000">
-                                    <color key="titleColor" red="0.19607843459999999" green="0.30980393290000002" blue="0.52156865600000002" alpha="1" colorSpace="calibratedRGB"/>
-                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <state key="highlighted">
-                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <connections>
-                                    <action selector="doSave:" destination="4" eventType="touchUpInside" id="A3R-MP-atG"/>
-                                </connections>
-                            </button>
                             <label opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" alpha="0.5" contentMode="bottomLeft" lineBreakMode="tailTruncation" numberOfLines="5" baselineAdjustment="alignBaselines" minimumFontSize="9" id="Et5-xA-bXz">
                                 <rect key="frame" x="10" y="218" width="680" height="155"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
@@ -105,6 +89,22 @@ TWEET
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="0eb-rf-ck8">
+                                <rect key="frame" x="502" y="624" width="201" height="61"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="28"/>
+                                <state key="normal" title="0000 x 0000">
+                                    <color key="titleColor" red="0.19607843459999999" green="0.30980393290000002" blue="0.52156865600000002" alpha="1" colorSpace="calibratedRGB"/>
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <state key="highlighted">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="doSave:" destination="4" eventType="touchUpInside" id="A3R-MP-atG"/>
+                                </connections>
+                            </button>
                             <activityIndicatorView hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" hidesWhenStopped="YES" style="whiteLarge" id="Vx9-PD-x7d">
                                 <rect key="frame" x="333" y="334" width="37" height="37"/>
                                 <autoresizingMask key="autoresizingMask"/>
@@ -152,10 +152,10 @@ TWEET
         <scene sceneID="24">
             <objects>
                 <tableViewController storyboardIdentifier="" title="Master" modalPresentationStyle="currentContext" clearsSelectionOnViewWillAppear="NO" id="19" customClass="TWLocMasterViewController" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" rowHeight="53" sectionHeaderHeight="22" sectionFooterHeight="22" id="20">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="singleLineEtched" rowHeight="44" sectionHeaderHeight="10" sectionFooterHeight="10" id="20">
                         <rect key="frame" x="0.0" y="64" width="320" height="704"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
                         <simulatedOrientationMetrics key="simulatedOrientationMetrics" orientation="landscapeRight"/>
                         <view key="tableHeaderView" contentMode="scaleToFill" id="wC3-4z-48C">
                             <rect key="frame" x="0.0" y="0.0" width="320" height="28"/>
@@ -180,10 +180,10 @@ TWEET
                         </view>
                         <prototypes>
                             <tableViewCell contentMode="scaleToFill" selectionStyle="blue" indentationWidth="10" reuseIdentifier="Cell" textLabel="x7l-jk-Uw7" detailTextLabel="Kj5-yh-qkA" imageView="tfT-eI-NtG" rowHeight="53" style="IBUITableViewCellStyleSubtitle" id="zbg-eB-BrY">
-                                <rect key="frame" x="0.0" y="50" width="320" height="53"/>
+                                <rect key="frame" x="0.0" y="62" width="320" height="55"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
-                                    <rect key="frame" x="0.0" y="0.0" width="320" height="52"/>
+                                    <rect key="frame" x="10" y="1" width="300" height="52"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="left" text="Title" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="x7l-jk-Uw7">
@@ -247,36 +247,6 @@ TWEET
     <resources>
         <image name="LocPin.png" width="100" height="100"/>
     </resources>
-    <classes>
-        <class className="TWLocDetailViewController" superclassName="UIViewController">
-            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocDetailViewController.h"/>
-            <relationships>
-                <relationship kind="action" name="doSave:"/>
-                <relationship kind="action" name="handleSwipeLeft:" candidateClass="UIGestureRecognizer"/>
-                <relationship kind="action" name="handleSwipeRight:" candidateClass="UIGestureRecognizer"/>
-                <relationship kind="action" name="handleSwipeUp:" candidateClass="UIGestureRecognizer"/>
-                <relationship kind="action" name="handleTap:" candidateClass="UIGestureRecognizer"/>
-                <relationship kind="action" name="panBigLabel:" candidateClass="UIGestureRecognizer"/>
-                <relationship kind="action" name="touchedStatus:"/>
-                <relationship kind="outlet" name="activityLabel" candidateClass="UITextView"/>
-                <relationship kind="outlet" name="activityView" candidateClass="UIActivityIndicatorView"/>
-                <relationship kind="outlet" name="bigLabel" candidateClass="UILabel"/>
-                <relationship kind="outlet" name="detailDescriptionLabel" candidateClass="UILabel"/>
-                <relationship kind="outlet" name="imageView" candidateClass="UIImageView"/>
-                <relationship kind="outlet" name="mapView" candidateClass="MKMapView"/>
-                <relationship kind="outlet" name="scrollView" candidateClass="UIScrollView"/>
-                <relationship kind="outlet" name="sizeButton" candidateClass="UIButton"/>
-                <relationship kind="outlet" name="textView" candidateClass="UITextView"/>
-            </relationships>
-        </class>
-        <class className="TWLocMasterViewController" superclassName="UITableViewController">
-            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocMasterViewController.h"/>
-            <relationships>
-                <relationship kind="outlet" name="queueLabel" candidateClass="UILabel"/>
-                <relationship kind="outlet" name="statusLabel" candidateClass="UILabel"/>
-            </relationships>
-        </class>
-    </classes>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
         <simulatedStatusBarMetrics key="statusBar" statusBarStyle="blackTranslucent"/>
         <simulatedOrientationMetrics key="orientation"/>
