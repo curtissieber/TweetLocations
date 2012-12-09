@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model name="" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1810" systemVersion="12C2034" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
-    <entity name="Group" syncable="YES">
-        <attribute name="groupName" optional="YES" attributeType="String" syncable="YES"/>
-        <relationship name="tweets" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Tweet" inverseName="group" inverseEntity="Tweet" syncable="YES"/>
+    <entity name="Account" representedClassName="Account" syncable="YES">
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="tweets" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Tweet" inverseName="account" inverseEntity="Tweet" syncable="YES"/>
     </entity>
     <entity name="Tweet" representedClassName="Tweet">
         <attribute name="favorite" optional="YES" attributeType="Boolean" syncable="YES"/>
@@ -20,11 +20,11 @@
         <attribute name="username" optional="YES" attributeType="String">
             <userInfo/>
         </attribute>
-        <relationship name="group" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Group" inverseName="tweets" inverseEntity="Group" syncable="YES"/>
+        <relationship name="account" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="tweets" inverseEntity="Account" syncable="YES"/>
         <userInfo/>
     </entity>
     <elements>
-        <element name="Tweet" positionX="0" positionY="0" width="128" height="255"/>
-        <element name="Group" positionX="160" positionY="192" width="128" height="75"/>
+        <element name="Tweet" positionX="261" positionY="189" width="128" height="255"/>
+        <element name="Account" positionX="160" positionY="192" width="128" height="75"/>
     </elements>
 </model>

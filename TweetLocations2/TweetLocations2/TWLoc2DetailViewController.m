@@ -1,13 +1,13 @@
 //
-//  TWLocDetailViewController.m
+//  TWLoc2DetailViewController.m
 //  TweetLocations
 //
 //  Created by Curtis Sieber on 8/25/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
-#import "TWLocDetailViewController.h"
-#import "TWLocMasterViewController.h"
+#import "TWLoc2DetailViewController.h"
+#import "TWLoc2MasterViewController.h"
 #import "PhotoGetter.h"
 #import "URLFetcher.h"
 #import <ImageIO/CGImageDestination.h>
@@ -15,12 +15,12 @@
 #import <QuartzCore/CAAnimation.h>
 #import <QuartzCore/CAMediaTimingFunction.h>
 
-@interface TWLocDetailViewController ()
+@interface TWLoc2DetailViewController ()
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
 - (void)configureView;
 @end
 
-@implementation TWLocDetailViewController
+@implementation TWLoc2DetailViewController
 
 #pragma mark - Managing the detail item
 
@@ -202,7 +202,7 @@
 
 - (void)handleURL:(NSString*)url
 {
-    if ([TWLocDetailViewController imageExtension:url]) {
+    if ([TWLoc2DetailViewController imageExtension:url]) {
         [self openURL:[NSURL URLWithString:url]];
         return;
     }
@@ -228,7 +228,7 @@
 {
     Tweet* originalTweet = _detailItem;
     NSString* urlStr = [url description];
-    if (![TWLocDetailViewController imageExtension:urlStr]) {
+    if (![TWLoc2DetailViewController imageExtension:urlStr]) {
         [self handleURL:urlStr]; // just grab the URL flat-up
     }
     
@@ -287,7 +287,7 @@
 
 - (NSMutableArray*)getURLs:(NSString*)html
 {
-    return [TWLocDetailViewController staticGetURLs:html];
+    return [TWLoc2DetailViewController staticGetURLs:html];
 }
 
 + (NSMutableArray*)staticGetURLs:(NSString*)html
@@ -335,10 +335,10 @@
 
 - (void)findJPG:(NSMutableString*)html theUrlStr:(NSString*)url
 {
-    NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:url];
+    NSString* replace = [TWLoc2DetailViewController staticFindJPG:html theUrlStr:url];
     //[_detailItem setOrigHTML:html];
     if (replace != Nil) {
-        if ([TWLocDetailViewController imageExtension:replace])
+        if ([TWLoc2DetailViewController imageExtension:replace])
             [self openURL:[NSURL URLWithString:replace]];
         else 
             [self handleURL:replace];
@@ -356,7 +356,7 @@
     NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     
     while ((current = [e nextObject]) != Nil) {
-        if ([TWLocDetailViewController imageExtension:current])
+        if ([TWLoc2DetailViewController imageExtension:current])
             [strResults addObject:current];
         else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             [strResults addObject:current];

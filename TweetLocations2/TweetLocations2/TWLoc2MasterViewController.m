@@ -1,16 +1,15 @@
 //
-//  TWLocMasterViewController.m
+//  TWLoc2MasterViewController.m
 //  TweetLocations
 //
 //  Created by Curtis Sieber on 8/25/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
-#import "TWLocMasterViewController.h"
-#import "TWLocDetailViewController.h"
+#import "TWLoc2MasterViewController.h"
+#import "TWLoc2DetailViewController.h"
 #import "Tweet.h"
 #import "URLFetcher.h"
-#import "GoogleReader.h"
 
 #import <Accounts/Accounts.h>
 #import <Twitter/Twitter.h>
@@ -18,11 +17,11 @@
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <CoreData/NSFetchedResultsController.h>
 
-@interface TWLocMasterViewController ()
+@interface TWLoc2MasterViewController ()
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath;
 @end
 
-@implementation TWLocMasterViewController
+@implementation TWLoc2MasterViewController
 //@synthesize twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
 
 #define ALERT_DUMMY (1)
@@ -251,7 +250,7 @@ static bool NetworkAccessAllowed = NO;
         if ([tweet origURL] != Nil)
             [tweet setUrl:[tweet origURL]];
         else {
-            NSArray* urls = [TWLocDetailViewController staticGetURLs:[tweet tweet]];
+            NSArray* urls = [TWLoc2DetailViewController staticGetURLs:[tweet tweet]];
             if ([urls count] > 0)
                 [tweet setUrl:[urls objectAtIndex:0]];
         }
@@ -408,7 +407,7 @@ static bool NetworkAccessAllowed = NO;
                 [self deleteTweetDataFile];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:listID];
             [_theQueue setSuspended:NO];
-            [TWLocMasterViewController incrementTasks];
+            [TWLoc2MasterViewController incrementTasks];
             [_theQueue addOperation:getTweetOp];
         }
     } @catch (NSException *eee) {
@@ -604,7 +603,7 @@ static bool NetworkAccessAllowed = NO;
                          NSLog(@"adding storetweet size=%d to the Queue", [timeline count]);
                          StoreTweetOperation* storeTweetOp = [[StoreTweetOperation alloc] initWithMaster:self timeline:timeline andList:listID];
                          [_theQueue setSuspended:NO];
-                         [TWLocMasterViewController incrementTasks];
+                         [TWLoc2MasterViewController incrementTasks];
                          [_theQueue addOperation:storeTweetOp];
                      }
                  }
@@ -768,7 +767,7 @@ static bool NetworkAccessAllowed = NO;
             [self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
             [_theQueue setSuspended:NO];
-            [TWLocMasterViewController incrementTasks];
+            [TWLoc2MasterViewController incrementTasks];
             [_theQueue addOperation:getTweetOp];
         } else {
             if (_nextIDMax > 0)
@@ -823,7 +822,7 @@ static bool NetworkAccessAllowed = NO;
                                 TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                                                       index:indexPath
                                                                        masterViewController:self];
-                                [TWLocMasterViewController incrementTasks];
+                                [TWLoc2MasterViewController incrementTasks];
                                 [_theQueue addOperation:top];
                                 [_theQueue setSuspended:NO];
                             }
@@ -1141,7 +1140,7 @@ static bool NetworkAccessAllowed = NO;
                                       target:self
                                       action:@selector(setAllTweetsRead:)];
     self.navigationItem.leftBarButtonItem = allRead;
-    self.detailViewController = (TWLocDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
+    self.detailViewController = (TWLoc2DetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
     [self.detailViewController setMaster:self];
     [[self.detailViewController activityLabel] setHidden:YES];
     [self setTitle:@"Twitter"];
@@ -1171,33 +1170,25 @@ static bool NetworkAccessAllowed = NO;
     CFRelease(reachability);
     if (!receivedFlags || (flags & kSCNetworkReachabilityFlagsIsWWAN) != 0) {
         NSLog(@"Cannot do nothing on cell network, that's a very bad idea");
-        [TWLocMasterViewController setNetworkAccessAllowed:NO];
+        [TWLoc2MasterViewController setNetworkAccessAllowed:NO];
         [_statusLabel setBackgroundColor:[UIColor yellowColor]];
     } else {
-        [TWLocMasterViewController setNetworkAccessAllowed:YES];
+        [TWLoc2MasterViewController setNetworkAccessAllowed:YES];
         [_statusLabel setBackgroundColor:[UIColor whiteColor]];
         NSLog(@"Network access is allowed, YAY!");
     }
 
     _tweetLibrary = YES;
-    _googleReaderLibrary = NO;
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    id thing = [defaults objectForKey:@"googleLibrary"];
-    NSLog(@"googleLibrary is %@",thing);
     
     if (_tweetLibrary) {
         self->twitterAccount = Nil;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         self->twitterAccountName = [defaults objectForKey:@"twitterAccount"];
         _twitterIDMax = -1;
         _nextIDMax = _twitterIDMax;
         _twitterIDMin = -1; // for the grab, make certain to grab it all
         [self killMax];
         [self getTwitterAccount];
-    }
-    
-    if (_googleReaderLibrary) {
-        _googleReader = [[GoogleReader alloc] init];
-        [_googleReader authenticate:YES];
     }
     
     NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:3.0
@@ -1388,17 +1379,14 @@ static bool NetworkAccessAllowed = NO;
             
             NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
             // Edit the entity name as appropriate.
-            NSEntityDescription *entity = [NSEntityDescription entityForName:@"Tweet" inManagedObjectContext:self.managedObjectContext];
+            NSEntityDescription *entity = [NSEntityDescription entityForName:@"Account" inManagedObjectContext:self.managedObjectContext];
             [fetchRequest setEntity:entity];
             
             // Set the batch size to a suitable number.
             [fetchRequest setFetchBatchSize:20];
             
             // Edit the sort key as appropriate.
-            //NSSortDescriptor *sortDescriptorUsername = [[NSSortDescriptor alloc] initWithKey:@"username" ascending:YES selector:@selector(caseInsensitiveCompare:)];
-            //NSSortDescriptor *sortDescriptorhasGPS = [[NSSortDescriptor alloc] initWithKey:@"locationFromPic" ascending:NO];
-            //NSSortDescriptor *sortDescriptorFavorite = [[NSSortDescriptor alloc] initWithKey:@"favorite" ascending:NO];
-            NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"tweetID" ascending:NO];
+            NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
             NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorID, nil];
             
             [fetchRequest setSortDescriptors:sortDescriptors];
@@ -1583,7 +1571,7 @@ static bool NetworkAccessAllowed = NO;
 @implementation TweetOperation
 
 - (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-            masterViewController:(TWLocMasterViewController*)theMaster
+            masterViewController:(TWLoc2MasterViewController*)theMaster
 {
     self = [super init];
     executing = finished = NO;
@@ -1605,7 +1593,7 @@ static bool NetworkAccessAllowed = NO;
                                                                                index:self->index
                                                                 masterViewController:self->master];
     NSOperationQueue* queue = [NSOperationQueue currentQueue];
-    [TWLocMasterViewController incrementTasks];
+    [TWLoc2MasterViewController incrementTasks];
     [queue addOperation:imageOperation];
 }
 
@@ -1617,11 +1605,11 @@ static bool NetworkAccessAllowed = NO;
         if (([tweet url] == Nil) ||
             ([[tweet url] length] < 4) ||
             ([master imageData:[tweet url]] != Nil) ) {
-            [TWLocMasterViewController decrementTasks];
+            [TWLoc2MasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+        if ([TWLoc2DetailViewController imageExtension:[tweet url]]) {
             [self tryImage];
         } else {
             NSURL* url = [NSURL URLWithString:[tweet url]];
@@ -1635,25 +1623,25 @@ static bool NetworkAccessAllowed = NO;
                                                            error:&error];
             if (data == Nil) {
                 NSLog(@"failed to get %@ in background",[tweet url]);
-                [TWLocMasterViewController decrementTasks];
+                [TWLoc2MasterViewController decrementTasks];
                 executing = NO; finished = YES;
                 return;
             }
             NSMutableString* html = [[NSMutableString alloc] initWithData:data
                                                                  encoding:NSStringEncodingConversionAllowLossy];
             if (html != Nil) {
-                NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
+                NSString* replace = [TWLoc2DetailViewController staticFindJPG:html theUrlStr:[tweet url]];
                 //[tweet setOrigHTML:html];
                 if (replace != Nil) {
                     [tweet setUrl:replace];
                     NSLog(@"URL_REPLACE %@",replace);
-                    if ([TWLocDetailViewController imageExtension:[tweet url]])
+                    if ([TWLoc2DetailViewController imageExtension:[tweet url]])
                         [self tryImage];
                     else {
                         TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                                               index:index
                                                                masterViewController:master];
-                        [TWLocMasterViewController incrementTasks];
+                        [TWLoc2MasterViewController incrementTasks];
                         [[master theQueue] addOperation:top];
                         [[master theQueue] setSuspended:NO];
                     }
@@ -1676,7 +1664,7 @@ static bool NetworkAccessAllowed = NO;
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 
-    [TWLocMasterViewController decrementTasks];
+    [TWLoc2MasterViewController decrementTasks];
     executing = NO; finished = YES;
 }
 
@@ -1686,7 +1674,7 @@ static bool NetworkAccessAllowed = NO;
 @implementation TweetImageOperation
 
 - (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster
+masterViewController:(TWLoc2MasterViewController*)theMaster
 {
     self = [super init];
     executing = finished = NO;
@@ -1761,11 +1749,11 @@ masterViewController:(TWLocMasterViewController*)theMaster
         if (([tweet url] == Nil) ||
             ([[tweet url] length] < 4) ||
             ([master imageData:[tweet url]] != Nil) ) {
-            [TWLocMasterViewController decrementTasks];
+            [TWLoc2MasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+        if ([TWLoc2DetailViewController imageExtension:[tweet url]]) {
             [self tryImage];
             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                 [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
@@ -1784,7 +1772,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     
-    [TWLocMasterViewController decrementTasks];
+    [TWLoc2MasterViewController decrementTasks];
     executing = NO; finished = YES;
 }
 
@@ -1793,7 +1781,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 #pragma mark GETTWEETOPERATION background queue task
 @implementation GetTweetOperation
 
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster andList:(NSNumber*)theListID
+- (id)initWithMaster:(TWLoc2MasterViewController*)theMaster andList:(NSNumber*)theListID
 {
     self = [super init];
     executing = finished = NO;
@@ -1811,7 +1799,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 {
     executing = YES;
     [master getTweets:listID];
-    [TWLocMasterViewController decrementTasks];
+    [TWLoc2MasterViewController decrementTasks];
     executing = NO; finished = YES;
 }
 
@@ -1820,7 +1808,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 #pragma mark STORETWEETOPERATION background queue task
 @implementation StoreTweetOperation
 
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID
+- (id)initWithMaster:(TWLoc2MasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID
 {
     self = [super init];
     executing = finished = NO;
@@ -1838,7 +1826,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 {
     executing = YES;
     [master storeTweets:timeline andList:listID];
-    [TWLocMasterViewController decrementTasks];
+    [TWLoc2MasterViewController decrementTasks];
     executing = NO; finished = YES;
 }
 

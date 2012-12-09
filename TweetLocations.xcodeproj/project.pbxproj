@@ -40,15 +40,15 @@
 		E9DE580615E94407005D75F6 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = E9DE580415E94407005D75F6 /* InfoPlist.strings */; };
 		E9DE580815E94407005D75F6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE580715E94407005D75F6 /* main.m */; };
 		E9DE580C15E94407005D75F6 /* TWLocAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE580B15E94407005D75F6 /* TWLocAppDelegate.m */; };
-		E9DE580F15E94407005D75F6 /* MainStoryboard_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9DE580D15E94407005D75F6 /* MainStoryboard_iPhone.storyboard */; };
-		E9DE581215E94407005D75F6 /* MainStoryboard_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9DE581015E94407005D75F6 /* MainStoryboard_iPad.storyboard */; };
 		E9DE581515E94407005D75F6 /* TweetLocations.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */; };
 		E9DE581815E94407005D75F6 /* TWLocMasterViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE581715E94407005D75F6 /* TWLocMasterViewController.m */; };
 		E9DE581B15E94407005D75F6 /* TWLocDetailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE581A15E94407005D75F6 /* TWLocDetailViewController.m */; };
 		E9DE582215E94580005D75F6 /* Accounts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE582115E94580005D75F6 /* Accounts.framework */; };
 		E9DE582415E94589005D75F6 /* Twitter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE582315E94589005D75F6 /* Twitter.framework */; };
-		E9DE582615E958E4005D75F6 /* TwitterInfo.bundle in Resources */ = {isa = PBXBuildFile; fileRef = E9DE582515E958E4005D75F6 /* TwitterInfo.bundle */; };
 		E9DE582C15E98231005D75F6 /* sampleJSONtweets.json in Resources */ = {isa = PBXBuildFile; fileRef = E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */; };
+		E9EB0AFE165FD729003264BC /* iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFA165FD728003264BC /* iPhone.storyboard */; };
+		E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFC165FD728003264BC /* iPad.storyboard */; };
+		E9EB0B01165FD77A003264BC /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0B00165FD77A003264BC /* Settings.bundle */; };
 		E9F8002C1657D98400F8D6B9 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F8002B1657D98400F8D6B9 /* Tweet.m */; };
 /* End PBXBuildFile section */
 
@@ -97,8 +97,6 @@
 		E9DE580915E94407005D75F6 /* TweetLocations-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TweetLocations-Prefix.pch"; sourceTree = "<group>"; };
 		E9DE580A15E94407005D75F6 /* TWLocAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TWLocAppDelegate.h; sourceTree = "<group>"; };
 		E9DE580B15E94407005D75F6 /* TWLocAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TWLocAppDelegate.m; sourceTree = "<group>"; };
-		E9DE580E15E94407005D75F6 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPhone.storyboard; sourceTree = "<group>"; };
-		E9DE581115E94407005D75F6 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/MainStoryboard_iPad.storyboard; sourceTree = "<group>"; };
 		E9DE581415E94407005D75F6 /* TweetLocations.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = TweetLocations.xcdatamodel; sourceTree = "<group>"; };
 		E9DE581615E94407005D75F6 /* TWLocMasterViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TWLocMasterViewController.h; sourceTree = "<group>"; };
 		E9DE581715E94407005D75F6 /* TWLocMasterViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TWLocMasterViewController.m; sourceTree = "<group>"; };
@@ -106,8 +104,10 @@
 		E9DE581A15E94407005D75F6 /* TWLocDetailViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TWLocDetailViewController.m; sourceTree = "<group>"; };
 		E9DE582115E94580005D75F6 /* Accounts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accounts.framework; path = System/Library/Frameworks/Accounts.framework; sourceTree = SDKROOT; };
 		E9DE582315E94589005D75F6 /* Twitter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Twitter.framework; path = System/Library/Frameworks/Twitter.framework; sourceTree = SDKROOT; };
-		E9DE582515E958E4005D75F6 /* TwitterInfo.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = TwitterInfo.bundle; sourceTree = "<group>"; };
 		E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = sampleJSONtweets.json; sourceTree = "<group>"; };
+		E9EB0AFB165FD728003264BC /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPhone.storyboard; sourceTree = "<group>"; };
+		E9EB0AFD165FD728003264BC /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPad.storyboard; sourceTree = "<group>"; };
+		E9EB0B00165FD77A003264BC /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		E9F8002A1657D98400F8D6B9 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
 		E9F8002B1657D98400F8D6B9 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -162,7 +162,6 @@
 		E9DE57EA15E94406005D75F6 = {
 			isa = PBXGroup;
 			children = (
-				E98D760E16457E8100E12BE1 /* QuartzCore.framework */,
 				E9DE580115E94407005D75F6 /* TweetLocations */,
 				E9DE57F815E94407005D75F6 /* Frameworks */,
 				E9DE57F615E94406005D75F6 /* Products */,
@@ -180,6 +179,7 @@
 		E9DE57F815E94407005D75F6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E98D760E16457E8100E12BE1 /* QuartzCore.framework */,
 				E947096216051074001B67C2 /* SystemConfiguration.framework */,
 				E9A2225F1604E25D001DC556 /* AssetsLibrary.framework */,
 				E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */,
@@ -198,12 +198,12 @@
 		E9DE580115E94407005D75F6 /* TweetLocations */ = {
 			isa = PBXGroup;
 			children = (
+				E9EB0AFA165FD728003264BC /* iPhone.storyboard */,
+				E9EB0AFC165FD728003264BC /* iPad.storyboard */,
 				E91D95C915EAB60C00717A95 /* TWLocApplication.h */,
 				E91D95CA15EAB60C00717A95 /* TWLocApplication.m */,
 				E9DE580A15E94407005D75F6 /* TWLocAppDelegate.h */,
 				E9DE580B15E94407005D75F6 /* TWLocAppDelegate.m */,
-				E9DE580D15E94407005D75F6 /* MainStoryboard_iPhone.storyboard */,
-				E9DE581015E94407005D75F6 /* MainStoryboard_iPad.storyboard */,
 				E9DE581615E94407005D75F6 /* TWLocMasterViewController.h */,
 				E9DE581715E94407005D75F6 /* TWLocMasterViewController.m */,
 				E9DE581915E94407005D75F6 /* TWLocDetailViewController.h */,
@@ -227,7 +227,7 @@
 		E9DE580215E94407005D75F6 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				E9DE582515E958E4005D75F6 /* TwitterInfo.bundle */,
+				E9EB0B00165FD77A003264BC /* Settings.bundle */,
 				E9DE580315E94407005D75F6 /* TweetLocations-Info.plist */,
 				E9DE580415E94407005D75F6 /* InfoPlist.strings */,
 				E9DE580715E94407005D75F6 /* main.m */,
@@ -296,9 +296,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				E9DE580615E94407005D75F6 /* InfoPlist.strings in Resources */,
-				E9DE580F15E94407005D75F6 /* MainStoryboard_iPhone.storyboard in Resources */,
-				E9DE581215E94407005D75F6 /* MainStoryboard_iPad.storyboard in Resources */,
-				E9DE582615E958E4005D75F6 /* TwitterInfo.bundle in Resources */,
 				E9DE582C15E98231005D75F6 /* sampleJSONtweets.json in Resources */,
 				E9A159D115EA703B00630EE4 /* TwitLoc57.png in Resources */,
 				E9A159D315EA704000630EE4 /* TwitLoc114.png in Resources */,
@@ -316,6 +313,9 @@
 				E98FAEB816063E2300CA371A /* Default-Portrait@2x~ipad.png in Resources */,
 				E98FAEBA16063E2700CA371A /* Default-Landscape@2x~ipad.png in Resources */,
 				E91D817716345F6400ED4283 /* Twitter.JSON.data.txt in Resources */,
+				E9EB0AFE165FD729003264BC /* iPhone.storyboard in Resources */,
+				E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */,
+				E9EB0B01165FD77A003264BC /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,20 +350,20 @@
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
-		E9DE580D15E94407005D75F6 /* MainStoryboard_iPhone.storyboard */ = {
+		E9EB0AFA165FD728003264BC /* iPhone.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				E9DE580E15E94407005D75F6 /* en */,
+				E9EB0AFB165FD728003264BC /* en */,
 			);
-			name = MainStoryboard_iPhone.storyboard;
+			name = iPhone.storyboard;
 			sourceTree = "<group>";
 		};
-		E9DE581015E94407005D75F6 /* MainStoryboard_iPad.storyboard */ = {
+		E9EB0AFC165FD728003264BC /* iPad.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				E9DE581115E94407005D75F6 /* en */,
+				E9EB0AFD165FD728003264BC /* en */,
 			);
-			name = MainStoryboard_iPad.storyboard;
+			name = iPad.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

@@ -1,5 +1,5 @@
 //
-//  TWLocMasterViewController.h
+//  TWLoc2MasterViewController.h
 //  TweetLocations
 //
 //  Created by Curtis Sieber on 8/25/12.
@@ -7,15 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "GoogleReader.h"
 
-@class TWLocDetailViewController;
+@class TWLoc2DetailViewController;
 
 #import <CoreData/CoreData.h>
 #import <Accounts/Accounts.h>
 #import "Tweet.h"
 
-@interface TWLocMasterViewController : UITableViewController
+@interface TWLoc2MasterViewController : UITableViewController
         <NSFetchedResultsControllerDelegate,
          UIAlertViewDelegate>
 {
@@ -38,8 +37,7 @@
 @property (nonatomic) BOOL tweetLibrary;
 @property (nonatomic) BOOL googleReaderLibrary;
 
-@property (strong, nonatomic) TWLocDetailViewController *detailViewController;
-@property (retain, nonatomic) GoogleReader* googleReader;
+@property (strong, nonatomic) TWLoc2DetailViewController *detailViewController;
 
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSManagedObjectContext *managedObjectContext;
@@ -65,39 +63,39 @@
 @end
 
 @interface TweetOperation : NSOperation {
-    TWLocMasterViewController* master;
+    TWLoc2MasterViewController* master;
     Tweet* tweet;
     NSIndexPath* index;
     BOOL executing, finished;
 }
 - (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster;
+masterViewController:(TWLoc2MasterViewController*)theMaster;
 @end
 
 @interface TweetImageOperation : NSOperation {
-    TWLocMasterViewController* master;
+    TWLoc2MasterViewController* master;
     Tweet* tweet;
     NSIndexPath* index;
     BOOL executing, finished;
 }
 - (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster;
+masterViewController:(TWLoc2MasterViewController*)theMaster;
 @end
 
 @interface GetTweetOperation : NSOperation {
-    TWLocMasterViewController* master;
+    TWLoc2MasterViewController* master;
     NSNumber* listID;
     BOOL executing, finished;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster andList:(NSNumber*)theListID;
+- (id)initWithMaster:(TWLoc2MasterViewController*)theMaster andList:(NSNumber*)theListID;
 
 @end
 @interface StoreTweetOperation : NSOperation {
-    TWLocMasterViewController* master;
+    TWLoc2MasterViewController* master;
     NSNumber* listID;
     BOOL executing, finished;
     NSArray* timeline;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID;
+- (id)initWithMaster:(TWLoc2MasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID;
 
 @end

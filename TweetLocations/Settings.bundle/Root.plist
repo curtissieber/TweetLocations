@@ -5,36 +5,6 @@
 	<key>PreferenceSpecifiers</key>
 	<array>
 		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Google Reader Library</string>
-			<key>Key</key>
-			<string>googleLibrary</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSTextFieldSpecifier</string>
-			<key>Title</key>
-			<string>Twitter ID Max</string>
-			<key>Key</key>
-			<string>twitterIDMax</string>
-			<key>DefaultValue</key>
-			<string>-1</string>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSTextFieldSpecifier</string>
-			<key>Title</key>
-			<string>Twitter ID Min</string>
-			<key>Key</key>
-			<string>twitterIDMin</string>
-			<key>DefaultValue</key>
-			<string>-1</string>
-		</dict>
-		<dict>
 			<key>AutocapitalizationType</key>
 			<string>None</string>
 			<key>AutocorrectionType</key>
@@ -54,6 +24,16 @@
 		</dict>
 		<dict>
 			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Google Reader Library</string>
+			<key>Key</key>
+			<string>googleLibrary</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>Type</key>
 			<string>PSTextFieldSpecifier</string>
 			<key>Title</key>
 			<string>Google Account</string>
@@ -65,6 +45,8 @@
 		<dict>
 			<key>Type</key>
 			<string>PSTextFieldSpecifier</string>
+			<key>IsSecure</key>
+			<true/>
 			<key>Title</key>
 			<string>Google Password</string>
 			<key>Key</key>
