@@ -8,6 +8,7 @@
 
 #import "TWLocMasterViewController.h"
 #import "TWLocDetailViewController.h"
+#import "Image.h"
 #import "Tweet.h"
 #import "URLFetcher.h"
 #import "GoogleReader.h"
@@ -72,35 +73,36 @@ static bool NetworkAccessAllowed = NO;
     [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:[NSNumber numberWithLongLong:0]];
 }
 
+- (TWLocImages*)getImageServer
+{
+    if (self->imageServer == Nil) {
+        self->imageServer = [[TWLocImages alloc] init];
+    }
+    return self->imageServer;
+}
+
 - (NSData*)imageData:(NSString*)url
 {
     @try {
-        NSData* data = Nil;
-        [self->imageDictLock lock];
-        data = [self->imageDict objectForKey:url];
-        [self->imageDictLock unlock];
-        return data;
+        return [[self getImageServer] imageData:url];
     } @catch (NSException *eee) {
-        [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     return Nil;
 }
-
+- (void)deleteImageData:(NSString*)url
+{
+    @try {
+        [[self getImageServer] deleteImageData:url];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
 - (void)imageData:(NSData*)data forURL:(NSString*)url
 {
     @try {
-        [self->imageDictLock lock];
-        if (data != Nil && url != Nil) {
-            if ([imageDict objectForKey:url] == Nil) {
-                [self->imageDict setObject:data forKey:url];
-            } else
-                NSLog(@"delined add of duplicate for %@",url);
-        } else
-            NSLog(@"Cannot keep image in dictionary, dictionary is Nil");
-        [self->imageDictLock unlock];
+        [[self getImageServer] imageData:data forURL:url];
     } @catch (NSException *eee) {
-        [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
@@ -128,16 +130,21 @@ static bool NetworkAccessAllowed = NO;
         NSIndexPath* nextindex = [self nextIndex:selected forTable:self.tableView];
         if (nextindex == Nil)
             return;
-        Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
-        
-        while ([[object hasBeenRead]boolValue] == YES &&
-               (nextindex = [self nextIndex:nextindex forTable:self.tableView]) != Nil)
+        Tweet *object;
+        @try {
             object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
-        
-        if ([[object hasBeenRead]boolValue] == YES) {
-            nextindex = [self nextIndex:selected forTable:self.tableView];
-            object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
-            NSLog(@"nothing unread, going back to %@",[object timestamp]);
+            
+            while ([[object hasBeenRead]boolValue] == YES &&
+                   (nextindex = [self nextIndex:nextindex forTable:self.tableView]) != Nil)
+                object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+            
+            if ([[object hasBeenRead]boolValue] == YES) {
+                nextindex = [self nextIndex:selected forTable:self.tableView];
+                object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+                NSLog(@"nothing unread, going back to %@",[object timestamp]);
+            }
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
         
         [self.tableView selectRowAtIndexPath:nextindex
@@ -147,16 +154,20 @@ static bool NetworkAccessAllowed = NO;
         self.detailViewController.detailItem = object;
         
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-        [self.tableView setNeedsDisplay];
-        [context processPendingChanges];
-        // Save the context.  But I keep having the queue stop dead at this point BOO
-        NSError *error = [[NSError alloc] init];
-        if (![context save:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+        @try {
+            [self.tableView setNeedsDisplay];
+            [context processPendingChanges];
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
-        NSLog(@"Got a chance to save, YAY!");
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -183,11 +194,15 @@ static bool NetworkAccessAllowed = NO;
         NSIndexPath* nextindex = [self prevIndex:selected forTable:self.tableView];
         if (nextindex == Nil)
             return;
-        [self.tableView selectRowAtIndexPath:nextindex
-                                    animated:YES
-                              scrollPosition:UITableViewScrollPositionMiddle];
-        Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
-        self.detailViewController.detailItem = object;
+        @try {
+            [self.tableView selectRowAtIndexPath:nextindex
+                                        animated:YES
+                                  scrollPosition:UITableViewScrollPositionMiddle];
+            Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+            self.detailViewController.detailItem = object;
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
         
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         [self.tableView setNeedsDisplay];
@@ -216,8 +231,12 @@ static bool NetworkAccessAllowed = NO;
             offset = -1;
 
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-        [context deleteObject:tweet];
-        [context processPendingChanges];
+        @try {
+            [context deleteObject:tweet];
+            [context processPendingChanges];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
         [self.tableView reloadData];
         
         NSIndexPath* nextindex = [NSIndexPath indexPathForRow:selected.row + offset
@@ -233,8 +252,6 @@ static bool NetworkAccessAllowed = NO;
         // Save the context.  But I keep having the queue stop dead at this point BOO
         NSError *error = [[NSError alloc] init];
         if (![context save:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
             NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
         }
         NSLog(@"Got a chance to save, YAY!");
@@ -308,14 +325,20 @@ static bool NetworkAccessAllowed = NO;
                  UITableViewCell* cell =[self.tableView cellForRowAtIndexPath:selected];
                  [cell setNeedsDisplay];
                  
-                 NSError* error2 = [[NSError alloc] init];
-                 // Save the context.  But I keep having the queue stop dead at this point BOO
-                 if (![context save:&error2]) {
-                     // Replace this implementation with code to handle the error appropriately.
-                     // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                     NSLog(@"Unresolved error saving the context %@, %@", error2, [error2 userInfo]);
-                 }
-                 NSLog(@"Got a chance to save, YAY!");
+                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                     @try {
+                         NSError* error2 = [[NSError alloc] init];
+                         // Save the context.  But I keep having the queue stop dead at this point BOO
+                         if (![context save:&error2]) {
+                             // Replace this implementation with code to handle the error appropriately.
+                             // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                             NSLog(@"Unresolved error saving the context %@, %@", error2, [error2 userInfo]);
+                         }
+                         NSLog(@"Got a chance to save, YAY!");
+                     } @catch (NSException *eee) {
+                         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                     }
+                 }];
              }];
          }];
     } @catch (NSException *eee) {
@@ -530,7 +553,7 @@ static bool NetworkAccessAllowed = NO;
 }
 
 #pragma mark Tweets
-#define MAXTWEETS (2000)
+#define MAXTWEETS (500)
 
 - (void)getTweets:(NSNumber*)listID
 {
@@ -549,10 +572,10 @@ static bool NetworkAccessAllowed = NO;
         if (listID != Nil) {
             url = [NSURL URLWithString:@"https://api.twitter.com/1.1/lists/statuses.json"];
             NSLog(@"List URL = %@",[url absoluteString]);
-            [params setObject:@"50" forKey:@"count"];
+            [params setObject:@"200" forKey:@"count"];
             [params setObject:[listID stringValue] forKey:@"list_id"];
         } else
-            [params setObject:@"50" forKey:@"count"];
+            [params setObject:@"200" forKey:@"count"];
         if (_twitterIDMax > 0)
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMax] forKey:@"since_id"];
         if (_twitterIDMin > 0 && _twitterIDMin != _twitterIDMax)
@@ -737,8 +760,6 @@ static bool NetworkAccessAllowed = NO;
                     [self saveTweetDebugToFile:[NSString stringWithFormat:@"original tweet %@\n",theID]];
                 } else {
                     [self saveTweetDebugToFile:[NSString stringWithFormat:@"DUP      tweet %@\n",theID]];
-                    //maxTweetsToGet = -1;
-                    //tweet = [results objectAtIndex:0];
                 }
                 
             } @catch (NSException* eee) {
@@ -785,14 +806,18 @@ static bool NetworkAccessAllowed = NO;
                     [self.tableView setNeedsDisplay];
                     [context processPendingChanges];
                     // Save the context.  But I keep having the queue stop dead at this point BOO
-                    NSError *error = [[NSError alloc] init];
-                    if (![context save:&error]) {
-                        // Replace this implementation with code to handle the error appropriately.
-                        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                        NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+                    @try {
+                        NSError *error = [[NSError alloc] init];
+                        if (![context save:&error]) {
+                            // Replace this implementation with code to handle the error appropriately.
+                            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+                        }
+                        NSLog(@"Got a chance to save, YAY!");
+                        [self.tableView reloadData];
+                    } @catch (NSException *eee) {
+                        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                     }
-                    NSLog(@"Got a chance to save, YAY!");
-                    [self.tableView reloadData];
                 }];
                 NSLog(@"Done with current list %@",theListID);
                 NSNumber* nextListID = [self->queueGetArray objectAtIndex:0];
@@ -804,31 +829,37 @@ static bool NetworkAccessAllowed = NO;
                     [self.tableView setNeedsDisplay];
                     [context processPendingChanges];
                     // Save the context.  But I keep having the queue stop dead at this point BOO
-                    NSError *error = [[NSError alloc] init];
-                    if (![context save:&error]) {
-                        // Replace this implementation with code to handle the error appropriately.
-                        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                        NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
-                    }
-                    NSLog(@"Got a chance to save, YAY!");
-                    [self.tableView reloadData];
-                    
-                    NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
-                    Tweet* tweet;
-                    while ((tweet = [e nextObject]) != Nil) {
-                        if (_theQueue != Nil && NetworkAccessAllowed &&
-                            [[tweet hasBeenRead] boolValue] == NO) {
-                            NSIndexPath* indexPath = [self.fetchedResultsController indexPathForObject:tweet];
-                            if (indexPath != Nil) {
-                                TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
-                                                                                      index:indexPath
-                                                                       masterViewController:self];
-                                [TWLocMasterViewController incrementTasks];
-                                [_theQueue addOperation:top];
-                                [_theQueue setSuspended:NO];
+                    @try {
+                        NSError *error = [[NSError alloc] init];
+                        if (![context save:&error]) {
+                            // Replace this implementation with code to handle the error appropriately.
+                            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+                        }
+                        NSLog(@"Got a chance to save, YAY!");
+                        [self.tableView reloadData];
+                        
+                        NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
+                        Tweet* tweet;
+                        while ((tweet = [e nextObject]) != Nil) {
+                            if (_theQueue != Nil && NetworkAccessAllowed &&
+                                [[tweet hasBeenRead] boolValue] == NO) {
+                                NSIndexPath* indexPath = [self.fetchedResultsController indexPathForObject:tweet];
+                                if (indexPath != Nil) {
+                                    TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
+                                                                                          index:indexPath
+                                                                           masterViewController:self];
+                                    [TWLocMasterViewController incrementTasks];
+                                    [_theQueue addOperation:top];
+                                    [_theQueue setSuspended:NO];
+                                }
                             }
                         }
+                    } @catch (NSException *eee) {
+                        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                     }
+                    NSString* status = [[self.detailViewController activityLabel] text];
+                    [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nNote: currently storing %d images, of size %0.2fMB",status,[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
                 }];
             }
         }
@@ -975,14 +1006,22 @@ static bool NetworkAccessAllowed = NO;
         [self.tableView setNeedsDisplay];
         [context processPendingChanges];
         // Save the context.  But I keep having the queue stop dead at this point BOO
-        NSError *error = [[NSError alloc] init];
-        if (![context save:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+        @try {
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+            [_theQueue addOperationWithBlock:^{
+                [self deleteImageData:Nil]; // removes all image data
+                [[self getImageServer] saveContext];
+            }];
+            [self.tableView reloadData];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
-        NSLog(@"Got a chance to save, YAY!");
-        [self.tableView reloadData];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -1030,8 +1069,10 @@ static bool NetworkAccessAllowed = NO;
                         [[tweet favorite] boolValue] == NO &&
                         [[tweet hasBeenRead] boolValue] == YES) {
                         //NSLog(@"removing %d tweet %@",i,tweet);
+                        NSString* url = [tweet url];
                         [context deleteObject:tweet];
                         [_idSet removeObject:[tweet tweetID]];
+                        [[self getImageServer] deleteImageData:url];
                     }
                 }
             }
@@ -1055,6 +1096,7 @@ static bool NetworkAccessAllowed = NO;
                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
             }
+            [[self getImageServer] saveContext];
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -1160,8 +1202,7 @@ static bool NetworkAccessAllowed = NO;
     self->queueGetArray = [[NSMutableArray alloc] initWithCapacity:0];
     _theQueue = [[NSOperationQueue alloc] init];
     [_theQueue setMaxConcurrentOperationCount:1];
-    self->imageDictLock = [[NSLock alloc] init];
-    self->imageDict = [[NSMutableDictionary alloc] init];
+    _theOtherQueue = Nil;
     
     SCNetworkReachabilityFlags flags;
     BOOL receivedFlags;
@@ -1229,12 +1270,7 @@ static bool NetworkAccessAllowed = NO;
     // Dispose of any resources that can be recreated.
     @try {
         NSLog(@"MEMORY WARNING in master view");
-        [self->imageDictLock lock];
-        [imageDict removeAllObjects];
-        NSLog(@"MEMORY WARNING releasing ALL IMAGES");
-        [self->imageDictLock unlock];
     } @catch (NSException *eee) {
-        [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
@@ -1368,8 +1404,6 @@ static bool NetworkAccessAllowed = NO;
             NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
             NSError *error = [[NSError alloc] init];
             if (![context save:&error]) {
-                // Replace this implementation with code to handle the error appropriately.
-                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
             }
             NSLog(@"Got a chance to save, YAY!");
@@ -1653,6 +1687,7 @@ static bool NetworkAccessAllowed = NO;
                         TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                                               index:index
                                                                masterViewController:master];
+                        [top setQueuePriority:NSOperationQueuePriorityHigh];
                         [TWLocMasterViewController incrementTasks];
                         [[master theQueue] addOperation:top];
                         [[master theQueue] setSuspended:NO];
@@ -1660,7 +1695,8 @@ static bool NetworkAccessAllowed = NO;
                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                         [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
                     }];
-                }
+                } else
+                    NSLog(@"URL_DEADEND %@ links",[tweet url]);
             }
         }
         
@@ -1748,6 +1784,8 @@ masterViewController:(TWLocMasterViewController*)theMaster
             }];
         }
         [master imageData:imageData forURL:[tweet url]];
+        [master.managedObjectContext processPendingChanges];
+
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }

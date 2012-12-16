@@ -8,6 +8,7 @@
 
 #import "TWLoc2MasterViewController.h"
 #import "TWLoc2DetailViewController.h"
+#import "Account.h"
 #import "Tweet.h"
 #import "URLFetcher.h"
 
@@ -624,6 +625,7 @@ static bool NetworkAccessAllowed = NO;
         int storedTweets = 0;
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
+        NSEntityDescription *tweetEntity = [[entity subentitiesByName] objectForKey:@"tweet"];
         
         NSEnumerator* e = [timeline objectEnumerator];
         NSDictionary* item;
@@ -711,6 +713,7 @@ static bool NetworkAccessAllowed = NO;
                     else if ([theUrl rangeOfString:@"/huff.to/"].location != NSNotFound)
                         theUrl = @"";
                     else if ([theUrl length] > 4) {
+                        Account* acc = [tweetEntity ]
                         tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
                                                               inManagedObjectContext:context];
                         [tweet setTweetID:theID];

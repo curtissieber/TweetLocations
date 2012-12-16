@@ -14,13 +14,12 @@
 #import <CoreData/CoreData.h>
 #import <Accounts/Accounts.h>
 #import "Tweet.h"
+#import "TWLocImages.h"
 
 @interface TWLocMasterViewController : UITableViewController
         <NSFetchedResultsControllerDelegate,
          UIAlertViewDelegate>
 {
-    NSMutableDictionary* imageDict;
-    NSLock* imageDictLock;
     NSString* twitterAccountName;
     ACAccount* twitterAccount;
     //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
@@ -28,6 +27,8 @@
     NSDictionary* lists;
     NSMutableDictionary* maxIDEachList;
     NSMutableArray* queueGetArray;
+    
+    TWLocImages* imageServer;
 }
 
 @property (nonatomic, retain) NSString* tweetGroup;
@@ -41,6 +42,7 @@
 @property (strong, nonatomic) TWLocDetailViewController *detailViewController;
 @property (retain, nonatomic) GoogleReader* googleReader;
 
+@property (strong, nonatomic) NSFetchedResultsController *imageFetchController;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSManagedObjectContext *managedObjectContext;
 @property (retain, nonatomic) UIImage* redX;
@@ -49,12 +51,14 @@
 @property (retain, nonatomic) UIImage* pinLinkPinImage;
 
 @property (strong, nonatomic)     NSOperationQueue* theQueue;
+@property (strong, nonatomic)     NSOperationQueue* theOtherQueue;
 @property (nonatomic, retain)     NSMutableSet* idSet;
 @property (nonatomic, retain)     NSMutableDictionary* tweetText;
 
 + (void)setNetworkAccessAllowed:(BOOL)allowed;
 - (BOOL)openURL:(NSURL *)url;
 - (void)killMax;
+- (TWLocImages*)getImageServer;
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
 - (void)nextTweet;

@@ -95,6 +95,10 @@
         }
         NSLog(@"SAVED BEFORE background/terminate");
     }
+    if (_masterViewController != Nil) {
+        [[_masterViewController getImageServer] saveContext];
+        NSLog(@"Images SAVED BEFORE background/terminate");
+    }
 }
 
 #pragma mark - Core Data stack
@@ -141,7 +145,9 @@
     _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
     NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
                              [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
-                             [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption, nil];
+                             [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
+                             [NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
+                             nil];
     if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
         /*
          Replace this implementation with code to handle the error appropriately.
