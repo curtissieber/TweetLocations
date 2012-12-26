@@ -554,6 +554,7 @@ static bool NetworkAccessAllowed = NO;
 
 #pragma mark Tweets
 #define MAXTWEETS (500)
+#define TWEETREQUESTSIZE (200)
 
 - (void)getTweets:(NSNumber*)listID
 {
@@ -568,14 +569,15 @@ static bool NetworkAccessAllowed = NO;
         
         //  The endpoint that we wish to call
         NSURL *url;
+        NSString* requestSize = [NSString stringWithFormat:@"%d",TWEETREQUESTSIZE];
         url = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/home_timeline.json"];
         if (listID != Nil) {
             url = [NSURL URLWithString:@"https://api.twitter.com/1.1/lists/statuses.json"];
             NSLog(@"List URL = %@",[url absoluteString]);
-            [params setObject:@"200" forKey:@"count"];
+            [params setObject:requestSize forKey:@"count"];
             [params setObject:[listID stringValue] forKey:@"list_id"];
         } else
-            [params setObject:@"200" forKey:@"count"];
+            [params setObject:requestSize forKey:@"count"];
         if (_twitterIDMax > 0)
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMax] forKey:@"since_id"];
         if (_twitterIDMin > 0 && _twitterIDMin != _twitterIDMax)
@@ -646,8 +648,29 @@ static bool NetworkAccessAllowed = NO;
 {
     @try {
         int storedTweets = 0;
+        __block BOOL twitterErrorDetected = NO;
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
+        
+        //TODO need to add a check here for error: JSON returns
+        if ([[timeline class] isSubclassOfClass:[NSDictionary class]]) {
+            NSDictionary* errorSet = (NSDictionary*)timeline;
+            NSArray* errors = [errorSet objectForKey:@"errors"];
+            [errors enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                NSDictionary* theError = obj;
+                NSString* message = [theError objectForKey:@"message"];
+                NSNumber* errNo = [theError objectForKey:@"code"];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSString* status = [[self.detailViewController activityLabel] text];
+                    [[self.detailViewController activityLabel]
+                     setText:[NSString
+                              stringWithFormat:@"%@\nTwitter Error (%@) %@",status,errNo,message]];
+                });
+                twitterErrorDetected = YES;
+                NSLog(@"TWITTER ERROR: (%@) %@",errNo,message);
+            }];
+            timeline = [[NSArray alloc] init]; // nothing to process
+        }
         
         NSEnumerator* e = [timeline objectEnumerator];
         NSDictionary* item;
@@ -784,7 +807,7 @@ static bool NetworkAccessAllowed = NO;
         }];
         
         if (_theQueue != Nil && storedTweets > 0 &&
-            !([timeline count] < 5 || _maxTweetsToGet < 1)) {
+            !([timeline count] < (TWEETREQUESTSIZE/2) || _maxTweetsToGet < 1)) {
             NSLog(@"adding another getTweet to the Queue");
             [self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
@@ -798,10 +821,10 @@ static bool NetworkAccessAllowed = NO;
                 [self saveTweetDebugToFile:[NSString stringWithFormat:@"did not get a new twitterIDMax\n"]];
             [self saveTweetDebugToFile:[NSString stringWithFormat:@"new twitterIDMax %lld\n",_twitterIDMax]];
             NSLog(@"new TwitterIDMax %lld",_twitterIDMax);
-            [self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
+            [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
 
             // now, let us do the next item in the queue
-            if ([self->queueGetArray count] > 0) {
+            if (!twitterErrorDetected && [self->queueGetArray count] > 0) {
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                     [self.tableView setNeedsDisplay];
                     [context processPendingChanges];

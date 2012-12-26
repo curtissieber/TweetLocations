@@ -104,8 +104,9 @@
 }
 - (NSInteger)sizeImages
 {
-    NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Images.sqlite"];
-    NSDictionary* filevalues = [[NSFileManager defaultManager] attributesOfItemAtPath:[storeURL absoluteString] error:Nil];
+    NSString* documentsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+    NSString* database = [documentsDir stringByAppendingPathComponent:@"Images.sqlite"];
+    NSDictionary* filevalues = [[NSFileManager defaultManager] attributesOfItemAtPath:database error:Nil];
     NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
     return [fsize integerValue];
 }
