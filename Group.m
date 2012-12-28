@@ -1,17 +1,18 @@
 //
-//  Image.m
+//  Group.m
 //  TweetLocations
 //
 //  Created by Curtis Sieber on 12/27/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
-#import "Image.h"
+#import "Group.h"
+#import "Tweet.h"
 
 
-@implementation Image
+@implementation Group
 
-@dynamic data;
-@dynamic url;
+@dynamic groupName;
+@dynamic tweets;
 
 @end

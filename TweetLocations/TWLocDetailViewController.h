@@ -12,7 +12,9 @@
 #import "Tweet.h"
 
 @interface TWLocDetailViewController : UIViewController
-            <UISplitViewControllerDelegate, UIScrollViewDelegate, UIAlertViewDelegate> {
+            <UISplitViewControllerDelegate, UIScrollViewDelegate, UIAlertViewDelegate,
+            UICollectionViewDataSource, UICollectionViewDelegate>
+{
                 NSData* thisImageData;
 }
 
@@ -31,9 +33,16 @@
 
 @property (retain, nonatomic) TWLocMasterViewController* master;
 
+@property (retain, nonatomic) IBOutlet UIButton* infoButton;
+@property (retain, nonatomic) IBOutlet UIButton* picButton;
+@property (retain, nonatomic) IBOutlet UICollectionView* picCollection;
+@property (retain, nonatomic) NSArray *pictures;
+
 + (BOOL)imageExtension:(NSString*)urlStr;
 + (NSMutableArray*)staticGetURLs:(NSString*)html;
 + (NSString*)staticFindJPG:(NSString*)html theUrlStr:(NSString*)url;
 - (BOOL)openURL:(NSURL *)url;
 - (IBAction)touchedStatus:(id)sender;
+- (IBAction)picturesButtonHit:(id)sender;
+- (IBAction)infoButtonHit:(id)sender;
 @end

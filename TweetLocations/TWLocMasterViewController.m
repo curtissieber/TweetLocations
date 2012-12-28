@@ -264,7 +264,6 @@ static bool NetworkAccessAllowed = NO;
     NSLog(@"want to refresh tweet %@ %@",[tweet tweetID], [tweet url]);
     
     @try {
-        //[tweet setOrigHTML:Nil];
         if ([tweet origURL] != Nil)
             [tweet setUrl:[tweet origURL]];
         else {
@@ -272,6 +271,7 @@ static bool NetworkAccessAllowed = NO;
             if ([urls count] > 0)
                 [tweet setUrl:[urls objectAtIndex:0]];
         }
+        [tweet setOrigHTML:Nil];
         NSLog(@"refresh gives url %@",[tweet url]);
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         [context processPendingChanges];
@@ -760,6 +760,7 @@ static bool NetworkAccessAllowed = NO;
                     else if ([theUrl length] > 4) {
                         tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
                                                               inManagedObjectContext:context];
+                        [tweet setSourceDict:[NSKeyedArchiver archivedDataWithRootObject:item]];
                         [tweet setTweetID:theID];
                         [tweet setFavorite:favorited];
                         [tweet setTimestamp:timestamp];
@@ -1700,7 +1701,9 @@ static bool NetworkAccessAllowed = NO;
                                                                  encoding:NSStringEncodingConversionAllowLossy];
             if (html != Nil) {
                 NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
-                //[tweet setOrigHTML:html];
+                if ([tweet origHTML] == Nil ||
+                    [[tweet url] rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+                    [tweet setOrigHTML:html];
                 if (replace != Nil) {
                     [tweet setUrl:replace];
                     NSLog(@"URL_REPLACE %@",replace);

@@ -10,6 +10,7 @@
 #import "TWLocMasterViewController.h"
 #import "PhotoGetter.h"
 #import "URLFetcher.h"
+#import "TWLocPicCollectionCell.h"
 #import <ImageIO/CGImageDestination.h>
 #import <AssetsLibrary/AssetsLibrary.h>
 #import <QuartzCore/CAAnimation.h>
@@ -30,6 +31,8 @@
         if ( newDetailItem != Nil &&
             [[newDetailItem class] isSubclassOfClass:[Tweet class]] ) {
             _detailItem = newDetailItem;
+            if ([_detailItem sourceDict] != Nil)
+                NSLog(@"%@",[NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]]);
             
             // Update the view.
             [self configureView];
@@ -52,7 +55,12 @@
     @try {
         // Update the user interface for the detail item.
         if (self.detailItem) {
+            [_picCollection setHidden:YES];
+            [_picButton setHidden:YES];
+            _pictures = Nil;
+            [_infoButton setHidden:([_detailItem origHTML] == Nil)];
             [_activityView startAnimating];
+            
             Tweet *tweet = self.detailItem;
             self.title = [tweet timestamp];
             
@@ -95,7 +103,6 @@
             
             NSData* imageData = [_master imageData:[tweet url]];
             if (imageData != Nil) {
-                //[self.textView setText:[_detailItem origHTML]];
                 NSLog(@"using cached data for %@",[tweet url]);
                 thisImageData = imageData;
                 UIImage *image = [[UIImage alloc] initWithData:imageData];
@@ -135,6 +142,27 @@
         }
     } @catch (NSException *eee) {
         [_activityView stopAnimating];
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+- (IBAction)infoButtonHit:(id)sender
+{
+    @try {
+        /*if ([_detailItem sourceDict] != Nil) {
+            NSDictionary* dict = [NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]];
+            NSString* dictionaryStr = [dict description];
+            [UIView animateWithDuration:0.4 animations:^{
+                _activityLabel.hidden = NO;
+                [_activityLabel setText:dictionaryStr];
+            }];
+        }*/
+        if ([_detailItem origHTML] != Nil) {
+            [UIView animateWithDuration:0.4 animations:^{
+                _activityLabel.hidden = NO;
+                [_activityLabel setText:[_detailItem origHTML]];
+            }];
+        }
+    } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
@@ -305,10 +333,18 @@
     [detector enumerateMatchesInString:html options:0 range:NSMakeRange(0, [html length]) usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
         if ([result resultType] == NSTextCheckingTypeLink) {
             NSString* urlStr = [[result URL] absoluteString];
-            if ([urlStr characterAtIndex:[urlStr length]-1] == '\'')
-                urlStr = [urlStr stringByReplacingOccurrencesOfString:@"'" withString:@""];
-            if ([urlStr compare:@"tel:" options:0 range:NSMakeRange(0, 4)] != NSOrderedSame)
+            if ([urlStr compare:@"tel:" options:0 range:NSMakeRange(0, 4)] != NSOrderedSame) {
+                if ([urlStr rangeOfString:@"%5C"].location != NSNotFound) {
+                    NSRange range = [urlStr rangeOfString:@"%5C"];
+                    urlStr = [urlStr substringToIndex:range.location];
+                }
+                if ([urlStr rangeOfString:@"http"].location != 0) {
+                    NSRange range = [urlStr rangeOfString:@"http"];
+                    if (range.location != NSNotFound)
+                        urlStr = [urlStr substringFromIndex:range.location];
+                }
                 [strResults addObject:urlStr];
+            }
         }
     }];
     return strResults;
@@ -337,7 +373,11 @@
 - (void)findJPG:(NSMutableString*)html theUrlStr:(NSString*)url
 {
     NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:url];
-    //[_detailItem setOrigHTML:html];
+    if ([_detailItem origHTML] == Nil ||
+        [url rangeOfString:@".tumblr.com/image/"].location != NSNotFound) {
+        [_detailItem setOrigHTML:html];
+        [_infoButton setHidden:NO];
+    }
     if (replace != Nil) {
         if ([TWLocDetailViewController imageExtension:replace])
             [self openURL:[NSURL URLWithString:replace]];
@@ -763,6 +803,33 @@ static bool isRetinaDisplay = NO;
     // Called when the view is shown again in the split view, invalidating the button and popover controller.
     [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     self.masterPopoverController = nil;
+}
+
+- (IBAction)picturesButtonHit:(id)sender
+{
+    
+}
+
+#pragma mark Collection View Data Source
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    TWLocPicCollectionCell* cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"picture" forIndexPath:indexPath];
+    int idx = [indexPath row];
+    [[cell image] setImage:[_pictures objectAtIndex:idx]];
+    return cell;
+}
+
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
+{
+    if (_pictures == Nil)
+        return 0;
+    return [_pictures count];
+}
+
+#pragma mark Collection View Delegate
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"selected picture %d",[indexPath row]);
 }
 
 @end

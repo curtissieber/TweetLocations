@@ -36,6 +36,11 @@
 		E9C0F3BC15EA981300A55251 /* PhotoGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = E9C0F3BA15EA981300A55251 /* PhotoGetter.m */; };
 		E9C0F3BE15EA9B1300A55251 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C0F3BD15EA9B1300A55251 /* CoreLocation.framework */; };
 		E9C0F3C015EA9B1B00A55251 /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */; };
+		E9D579DA168CDC3300ACBBC9 /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579D9168CDC3300ACBBC9 /* Image.m */; };
+		E9D579DD168CDC3E00ACBBC9 /* Group.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579DC168CDC3E00ACBBC9 /* Group.m */; };
+		E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */; };
+		E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */; };
+		E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579EB168DE45800ACBBC9 /* Tweet.m */; };
 		E9DE57FA15E94407005D75F6 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57F915E94407005D75F6 /* UIKit.framework */; };
 		E9DE57FC15E94407005D75F6 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57FB15E94407005D75F6 /* Foundation.framework */; };
 		E9DE57FE15E94407005D75F6 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57FD15E94407005D75F6 /* CoreGraphics.framework */; };
@@ -52,8 +57,6 @@
 		E9EB0AFE165FD729003264BC /* iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFA165FD728003264BC /* iPhone.storyboard */; };
 		E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFC165FD728003264BC /* iPad.storyboard */; };
 		E9EB0B01165FD77A003264BC /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0B00165FD77A003264BC /* Settings.bundle */; };
-		E9F54C1C1675291A002814EE /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F54C1B1675291A002814EE /* Image.m */; };
-		E9F8002C1657D98400F8D6B9 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F8002B1657D98400F8D6B9 /* Tweet.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -95,6 +98,16 @@
 		E9C0F3BB15EA981300A55251 /* PhotoGetter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhotoGetter.h; sourceTree = "<group>"; };
 		E9C0F3BD15EA9B1300A55251 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
+		E9D579D8168CDC3300ACBBC9 /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
+		E9D579D9168CDC3300ACBBC9 /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
+		E9D579DB168CDC3E00ACBBC9 /* Group.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Group.h; path = ../Group.h; sourceTree = "<group>"; };
+		E9D579DC168CDC3E00ACBBC9 /* Group.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Group.m; path = ../Group.m; sourceTree = "<group>"; };
+		E9D579E1168CF49C00ACBBC9 /* TWLocPicCollectionCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TWLocPicCollectionCell.h; sourceTree = "<group>"; };
+		E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TWLocPicCollectionCell.m; sourceTree = "<group>"; };
+		E9D579E4168D00DC00ACBBC9 /* AnimatedGif.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimatedGif.h; sourceTree = "<group>"; };
+		E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnimatedGif.m; sourceTree = "<group>"; };
+		E9D579EA168DE45800ACBBC9 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
+		E9D579EB168DE45800ACBBC9 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E9DE57F515E94406005D75F6 /* TweetLocations.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TweetLocations.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9DE57F915E94407005D75F6 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		E9DE57FB15E94407005D75F6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -118,10 +131,6 @@
 		E9EB0AFD165FD728003264BC /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPad.storyboard; sourceTree = "<group>"; };
 		E9EB0B00165FD77A003264BC /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		E9F54C18167528A8002814EE /* TweetLocations 5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 5.xcdatamodel"; sourceTree = "<group>"; };
-		E9F54C1A1675291A002814EE /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
-		E9F54C1B1675291A002814EE /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
-		E9F8002A1657D98400F8D6B9 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
-		E9F8002B1657D98400F8D6B9 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -220,6 +229,10 @@
 				E9DE581715E94407005D75F6 /* TWLocMasterViewController.m */,
 				E9DE581915E94407005D75F6 /* TWLocDetailViewController.h */,
 				E9DE581A15E94407005D75F6 /* TWLocDetailViewController.m */,
+				E9D579E1168CF49C00ACBBC9 /* TWLocPicCollectionCell.h */,
+				E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */,
+				E9D579E4168D00DC00ACBBC9 /* AnimatedGif.h */,
+				E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */,
 				E90E0673167E2ABE004BEC18 /* TWLocImages.h */,
 				E90E0674167E2ABE004BEC18 /* TWLocImages.m */,
 				E90E0677167E2C4E004BEC18 /* Images.xcdatamodeld */,
@@ -228,10 +241,12 @@
 				E951013B16445EDB00A4505E /* GoogleReader.h */,
 				E951013C16445EDB00A4505E /* GoogleReader.m */,
 				E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */,
-				E9F54C1A1675291A002814EE /* Image.h */,
-				E9F54C1B1675291A002814EE /* Image.m */,
-				E9F8002A1657D98400F8D6B9 /* Tweet.h */,
-				E9F8002B1657D98400F8D6B9 /* Tweet.m */,
+				E9D579EA168DE45800ACBBC9 /* Tweet.h */,
+				E9D579EB168DE45800ACBBC9 /* Tweet.m */,
+				E9D579D8168CDC3300ACBBC9 /* Image.h */,
+				E9D579D9168CDC3300ACBBC9 /* Image.m */,
+				E9D579DB168CDC3E00ACBBC9 /* Group.h */,
+				E9D579DC168CDC3E00ACBBC9 /* Group.m */,
 				E9C0F3BB15EA981300A55251 /* PhotoGetter.h */,
 				E9C0F3BA15EA981300A55251 /* PhotoGetter.m */,
 				E9B4680915EAAB460021F674 /* URLFetcher.h */,
@@ -354,11 +369,14 @@
 				E9B4680A15EAAB460021F674 /* URLFetcher.m in Sources */,
 				E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */,
 				E951013D16445EDB00A4505E /* GoogleReader.m in Sources */,
-				E9F8002C1657D98400F8D6B9 /* Tweet.m in Sources */,
-				E9F54C1C1675291A002814EE /* Image.m in Sources */,
 				E90E0675167E2ABE004BEC18 /* TWLocImages.m in Sources */,
 				E90E0679167E2C4E004BEC18 /* Images.xcdatamodeld in Sources */,
 				E90E067C167E2DCC004BEC18 /* ImageItem.m in Sources */,
+				E9D579DA168CDC3300ACBBC9 /* Image.m in Sources */,
+				E9D579DD168CDC3E00ACBBC9 /* Group.m in Sources */,
+				E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */,
+				E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */,
+				E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,7 +524,7 @@
 				E9072F2116573C3F000B1B07 /* TweetLocations 4.xcdatamodel */,
 				E9DE581415E94407005D75F6 /* TweetLocations.xcdatamodel */,
 			);
-			currentVersion = E9072F2116573C3F000B1B07 /* TweetLocations 4.xcdatamodel */;
+			currentVersion = E9F54C18167528A8002814EE /* TweetLocations 5.xcdatamodel */;
 			path = TweetLocations.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

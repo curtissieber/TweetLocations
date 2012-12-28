@@ -277,16 +277,13 @@
                     [master->imageDictLock unlock];
                     NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                 }
-                
+                if ([images count] > 0) {
+                    DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
+                    [[master theOtherQueue] addOperation:dip];
+                    [[master theOtherQueue] setSuspended:NO];
+                }
             }];
-            
-            if ([images count] > 0) {
-                DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
-                [[master theOtherQueue] addOperation:dip];
-                [[master theOtherQueue] setSuspended:NO];
-            }
         }
-        
     } @catch (NSException *eee) {
         [master->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);

@@ -2,7 +2,7 @@
 //  Image.h
 //  TweetLocations
 //
-//  Created by Curtis Sieber on 12/9/12.
+//  Created by Curtis Sieber on 12/27/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 

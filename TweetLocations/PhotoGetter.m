@@ -24,11 +24,21 @@
        sizelabel:(UIButton*)ibutton
         callback:(PhotoCallback)theCallback
 {
+    [self isGIFtype:url];
     [self setScrollView:sview];
     [self setImageView:iview];
     [self setSizeButton:ibutton];
     self->callback = theCallback;
     [self getPhoto:url];
+}
+
+- (bool)isGIFtype:(id)url
+{
+    NSString* urlstr = [url absoluteString];
+    NSString* ext = [urlstr pathExtension];
+    if ([ext localizedCaseInsensitiveCompare:@"gif"] == NSOrderedSame)
+        return YES;
+    return NO;
 }
 
 - (void)getPhoto:(NSURL*)url
@@ -117,7 +127,10 @@
         
         UIImage *image = [[UIImage alloc] initWithData:photoData];
         
-        [PhotoGetter setupImage:image iview:imageView sview:scrollView button:sizeButton];
+        if (self->isGIF)
+            [PhotoGetter setupGIF:image iview:imageView sview:scrollView button:sizeButton rawData:photoData];
+        else
+            [PhotoGetter setupImage:image iview:imageView sview:scrollView button:sizeButton];
                 
         if (self->callback) {
             callback(lat, lon, timestamp, photoData);
@@ -176,7 +189,70 @@
           scrollSize.width, scrollSize.height,
           scale,
           offset.x, offset.y);
+    
+    int height = [image size].height;
+    int width = [image size].width;
+    NSString *sizetxt = [NSString stringWithFormat:@"[%d x %d]",height,width];
+    [button setTitle:sizetxt forState:UIControlStateNormal];
+    [button setTitle:@"SAVING PICTURE" forState:UIControlStateSelected];
+    [button setTitle:@"SAVING PICTURE" forState:UIControlStateHighlighted];
+    if (height > 1023 || width > 1023)
+        [button.titleLabel setBackgroundColor:[UIColor cyanColor]];
+    else
+        [button.titleLabel setBackgroundColor:[UIColor whiteColor]];
+}
 
++ (void)setupGIF:(UIImage*)image
+             iview:(UIImageView*)iview
+             sview:(UIScrollView*)sview
+            button:(UIButton*)button
+           rawData:(NSData*)data
+{
+    [sview setContentScaleFactor:1];
+    [sview setContentOffset:CGPointMake(0, 0)];
+    [sview setTransform:CGAffineTransformIdentity];
+    CGRect frame = [iview frame];
+    frame.origin.x = frame.origin.y = 0;
+    //frame.size = [image size];
+    [iview setFrame:frame];
+    [iview setTransform:CGAffineTransformIdentity];
+    [iview setContentMode:UIViewContentModeScaleAspectFit];
+    
+    //[iview setImage:image];
+    [UIView transitionWithView:sview
+                      duration:0.4
+                       options:UIViewAnimationOptionTransitionCrossDissolve
+                    animations:^{
+                        iview.image = image;
+                    }
+                    completion:Nil];
+    
+    //[iview sizeToFit];
+    [sview setContentScaleFactor:1];
+    [sview setContentOffset:CGPointMake(0, 0)];
+    [sview setTransform:CGAffineTransformIdentity];
+    float scale = 1.0;
+    CGSize imageSize = [iview frame].size;
+    CGSize scrollSize = [sview frame].size;
+    
+    [sview setContentSize:imageSize];
+    scale = scrollSize.width / imageSize.width;
+    if (scrollSize.height / imageSize.height < scale)
+        scale = scrollSize.height / imageSize.height;
+    [sview setContentScaleFactor:scale];
+    CGPoint offset = CGPointMake((scrollSize.width-imageSize.width*scale)/2,
+                                 (scrollSize.height-imageSize.height*scale)/2);
+    CGAffineTransform transform = CGAffineTransformMakeScale(scale, scale);
+    transform = CGAffineTransformTranslate(transform, offset.x, offset.y);
+    [sview setTransform:transform];
+    //[sview setClipsToBounds:YES];
+    [sview setNeedsDisplay];
+    NSLog(@"isize %0.1f %0.1f ssize %0.1f %0.1f scale %0.1f offset %0.1f %0.1f",
+          imageSize.width,imageSize.height,
+          scrollSize.width, scrollSize.height,
+          scale,
+          offset.x, offset.y);
+    
     int height = [image size].height;
     int width = [image size].width;
     NSString *sizetxt = [NSString stringWithFormat:@"[%d x %d]",height,width];

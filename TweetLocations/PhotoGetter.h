@@ -16,6 +16,7 @@ typedef void(^PhotoCallback)(float latitude, float longitude, NSString* timestam
     UIImageView     *imageView;
     UIButton        *sizeButton;
     bool            isRetinaDisplay;
+    bool            isGIF;
     PhotoCallback   callback;
 }
 
@@ -35,5 +36,10 @@ typedef void(^PhotoCallback)(float latitude, float longitude, NSString* timestam
              iview:(UIImageView*)iview
              sview:(UIScrollView*)sview
             button:(UIButton*)button;
++ (void)setupGIF:(UIImage*)image
+             iview:(UIImageView*)iview
+             sview:(UIScrollView*)sview
+            button:(UIButton*)button
+           rawData:(NSData*)data;
 
 @end
