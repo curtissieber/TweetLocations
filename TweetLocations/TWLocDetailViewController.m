@@ -10,6 +10,8 @@
 #import "TWLocMasterViewController.h"
 #import "PhotoGetter.h"
 #import "URLFetcher.h"
+#import "MovieGetter.h"
+#import "DocumentViewController.h"
 #import "TWLocPicCollectionCell.h"
 #import <ImageIO/CGImageDestination.h>
 #import <AssetsLibrary/AssetsLibrary.h>
@@ -31,8 +33,6 @@
         if ( newDetailItem != Nil &&
             [[newDetailItem class] isSubclassOfClass:[Tweet class]] ) {
             _detailItem = newDetailItem;
-            if ([_detailItem sourceDict] != Nil)
-                NSLog(@"%@",[NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]]);
             
             // Update the view.
             [self configureView];
@@ -55,9 +55,7 @@
     @try {
         // Update the user interface for the detail item.
         if (self.detailItem) {
-            [_picCollection setHidden:YES];
-            [_picButton setHidden:YES];
-            _pictures = Nil;
+            [self setupPicturesCollection];
             [_infoButton setHidden:([_detailItem origHTML] == Nil)];
             [_activityView startAnimating];
             
@@ -108,11 +106,18 @@
                 UIImage *image = [[UIImage alloc] initWithData:imageData];
                                 
                 [self.scrollView setHidden:NO];
-                [PhotoGetter setupImage:image
-                                  iview:self.imageView
-                                  sview:self.scrollView
-                                 button:self.sizeButton];
-                                                
+                if ([PhotoGetter isGIFtype:[tweet url]])
+                    [PhotoGetter setupGIF:image
+                                      iview:self.imageView
+                                      sview:self.scrollView
+                                     button:self.sizeButton
+                                    rawData:imageData];
+                else
+                    [PhotoGetter setupImage:image
+                                      iview:self.imageView
+                                      sview:self.scrollView
+                                     button:self.sizeButton];
+                
                 if (latitude > -900 && longitude > -900) {
                     [self resizeForMap];
                     [self displayMap:[tweet timestamp]
@@ -377,6 +382,7 @@
         [url rangeOfString:@".tumblr.com/image/"].location != NSNotFound) {
         [_detailItem setOrigHTML:html];
         [_infoButton setHidden:NO];
+        [self setupPicturesCollection];
     }
     if (replace != Nil) {
         if ([TWLocDetailViewController imageExtension:replace])
@@ -648,22 +654,24 @@ static bool isRetinaDisplay = NO;
     [theView addGestureRecognizer:swipeGesture];
 }
 
-#define DOSOMETHING (12345)
+#define ALERT_DOSOMETHING (12345)
+#define ALERT_SAVEVIDEO (777)
+#define ALERT_TAG_NULL (1)
 - (void)doSomething:(id)sender
 {
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"What to do?"
-                                                    message:@"Delete, ReGrab, or Favorite the tweet?"
+                                                    message:@"Delete, ReGrab, or Favorite?"
                                                    delegate:self
                                           cancelButtonTitle: @"CANCEL"
-                                          otherButtonTitles: @"DELETE TWEET", @"Refresh", @"Favorite", nil];
-    [alert setTag:DOSOMETHING];
+                                          otherButtonTitles: @"DELETE TWEET", @"Refresh", @"Favorite", @"DOCUMENTS",nil];
+    [alert setTag:ALERT_DOSOMETHING];
     [alert show];
 }
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
     @try {
-        if ([alertView tag] == DOSOMETHING) {
+        if ([alertView tag] == ALERT_DOSOMETHING) {
             NSString* chosen = [alertView buttonTitleAtIndex:buttonIndex];
             if ([chosen compare:@"CANCEL"] == NSOrderedSame)
                 return;
@@ -673,7 +681,11 @@ static bool isRetinaDisplay = NO;
                 [_master refreshTweet:_detailItem];
             } else if ([chosen compare:@"Favorite"] == NSOrderedSame) {
                 [_master favoriteTweet:_detailItem];
+            } else if ([chosen compare:@"DOCUMENTS"] == NSOrderedSame) {
+                [self doDocumentsView];
             }
+        } else if ([alertView tag] == ALERT_SAVEVIDEO) {
+            [self saveVideo];
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -805,18 +817,261 @@ static bool isRetinaDisplay = NO;
     self.masterPopoverController = nil;
 }
 
+- (void)setupPicturesCollection
+{
+    @try {
+        [_picCollection setHidden:YES];
+        [_picButton setHidden:YES];
+        _pictures = Nil;
+        
+        bool isTumblr = [[_detailItem url] rangeOfString:@"tumblr.com"].location != NSNotFound ||
+        [[_detailItem url] rangeOfString:@"tmblr.co"].location != NSNotFound;
+        bool isGWIP = [[_detailItem url] rangeOfString:@"guyswithiphones.com"].location != NSNotFound;
+        bool isInstagram = [[_detailItem url] rangeOfString:@"/instagr.am/"].location != NSNotFound;
+        bool isOwly = [[_detailItem url] rangeOfString:@"/ow.ly/"].location != NSNotFound;
+        bool isMoby = [[_detailItem url] rangeOfString:@"/moby.to/"].location != NSNotFound;
+        bool isYouTube = [[_detailItem url] rangeOfString:@"youtube.com/"].location != NSNotFound ||
+        [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
+        NSArray* urls = [[_detailItem origHTML] componentsSeparatedByString:@"\n"];
+        NSSet* urlset = [NSSet setWithArray:urls];
+        urlset = [urlset objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+            NSString* theURL = obj;
+            if ([TWLocDetailViewController imageExtension:theURL]) {
+                if ([theURL rangeOfString:@"twimg.com/profile_images"].location != NSNotFound)
+                    return NO;
+                else if ([theURL rangeOfString:@"/hprofile"].location != NSNotFound)
+                    return NO;
+                else if (isTumblr) {
+                    if ([theURL rangeOfString:@"media.tumblr.com"].location != NSNotFound &&
+                        [theURL rangeOfString:@"/tumblr_"].location != NSNotFound)
+                        return YES;
+                    return NO;
+                } else if (isGWIP) {
+                    if ([theURL rangeOfString:@"guyswithiphones.com/201"].location != NSNotFound)
+                        return YES;
+                    return NO;
+                } else if (isInstagram) {
+                    if ([theURL rangeOfString:@"distilleryimage"].location != NSNotFound &&
+                        [theURL rangeOfString:@".instagram.com/"].location != NSNotFound)
+                        return YES;
+                    return NO;
+                }else if (isOwly) {
+                    if ([theURL rangeOfString:@"//static.ow.ly/"].location != NSNotFound &&
+                        [theURL rangeOfString:@"/normal/"].location != NSNotFound)
+                        return YES;
+                    return NO;
+                }else if (isMoby) {
+                    if ([theURL rangeOfString:@"mobypicture.com/"].location != NSNotFound &&
+                        [theURL rangeOfString:@"_view."].location != NSNotFound)
+                        return YES;
+                    return NO;
+                }else if (isYouTube) {
+                    if ([theURL rangeOfString:@"/hqdefault."].location != NSNotFound)
+                        return YES;
+                    return NO;
+                }
+                return YES;
+            }
+            return NO;
+        }];
+        if (isTumblr)
+            urlset = [self removeTumblrDups:urlset];
+        NSLog(@"THE SET OF PICS:\n%@",[urlset description]);
+        
+        if ([urlset count] > 1) {
+            _pictures = [urlset allObjects];
+            [_picCollection reloadData];
+            [_picCollection setNeedsDisplay];
+            [_picButton setHidden:NO];
+            _picButton.titleLabel.text = [NSString stringWithFormat:@"%d Pics",[_pictures count]];
+        }
+        
+        [self checkForVideo:[NSSet setWithArray:urls]];
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+}
+- (NSSet*)removeTumblrDups:(NSSet*)urlset
+{
+    NSMutableSet* retset = [[NSMutableSet alloc] initWithCapacity:1];
+    @try {
+        [urlset enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+            NSString* theURL = obj;
+            NSRange filenamerange = [theURL rangeOfString:@"/tumblr_"];
+            if (filenamerange.location == NSNotFound) {
+                [retset addObject:theURL];
+            } else {
+                NSString* filename = [theURL substringFromIndex:filenamerange.location];
+                NSArray* filecomps = [filename componentsSeparatedByString:@"_"];
+                if ([filecomps count] < 3)
+                    [retset addObject:theURL];
+                else {
+                    NSString* hash = [filecomps objectAtIndex:1];
+                    NSString* ext = [filecomps objectAtIndex:2];
+                    __block bool match = ([ext length] < 5);
+                    [retset enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                        NSString* matchURL = obj;
+                        if ([matchURL rangeOfString:hash].location != NSNotFound)
+                            match = *stop = YES;
+                    }];
+                    if (!match)
+                        [retset addObject:theURL];
+                }
+            }
+        }];
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+    return retset;
+}
 - (IBAction)picturesButtonHit:(id)sender
 {
+    [_picCollection setHidden:(![_picCollection isHidden])];
+}
+
+static NSString* videoURL = Nil;
+
+- (void)checkForVideo:(NSSet*)urls
+{
+    __block bool hasVideo = NO;
+    [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        NSString* theURL = obj;
+        if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
+            hasVideo = *stop = YES;
+            videoURL = theURL;
+        }
+    }];
+    [_videoButton setHidden:(!hasVideo)];
+}
+- (IBAction)videoButtonHit:(id)sender
+{
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SAVE VIDEO" message:[NSString stringWithFormat:@"Save the %@ video?",videoURL] delegate:self cancelButtonTitle:@"NO" otherButtonTitles:@"YES, save", nil];
+    alert.tag = ALERT_SAVEVIDEO;
+    [alert show];
+}
+- (void)saveVideo
+{
+    NSLog(@"Needing to save %@ to file", videoURL);
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString* lastNamePart;
+    lastNamePart = [NSString stringWithFormat:@"%@%@",
+                    videoURL.lastPathComponent, @".mp4"];
+    NSString* filename = [documentsDirectory
+                          stringByAppendingPathComponent:
+                          lastNamePart];
+    NSLog(@"the filename will be %@",filename);
     
+    [_activityView startAnimating];
+    MovieGetter* getter = [[MovieGetter alloc] init];
+    [getter fetch:[NSURL URLWithString:videoURL]
+         intoFile:filename
+      urlCallback:^(long long dataSize, BOOL complete, BOOL success) {
+          if (complete) {
+              float datasize = dataSize / 1024.0 / 1024.0;
+              NSString* status = [NSString stringWithFormat:
+                                  @"download complete into %@, %.2f MB of data, %@",
+                                  filename, datasize, success ? @"SUCCESS" : @"FAIL"];
+              NSLog(@"%@",status);
+              if (success) {
+                  UIAlertView *alert =
+                  [[UIAlertView alloc] initWithTitle:@"Movie saved"
+                                             message:status
+                                            delegate:self
+                                   cancelButtonTitle:@"YAY"
+                                   otherButtonTitles: nil];
+                  [alert setCancelButtonIndex:0];
+                  [alert setTag:ALERT_TAG_NULL];
+                  [alert show];
+              } else {
+                  UIAlertView *alert =
+                  [[UIAlertView alloc] initWithTitle:@"Movie cannot be saved"
+                                             message:status
+                                            delegate:self
+                                   cancelButtonTitle:@"BOO"
+                                   otherButtonTitles: nil];
+                  [alert setCancelButtonIndex:0];
+                  [alert setTag:ALERT_TAG_NULL];
+                  [alert show];
+              }
+              
+              [[_master queueLabel] setText:filename];
+              [_activityView stopAnimating];
+          } else { // not complete
+              float datasize = dataSize / 1024.0 / 1024.0;
+              [[_master queueLabel] setText:[NSString stringWithFormat:@"%.2f MB",datasize]];
+          }
+      }];
+}
+- (void)doDocumentsView
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSFileManager* fManager = [NSFileManager defaultManager];
+    NSArray* files = [fManager contentsOfDirectoryAtPath:documentsDirectory error:Nil];
+    NSMutableArray* filesizes = [[NSMutableArray alloc] initWithCapacity:[files count]];
+    
+    NSEnumerator *e = [files objectEnumerator];
+    NSString* file;
+    long long totalsize = 0;
+    while ((file = [e nextObject]) != Nil) {
+        NSDictionary* filevalues = [fManager attributesOfItemAtPath:[documentsDirectory stringByAppendingPathComponent:file] error:Nil];
+        NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
+        [filesizes addObject:fsize];
+        totalsize += [filevalues fileSize];
+    }
+    
+    UIStoryboard *stsettings = [UIStoryboard storyboardWithName:@"DocumentViewController"
+                                                         bundle:Nil];
+    DocumentViewController *dview = [stsettings instantiateInitialViewController];
+    [dview setTheData:files];
+    [dview setFilesizes:filesizes];
+    [dview setTitle:@"Documents"];
+    [dview setModalTransitionStyle:UIModalTransitionStyleCoverVertical];
+    [dview setModalPresentationStyle:UIModalPresentationFullScreen];
+    [self presentViewController:dview animated:YES completion:Nil];
 }
 
 #pragma mark Collection View Data Source
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    TWLocPicCollectionCell* cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"picture" forIndexPath:indexPath];
-    int idx = [indexPath row];
-    [[cell image] setImage:[_pictures objectAtIndex:idx]];
-    return cell;
+    @try {
+        TWLocPicCollectionCell* cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"picture" forIndexPath:indexPath];
+        int idx = [indexPath row];
+        //[[cell image] setImage:[_pictures objectAtIndex:idx]];
+        [[cell image] setImage:[_master redX]];
+        PhotoGetter* getter = [[PhotoGetter alloc] init];
+        NSString* urlstr = [_pictures objectAtIndex:idx];
+        NSData* picdata = [_master imageData:urlstr];
+        if (picdata == Nil) {
+            [getter getPhoto:[NSURL URLWithString:urlstr]
+                        into:[cell image]
+                      scroll:Nil
+                   sizelabel:Nil
+                    callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
+                        [_master imageData:imageData forURL:urlstr];
+                    }];
+        } else {
+            UIImage *image = [[UIImage alloc] initWithData:picdata];
+            
+            [self.scrollView setHidden:NO];
+            if ([PhotoGetter isGIFtype:urlstr])
+                [PhotoGetter setupGIF:image
+                                iview:[cell image]
+                                sview:Nil
+                               button:Nil
+                              rawData:picdata];
+            else
+                [PhotoGetter setupImage:image
+                                  iview:[cell image]
+                                  sview:Nil
+                                 button:Nil];
+        }
+        return cell;
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+    return Nil;
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
@@ -829,7 +1084,13 @@ static bool isRetinaDisplay = NO;
 #pragma mark Collection View Delegate
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSLog(@"selected picture %d",[indexPath row]);
+    @try {
+        int idx = [indexPath row];
+        NSLog(@"selected picture %d",idx);
+        [self openURL:[NSURL URLWithString:[_pictures objectAtIndex:idx]]];
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
 }
 
 @end

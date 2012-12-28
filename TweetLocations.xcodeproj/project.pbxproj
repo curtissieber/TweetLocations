@@ -41,6 +41,9 @@
 		E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */; };
 		E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */; };
 		E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579EB168DE45800ACBBC9 /* Tweet.m */; };
+		E9D579F3168E2D8D00ACBBC9 /* MovieGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579F1168E2D8C00ACBBC9 /* MovieGetter.m */; };
+		E9D579F7168E2F3200ACBBC9 /* DocumentViewController.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */; };
+		E9D579F8168E2F3200ACBBC9 /* DocumentViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */; };
 		E9DE57FA15E94407005D75F6 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57F915E94407005D75F6 /* UIKit.framework */; };
 		E9DE57FC15E94407005D75F6 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57FB15E94407005D75F6 /* Foundation.framework */; };
 		E9DE57FE15E94407005D75F6 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE57FD15E94407005D75F6 /* CoreGraphics.framework */; };
@@ -108,6 +111,11 @@
 		E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnimatedGif.m; sourceTree = "<group>"; };
 		E9D579EA168DE45800ACBBC9 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
 		E9D579EB168DE45800ACBBC9 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
+		E9D579F1168E2D8C00ACBBC9 /* MovieGetter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MovieGetter.m; sourceTree = "<group>"; };
+		E9D579F2168E2D8C00ACBBC9 /* MovieGetter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MovieGetter.h; sourceTree = "<group>"; };
+		E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = DocumentViewController.storyboard; sourceTree = "<group>"; };
+		E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DocumentViewController.m; sourceTree = "<group>"; };
+		E9D579F6168E2F3200ACBBC9 /* DocumentViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DocumentViewController.h; sourceTree = "<group>"; };
 		E9DE57F515E94406005D75F6 /* TweetLocations.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TweetLocations.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9DE57F915E94407005D75F6 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		E9DE57FB15E94407005D75F6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -240,6 +248,9 @@
 				E90E067B167E2DCB004BEC18 /* ImageItem.m */,
 				E951013B16445EDB00A4505E /* GoogleReader.h */,
 				E951013C16445EDB00A4505E /* GoogleReader.m */,
+				E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */,
+				E9D579F6168E2F3200ACBBC9 /* DocumentViewController.h */,
+				E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */,
 				E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */,
 				E9D579EA168DE45800ACBBC9 /* Tweet.h */,
 				E9D579EB168DE45800ACBBC9 /* Tweet.m */,
@@ -251,6 +262,8 @@
 				E9C0F3BA15EA981300A55251 /* PhotoGetter.m */,
 				E9B4680915EAAB460021F674 /* URLFetcher.h */,
 				E9B4680815EAAB460021F674 /* URLFetcher.m */,
+				E9D579F2168E2D8C00ACBBC9 /* MovieGetter.h */,
+				E9D579F1168E2D8C00ACBBC9 /* MovieGetter.m */,
 				E9A159CE15EA700B00630EE4 /* icons */,
 				E9DE580215E94407005D75F6 /* Supporting Files */,
 				E91D816E1634447F00ED4283 /* samples */,
@@ -350,6 +363,7 @@
 				E9EB0AFE165FD729003264BC /* iPhone.storyboard in Resources */,
 				E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */,
 				E9EB0B01165FD77A003264BC /* Settings.bundle in Resources */,
+				E9D579F7168E2F3200ACBBC9 /* DocumentViewController.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -377,6 +391,8 @@
 				E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */,
 				E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */,
 				E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */,
+				E9D579F3168E2D8D00ACBBC9 /* MovieGetter.m in Sources */,
+				E9D579F8168E2F3200ACBBC9 /* DocumentViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

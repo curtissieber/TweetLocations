@@ -25,6 +25,7 @@ typedef void(^PhotoCallback)(float latitude, float longitude, NSString* timestam
 @property (atomic, retain) UIImageView     *imageView;
 @property (atomic, retain) UIButton        *sizeButton;
 
++ (bool)isGIFtype:(id)url;
 - (void)getPhoto:(NSURL*)url
             into:(UIImageView*)iview
           scroll:(UIScrollView*)sview

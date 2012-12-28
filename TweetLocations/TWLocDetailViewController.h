@@ -34,6 +34,7 @@
 @property (retain, nonatomic) TWLocMasterViewController* master;
 
 @property (retain, nonatomic) IBOutlet UIButton* infoButton;
+@property (retain, nonatomic) IBOutlet UIButton* videoButton;
 @property (retain, nonatomic) IBOutlet UIButton* picButton;
 @property (retain, nonatomic) IBOutlet UICollectionView* picCollection;
 @property (retain, nonatomic) NSArray *pictures;
@@ -44,5 +45,6 @@
 - (BOOL)openURL:(NSURL *)url;
 - (IBAction)touchedStatus:(id)sender;
 - (IBAction)picturesButtonHit:(id)sender;
+- (IBAction)videoButtonHit:(id)sender;
 - (IBAction)infoButtonHit:(id)sender;
 @end

@@ -8,6 +8,7 @@
 
 #import <ImageIO/ImageIO.h>
 #import "PhotoGetter.h"
+#import "AnimatedGif.h"
 
 @implementation PhotoGetter
 
@@ -24,7 +25,7 @@
        sizelabel:(UIButton*)ibutton
         callback:(PhotoCallback)theCallback
 {
-    [self isGIFtype:url];
+    self->isGIF = [PhotoGetter isGIFtype:url];
     [self setScrollView:sview];
     [self setImageView:iview];
     [self setSizeButton:ibutton];
@@ -32,9 +33,15 @@
     [self getPhoto:url];
 }
 
-- (bool)isGIFtype:(id)url
++ (bool)isGIFtype:(id)url
 {
-    NSString* urlstr = [url absoluteString];
+    NSString* urlstr;
+    if ([[url class] isSubclassOfClass:[NSURL class]])
+        urlstr = [(NSURL*)url absoluteString];
+    else if ([[url class] isSubclassOfClass:[NSString class]])
+        urlstr = url;
+    else
+        return NO;
     NSString* ext = [urlstr pathExtension];
     if ([ext localizedCaseInsensitiveCompare:@"gif"] == NSOrderedSame)
         return YES;
@@ -145,6 +152,13 @@
              sview:(UIScrollView*)sview
             button:(UIButton*)button
 {
+    if (sview == Nil || button == Nil) {
+        [iview setImage:image];
+        [iview setAnimationImages: Nil];
+        [iview setAnimationDuration:0];
+        [iview stopAnimating];
+        return;
+    }
     [sview setContentScaleFactor:1];
     [sview setContentOffset:CGPointMake(0, 0)];
     [sview setTransform:CGAffineTransformIdentity];
@@ -161,6 +175,9 @@
                        options:UIViewAnimationOptionTransitionCrossDissolve
                     animations:^{
                         iview.image = image;
+                        [iview setAnimationImages: Nil];
+                        [iview setAnimationDuration:0];
+                        [iview stopAnimating];
                     }
                     completion:Nil];
     
@@ -208,6 +225,18 @@
             button:(UIButton*)button
            rawData:(NSData*)data
 {
+    if (sview == Nil || button == Nil) {
+        // GIF-special section
+        AnimatedGif* animate = [[AnimatedGif alloc] init];
+        [animate decodeGIF:data];
+        UIImageView *tempImageView = [animate getAnimation];
+        
+        [iview setImage: [tempImageView image]];
+        [iview setAnimationImages: [tempImageView animationImages]];
+        [iview setAnimationDuration:[tempImageView animationDuration]];
+        [iview startAnimating];
+        return;
+    }
     [sview setContentScaleFactor:1];
     [sview setContentOffset:CGPointMake(0, 0)];
     [sview setTransform:CGAffineTransformIdentity];
@@ -218,12 +247,21 @@
     [iview setTransform:CGAffineTransformIdentity];
     [iview setContentMode:UIViewContentModeScaleAspectFit];
     
+    // GIF-special section
+    AnimatedGif* animate = [[AnimatedGif alloc] init];
+    [animate decodeGIF:data];
+    UIImageView *tempImageView = [animate getAnimation];
+    
     //[iview setImage:image];
     [UIView transitionWithView:sview
                       duration:0.4
                        options:UIViewAnimationOptionTransitionCrossDissolve
                     animations:^{
-                        iview.image = image;
+                        [iview setImage: [tempImageView image]];
+                        //[iview sizeToFit];
+                        [iview setAnimationImages: [tempImageView animationImages]];
+                        [iview setAnimationDuration:[tempImageView animationDuration]];
+                        [iview startAnimating];
                     }
                     completion:Nil];
     

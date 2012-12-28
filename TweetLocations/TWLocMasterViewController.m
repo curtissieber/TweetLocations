@@ -541,9 +541,15 @@ static bool NetworkAccessAllowed = NO;
             NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
             if ([buttonNameHit isEqualToString:@"CANCEL"])
                 NSLog(@"don't set all to read");
-            else {
+            else if ([buttonNameHit isEqualToString:@"TWEETS READ"]) {
                 NSLog(@"YES set all to read");
                 [self allTweetsNeedToBeSetToRead];
+            } else if ([buttonNameHit isEqualToString:@"DELETE IMAGES"]) {
+                NSLog(@"deleting all images");
+                [_theQueue addOperationWithBlock:^{
+                    [self deleteImageData:Nil]; // removes all image data
+                    [[self getImageServer] saveContext];
+                }];
             }
         }
     } @catch (NSException *eee) {
@@ -1002,7 +1008,7 @@ static bool NetworkAccessAllowed = NO;
 
 - (void)setAllTweetsRead:(id)sender
 {
-    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"All Done?" message:@"Do you really want to set all the tweets to a 'READ' state?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"YES", nil];
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"All Done?" message:@"Set all tweets to READ, or delete images?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"TWEETS READ", @"DELETE IMAGES", nil];
     [alert setTag:ALERT_SETALLREAD];
     [alert show];
     return; // don't delete, don't set things to "read" state
@@ -1038,10 +1044,6 @@ static bool NetworkAccessAllowed = NO;
                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
             }
             NSLog(@"Got a chance to save, YAY!");
-            [_theQueue addOperationWithBlock:^{
-                [self deleteImageData:Nil]; // removes all image data
-                [[self getImageServer] saveContext];
-            }];
             [self.tableView reloadData];
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -1702,7 +1704,7 @@ static bool NetworkAccessAllowed = NO;
             if (html != Nil) {
                 NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
                 if ([tweet origHTML] == Nil ||
-                    [[tweet url] rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+                    [[tweet url] rangeOfString:@"photoset_iframe"].location != NSNotFound)
                     [tweet setOrigHTML:html];
                 if (replace != Nil) {
                     [tweet setUrl:replace];

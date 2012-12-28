@@ -274,27 +274,30 @@ static AnimatedGif * instance;
             imageView = [[UIImageView alloc] initWithImage:[self getFrameAsImageAtIndex:0]];
         }
 
-		
-		// Add all subframes to the animation
-		NSMutableArray *array = [[NSMutableArray alloc] init];
-		for (int i = 0; i < [GIF_framesData count]; i++)
-		{		
-			[array addObject: [self getFrameAsImageAtIndex:i]];
-		}
-		
-		[imageView setAnimationImages:array];
-        //[array release];
-		
-		// Count up the total delay, since Cocoa doesn't do per frame delays.
-		double total = 0;
-		for (int i = 0; i < [GIF_delays count]; i++)
-		{
-			total += [[GIF_delays objectAtIndex:i] doubleValue];
-		}
-		
-		// GIFs store the delays as 1/100th of a second,
-        // UIImageViews want it in seconds.
-		[imageView setAnimationDuration:total/100];
+		@try {
+            // Add all subframes to the animation
+            NSMutableArray *array = [[NSMutableArray alloc] init];
+            for (int i = 0; i < [GIF_framesData count]; i++)
+            {
+                [array addObject: [self getFrameAsImageAtIndex:i]];
+            }
+            
+            [imageView setAnimationImages:array];
+            //[array release];
+            
+            // Count up the total delay, since Cocoa doesn't do per frame delays.
+            double total = 0;
+            for (int i = 0; i < [GIF_delays count]; i++)
+            {
+                total += [[GIF_delays objectAtIndex:i] doubleValue];
+            }
+            
+            // GIFs store the delays as 1/100th of a second,
+            // UIImageViews want it in seconds.
+            [imageView setAnimationDuration:total/100];
+        } @catch (NSException *ee) {
+            NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        }
 		
 		// Repeat infinite
 		[imageView setAnimationRepeatCount:0];
