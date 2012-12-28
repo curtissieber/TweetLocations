@@ -548,7 +548,6 @@ static bool NetworkAccessAllowed = NO;
                 NSLog(@"deleting all images");
                 [_theQueue addOperationWithBlock:^{
                     [self deleteImageData:Nil]; // removes all image data
-                    [[self getImageServer] saveContext];
                 }];
             }
         }
@@ -1407,7 +1406,7 @@ static bool NetworkAccessAllowed = NO;
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return 80;
+    return 100;
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender

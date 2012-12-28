@@ -64,7 +64,9 @@
         ImageItem* image = [self imageFetch:url];
         if (image == Nil)
             return Nil;
-        return [image data];
+        if ([[image class] isSubclassOfClass:[ImageItem class]])
+            return [image data];
+        return image;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }

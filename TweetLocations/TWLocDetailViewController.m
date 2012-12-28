@@ -235,6 +235,9 @@
 
 - (void)handleURL:(NSString*)url
 {
+    [self resizeWithoutMap];
+    [self.mapView setHidden:YES];
+    
     if ([TWLocDetailViewController imageExtension:url]) {
         [self openURL:[NSURL URLWithString:url]];
         return;
@@ -259,6 +262,9 @@
 // should load the image
 -(BOOL)openURL:(NSURL *)url
 {
+    [self resizeWithoutMap];
+    [self.mapView setHidden:YES];
+
     Tweet* originalTweet = _detailItem;
     NSString* urlStr = [url description];
     if (![TWLocDetailViewController imageExtension:urlStr]) {
@@ -882,6 +888,7 @@ static bool isRetinaDisplay = NO;
             _pictures = [urlset allObjects];
             [_picCollection reloadData];
             [_picCollection setNeedsDisplay];
+            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionLeft animated:YES];
             [_picButton setHidden:NO];
             _picButton.titleLabel.text = [NSString stringWithFormat:@"%d Pics",[_pictures count]];
         }
@@ -1042,6 +1049,9 @@ static NSString* videoURL = Nil;
         [[cell image] setImage:[_master redX]];
         PhotoGetter* getter = [[PhotoGetter alloc] init];
         NSString* urlstr = [_pictures objectAtIndex:idx];
+        if (urlstr == Nil)
+            return cell;
+        
         NSData* picdata = [_master imageData:urlstr];
         if (picdata == Nil) {
             [getter getPhoto:[NSURL URLWithString:urlstr]

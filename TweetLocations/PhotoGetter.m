@@ -219,6 +219,8 @@
         [button.titleLabel setBackgroundColor:[UIColor whiteColor]];
 }
 
+#define SIMPLE_GIFS
+
 + (void)setupGIF:(UIImage*)image
              iview:(UIImageView*)iview
              sview:(UIScrollView*)sview
@@ -226,6 +228,17 @@
            rawData:(NSData*)data
 {
     if (sview == Nil || button == Nil) {
+#ifdef SIMPLE_GIFS
+        float frameTime = 0;
+        NSArray* frames = [PhotoGetter gifFrames:data runTime:&frameTime];
+        if (frames != Nil && [frames count] > 0) {
+            [iview setImage: [frames objectAtIndex:0]];
+            [iview setAnimationImages: frames];
+            [iview setAnimationDuration:frameTime];
+            [iview startAnimating];
+        }
+        return;
+#else
         // GIF-special section
         AnimatedGif* animate = [[AnimatedGif alloc] init];
         [animate decodeGIF:data];
@@ -236,6 +249,7 @@
         [iview setAnimationDuration:[tempImageView animationDuration]];
         [iview startAnimating];
         return;
+#endif
     }
     [sview setContentScaleFactor:1];
     [sview setContentOffset:CGPointMake(0, 0)];
@@ -246,7 +260,23 @@
     [iview setFrame:frame];
     [iview setTransform:CGAffineTransformIdentity];
     [iview setContentMode:UIViewContentModeScaleAspectFit];
-    
+
+#ifdef SIMPLE_GIFS
+    [UIView transitionWithView:sview
+                      duration:0.4
+                       options:UIViewAnimationOptionTransitionCrossDissolve
+                    animations:^{
+                        float frameTime = 0;
+                        NSArray* frames = [PhotoGetter gifFrames:data runTime:&frameTime];
+                        if (frames != Nil && [frames count] > 0) {
+                            [iview setImage: [frames objectAtIndex:0]];
+                            [iview setAnimationImages: frames];
+                            [iview setAnimationDuration:frameTime];
+                            [iview startAnimating];
+                        }
+                    }
+                    completion:Nil];
+#else
     // GIF-special section
     AnimatedGif* animate = [[AnimatedGif alloc] init];
     [animate decodeGIF:data];
@@ -264,7 +294,7 @@
                         [iview startAnimating];
                     }
                     completion:Nil];
-    
+#endif
     //[iview sizeToFit];
     [sview setContentScaleFactor:1];
     [sview setContentOffset:CGPointMake(0, 0)];
@@ -301,6 +331,35 @@
         [button.titleLabel setBackgroundColor:[UIColor cyanColor]];
     else
         [button.titleLabel setBackgroundColor:[UIColor whiteColor]];
+}
+
++ (NSArray*)gifFrames:(NSData*)data runTime:(float*)theTime
+{
+    NSMutableArray *frames = nil;
+    *theTime = 0.0;
+    CGImageSourceRef src = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
+    if (src) {
+        size_t l = CGImageSourceGetCount(src);
+        frames = [NSMutableArray arrayWithCapacity:l];
+        for (size_t i = 0; i < l; i++) {
+            CGImageRef img = CGImageSourceCreateImageAtIndex(src, i, NULL);
+            if (img) {
+                [frames addObject:[UIImage imageWithCGImage:img]];
+                CGImageRelease(img);
+            }
+            NSDictionary* imgDict = (__bridge NSDictionary *)(CGImageSourceCopyPropertiesAtIndex(src, i, NULL));
+            if (imgDict != Nil) {
+                NSDictionary* gifDict = [imgDict objectForKey:@"{GIF}"];
+                if (gifDict != Nil) {
+                    NSNumber* timeStr = [gifDict objectForKey:@"DelayTime"];
+                    if (timeStr != Nil)
+                        *theTime += [timeStr floatValue];
+                }
+            }
+        }
+        CFRelease(src);
+    }
+    return frames;
 }
 
 @end
