@@ -349,11 +349,11 @@
             }
             NSDictionary* imgDict = (__bridge NSDictionary *)(CGImageSourceCopyPropertiesAtIndex(src, i, NULL));
             if (imgDict != Nil) {
-                NSDictionary* gifDict = [imgDict objectForKey:@"{GIF}"];
-                if (gifDict != Nil) {
-                    NSNumber* timeStr = [gifDict objectForKey:@"DelayTime"];
-                    if (timeStr != Nil)
-                        *theTime += [timeStr floatValue];
+                NSDictionary *frameProperties = [imgDict objectForKey:(NSString *)kCGImagePropertyGIFDictionary];
+                if (frameProperties != Nil) {
+                    NSNumber *delayTime = [frameProperties objectForKey:(NSString *)kCGImagePropertyGIFUnclampedDelayTime];
+                    if (delayTime != Nil)
+                        *theTime += [delayTime floatValue];
                 }
             }
         }

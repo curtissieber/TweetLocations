@@ -53,6 +53,8 @@
 - (void)configureView
 {
     @try {
+        [PhotoGetter setupImage:[_master redX] iview:_imageView sview:_scrollView button:_sizeButton];
+
         // Update the user interface for the detail item.
         if (self.detailItem) {
             [self setupPicturesCollection];
@@ -73,11 +75,13 @@
             [detail appendFormat:@" %@",[tweet timestamp]];
             
             [self.detailDescriptionLabel setText:detail];
-            if ([[tweet hasBeenRead] boolValue] == YES)
-                [self.detailDescriptionLabel setTextColor:[UIColor darkGrayColor]];
-            else
+            if ([[tweet hasBeenRead] boolValue] == YES) {
+                [self.detailDescriptionLabel setTextColor:[UIColor redColor]];
+                [self.bigLabel setTextColor:[UIColor redColor]];
+            } else {
                 [self.detailDescriptionLabel setTextColor:[UIColor whiteColor]];
-            [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                [self.bigLabel setTextColor:[UIColor whiteColor]];
+            } [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
             
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
                                           [tweet tweet], [tweet username]];
@@ -861,17 +865,17 @@ static bool isRetinaDisplay = NO;
                         [theURL rangeOfString:@".instagram.com/"].location != NSNotFound)
                         return YES;
                     return NO;
-                }else if (isOwly) {
+                } else if (isOwly) {
                     if ([theURL rangeOfString:@"//static.ow.ly/"].location != NSNotFound &&
                         [theURL rangeOfString:@"/normal/"].location != NSNotFound)
                         return YES;
                     return NO;
-                }else if (isMoby) {
+                } else if (isMoby) {
                     if ([theURL rangeOfString:@"mobypicture.com/"].location != NSNotFound &&
                         [theURL rangeOfString:@"_view."].location != NSNotFound)
                         return YES;
                     return NO;
-                }else if (isYouTube) {
+                } else if (isYouTube) {
                     if ([theURL rangeOfString:@"/hqdefault."].location != NSNotFound)
                         return YES;
                     return NO;
@@ -888,9 +892,21 @@ static bool isRetinaDisplay = NO;
             _pictures = [urlset allObjects];
             [_picCollection reloadData];
             [_picCollection setNeedsDisplay];
-            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionLeft animated:YES];
+            [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:YES scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
+            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:YES];
             [_picButton setHidden:NO];
-            _picButton.titleLabel.text = [NSString stringWithFormat:@"%d Pics",[_pictures count]];
+            [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
+            __block CGRect origFrame = [_picButton frame];
+            [UIView animateWithDuration:0.9 animations:^{
+                CGRect newFrame;
+                newFrame.origin.x = origFrame.origin.x - origFrame.size.width*2;
+                newFrame.origin.y = origFrame.origin.y;
+                newFrame.size.width = origFrame.size.width * 3;
+                newFrame.size.height = origFrame.size.height * 3;
+                [_picButton setFrame:newFrame];
+            } completion:^(BOOL finished) {
+                [_picButton setFrame:origFrame];
+            }];
         }
         
         [self checkForVideo:[NSSet setWithArray:urls]];

@@ -624,8 +624,6 @@ static bool NetworkAccessAllowed = NO;
                              if (keys != Nil && [keys count] > 0)
                                  listname = [keys objectAtIndex:0];
                          }
-                         NSString* status = [NSString stringWithFormat:@"Storing %@ tweets [%d]",listname, [timeline count]];
-                         [self STATUS:status];
                      }];
                      [self saveTweetDebugToFile:[NSString stringWithFormat:@"received %d tweets\n", [timeline count]]];
                      [self saveTweetDataToFile:responseData];
@@ -810,12 +808,14 @@ static bool NetworkAccessAllowed = NO;
             }
             NSString* status = [[self.detailViewController activityLabel] text];
             [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nRetrieved %d new (%d old) tweets from the %@ area",status,storedTweets,[timeline count]-storedTweets,listname]];
+            status = [NSString stringWithFormat:@"Storing %@ tweets [%d]",listname, storedTweets];
+            [self STATUS:status];
         }];
         
         if (_theQueue != Nil && storedTweets > 0 &&
             !([timeline count] < (TWEETREQUESTSIZE/2) || _maxTweetsToGet < 1)) {
             NSLog(@"adding another getTweet to the Queue");
-            [self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
+            //[self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
             [_theQueue setSuspended:NO];
             [TWLocMasterViewController incrementTasks];
