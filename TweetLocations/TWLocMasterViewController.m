@@ -81,6 +81,15 @@ static bool NetworkAccessAllowed = NO;
     return self->imageServer;
 }
 
+- (NSArray*)fetchImages
+{
+    @try {
+        return [[self getImageServer] fetchImages];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return Nil;
+}
 - (NSData*)imageData:(NSString*)url
 {
     @try {
@@ -827,7 +836,9 @@ static bool NetworkAccessAllowed = NO;
                 [self saveTweetDebugToFile:[NSString stringWithFormat:@"did not get a new twitterIDMax\n"]];
             [self saveTweetDebugToFile:[NSString stringWithFormat:@"new twitterIDMax %lld\n",_twitterIDMax]];
             NSLog(@"new TwitterIDMax %lld",_twitterIDMax);
-            [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
+            }];
 
             // now, let us do the next item in the queue
             if (!twitterErrorDetected && [self->queueGetArray count] > 0) {
@@ -1303,24 +1314,6 @@ static bool NetworkAccessAllowed = NO;
 - (void)insertNewObject:(id)sender
 {
     return;
-/*
-    NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-    NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
-    NSManagedObject *newManagedObject = [NSEntityDescription insertNewObjectForEntityForName:[entity name] inManagedObjectContext:context];
-    
-    // If appropriate, configure the new managed object.
-    // Normally you should use accessor methods, but using KVC here avoids the need to add a custom class to the template.
-    [newManagedObject setValue:[NSDate date] forKey:@"timeStamp"];
-    
-    // Save the context.
-    NSError *error = nil;
-    if (![context save:&error]) {
-         // Replace this implementation with code to handle the error appropriately.
-         // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
-        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-        abort();
-    }
-*/
  }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -1359,23 +1352,6 @@ static bool NetworkAccessAllowed = NO;
     return NO;
 }
 
-/*
- - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-        [context deleteObject:[self.fetchedResultsController objectAtIndexPath:indexPath]];
-        
-        NSError *error = nil;
-        if (![context save:&error]) {
-             // Replace this implementation with code to handle the error appropriately.
-             // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            abort();
-        }
-    }   
-}*/
-
 - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
 {
     // The table view should not be re-orderable.
@@ -1391,7 +1367,7 @@ static bool NetworkAccessAllowed = NO;
     } else {
         [self.detailViewController setMaster:self];
     }
-    /*[[NSOperationQueue mainQueue] addOperationWithBlock:^{
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
         // Save the context.  But I keep having the queue stop dead at this point BOO
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         NSError *error = [[NSError alloc] init];
@@ -1401,7 +1377,7 @@ static bool NetworkAccessAllowed = NO;
             NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
         }
         NSLog(@"Got a chance to save, YAY!");
-    }];*/
+    }];
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -1447,7 +1423,7 @@ static bool NetworkAccessAllowed = NO;
             
             NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
             // Edit the entity name as appropriate.
-            NSEntityDescription *entity = [NSEntityDescription entityForName:@"Tweet" inManagedObjectContext:self.managedObjectContext];
+            NSEntityDescription *entity = [NSEntityDescription entityForName:@"Tweet" inManagedObjectContext:[self.managedObjectContext managedObjectContext]];
             [fetchRequest setEntity:entity];
             
             // Set the batch size to a suitable number.
@@ -1464,7 +1440,7 @@ static bool NetworkAccessAllowed = NO;
             
             // Edit the section name key path and cache name if appropriate.
             // nil for section name key path means "no sections".
-            NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:self.managedObjectContext sectionNameKeyPath:Nil cacheName:@"Master"];
+            NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:[self.managedObjectContext managedObjectContext] sectionNameKeyPath:Nil cacheName:@"Master"];
             aFetchedResultsController.delegate = self;
             self.fetchedResultsController = aFetchedResultsController;
             
@@ -1673,6 +1649,11 @@ static bool NetworkAccessAllowed = NO;
     executing = YES;
     
     @try {
+        if ([[tweet hasBeenRead] boolValue] == YES) {
+            [TWLocMasterViewController decrementTasks];
+            executing = NO; finished = YES;
+            return;
+        }
         if (([tweet url] == Nil) ||
             ([[tweet url] length] < 4) ||
             ([master imageData:[tweet url]] != Nil) ) {
@@ -1811,7 +1792,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
             }];
         }
         [master imageData:imageData forURL:[tweet url]];
-        [master.managedObjectContext processPendingChanges];
+        [[master.fetchedResultsController managedObjectContext] processPendingChanges];
 
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -1823,6 +1804,11 @@ masterViewController:(TWLocMasterViewController*)theMaster
     executing = YES;
     
     @try {
+        if ([[tweet hasBeenRead] boolValue] == YES) {
+            [TWLocMasterViewController decrementTasks];
+            executing = NO; finished = YES;
+            return;
+        }
         if (([tweet url] == Nil) ||
             ([[tweet url] length] < 4) ||
             ([master imageData:[tweet url]] != Nil) ) {

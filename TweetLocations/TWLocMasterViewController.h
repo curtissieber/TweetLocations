@@ -44,7 +44,7 @@
 
 @property (strong, nonatomic) NSFetchedResultsController *imageFetchController;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
-@property (strong, nonatomic) NSManagedObjectContext *managedObjectContext;
+@property (strong, nonatomic) id managedObjectContext;
 @property (retain, nonatomic) UIImage* redX;
 @property (retain, nonatomic) UIImage* pinImage;
 @property (retain, nonatomic) UIImage* pinLinkImage;

@@ -17,6 +17,21 @@
     return self;
 }
 
+- (NSArray*)fetchImages
+{
+    NSArray* data = Nil;
+    [self->imageDictLock lock];
+    @try {
+        data = [self fetchImageForURL:Nil];
+        [self->imageDictLock unlock];
+        if (data != Nil && [[data class] isSubclassOfClass:[NSArray class]])
+            return data;
+    } @catch (NSException *eee) {
+        [self->imageDictLock unlock];
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return Nil;
+}
 - (NSData*)imageData:(NSString*)url
 {
     NSData* data = Nil;
@@ -24,7 +39,8 @@
     @try {
         data = [self fetchImageForURL:url];
         [self->imageDictLock unlock];
-        return data;
+        if (data != Nil && [[data class] isSubclassOfClass:[NSData class]])
+            return data;
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -59,7 +75,7 @@
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
-- (NSData*)fetchImageForURL:(NSString*)url {
+- (id)fetchImageForURL:(NSString*)url {
     @try {
         ImageItem* image = [self imageFetch:url];
         if (image == Nil)
@@ -73,9 +89,13 @@
 }
 - (void)addImageObject:(NSData*)image forURL:(NSString*)url {
     @try {
-        ImageItem* imageItem = [NSEntityDescription insertNewObjectForEntityForName:@"ImageItem" inManagedObjectContext:self.managedObjectContext];
-        [imageItem setUrl:url];
-        [imageItem setData:image];
+        ImageItem* imageItem = [NSEntityDescription insertNewObjectForEntityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
+        if (imageItem != Nil) {
+            [imageItem setUrl:url];
+            [imageItem setData:image];
+        } else {
+            NSLog(@"ERROR ERROR did not create a new imageItem to store %@",url);
+        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -93,7 +113,8 @@
         }
         id fetchReturn = [self imageFetch:url];
         if (fetchReturn == Nil) return;
-        [self.managedObjectContext deleteObject:fetchReturn];
+        if ([[fetchReturn class] isSubclassOfClass:[ImageItem class]])
+            [[self managedObjectContext] deleteObject:fetchReturn];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -101,7 +122,7 @@
 
 - (NSInteger)numImages
 {
-    NSArray* images = [self imageFetch:Nil];
+    NSArray* images = [self fetchImages];
     return [images count];
 }
 - (NSInteger)sizeImages
@@ -117,7 +138,7 @@
 {
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     // Edit the entity name as appropriate.
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     if (url == Nil)
         [fetchRequest setIncludesPropertyValues:NO];
@@ -139,7 +160,7 @@
     
     // Edit the section name key path and cache name if appropriate.
     // nil for section name key path means "no sections".
-    NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:self.managedObjectContext sectionNameKeyPath:Nil cacheName:@"ImageItem"];
+    NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:[self managedObjectContext] sectionNameKeyPath:Nil cacheName:@"ImageItem"];
     aFetchedResultsController.delegate = Nil;
     
     NSError *error = nil;
@@ -164,10 +185,15 @@
 
 - (NSManagedObjectContext *)managedObjectContext
 {
+    static NSThread* theThread = Nil;
     if (_managedObjectContext != nil) {
+        if (theThread != Nil)
+            if ([theThread hash] != [[NSThread currentThread] hash])
+                NSLog(@"image context changed thread (base = %@) to %@", theThread, [NSThread currentThread]);
         return _managedObjectContext;
     }
     
+    theThread = [NSThread currentThread];
     NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
     if (coordinator != nil) {
         _managedObjectContext = [[NSManagedObjectContext alloc] init];
@@ -253,7 +279,7 @@
     executing = YES;
     
     @try {
-        NSArray* images = [master imageFetch:Nil];
+        NSArray* images = [master fetchImages];
         if (images != Nil) {
             [master->imageDictLock lock];
             [images enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {

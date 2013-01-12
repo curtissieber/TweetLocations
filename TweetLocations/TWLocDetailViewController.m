@@ -291,7 +291,7 @@
                 [self.scrollView setHidden:NO];
                 if (_master != Nil) {
                     [_master imageData:data forURL:urlStr];
-                    [_master.managedObjectContext processPendingChanges];
+                    [[_master.fetchedResultsController managedObjectContext] processPendingChanges];
                 }
                 if (originalTweet != _detailItem) { // oops we moved !!
                     [_activityView stopAnimating];

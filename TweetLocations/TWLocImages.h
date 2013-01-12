@@ -22,6 +22,7 @@
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSOperationQueue* theOtherQueue;
 
+- (NSArray*)fetchImages;
 - (NSData*)imageData:(NSString*)url;
 - (void)deleteImageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;

@@ -28,12 +28,12 @@
         UINavigationController *masterNavigationController = splitViewController.viewControllers[0];
         TWLocMasterViewController *controller = (TWLocMasterViewController *)masterNavigationController.topViewController;
         self.masterViewController = controller; //CRS
-        controller.managedObjectContext = self.managedObjectContext;
+        controller.managedObjectContext = self;
     } else {
         UINavigationController *navigationController = (UINavigationController *)self.window.rootViewController;
         TWLocMasterViewController *controller = (TWLocMasterViewController *)navigationController.topViewController;
         self.masterViewController = controller; //CRS
-        controller.managedObjectContext = self.managedObjectContext;
+        controller.managedObjectContext = self;
     }
     return YES;
 }
@@ -85,7 +85,7 @@
 - (void)saveContext
 {
     NSError *error = nil;
-    NSManagedObjectContext *managedObjectContext = self.managedObjectContext;
+    NSManagedObjectContext *managedObjectContext = [self managedObjectContext];
     if (managedObjectContext != nil) {
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
              // Replace this implementation with code to handle the error appropriately.
@@ -107,10 +107,15 @@
 // If the context doesn't already exist, it is created and bound to the persistent store coordinator for the application.
 - (NSManagedObjectContext *)managedObjectContext
 {
+    static NSThread* theThread = Nil;
     if (_managedObjectContext != nil) {
+        if (theThread != Nil)
+            if ([theThread hash] != [[NSThread currentThread] hash])
+                NSLog(@"master context changed thread (base = %@) to %@", theThread, [NSThread currentThread]);
         return _managedObjectContext;
     }
     
+    theThread = [NSThread currentThread];
     NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
     if (coordinator != nil) {
         _managedObjectContext = [[NSManagedObjectContext alloc] init];
