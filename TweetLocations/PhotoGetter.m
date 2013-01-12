@@ -201,11 +201,11 @@
     [sview setTransform:transform];
     //[sview setClipsToBounds:YES];
     [sview setNeedsDisplay];
-    NSLog(@"isize %0.1f %0.1f ssize %0.1f %0.1f scale %0.1f offset %0.1f %0.1f",
-          imageSize.width,imageSize.height,
-          scrollSize.width, scrollSize.height,
-          scale,
-          offset.x, offset.y);
+    //NSLog(@"isize %0.1f %0.1f ssize %0.1f %0.1f scale %0.1f offset %0.1f %0.1f",
+    //      imageSize.width,imageSize.height,
+    //      scrollSize.width, scrollSize.height,
+    //      scale,
+    //     offset.x, offset.y);
     
     int height = [image size].height;
     int width = [image size].width;
@@ -315,11 +315,11 @@
     [sview setTransform:transform];
     //[sview setClipsToBounds:YES];
     [sview setNeedsDisplay];
-    NSLog(@"isize %0.1f %0.1f ssize %0.1f %0.1f scale %0.1f offset %0.1f %0.1f",
-          imageSize.width,imageSize.height,
-          scrollSize.width, scrollSize.height,
-          scale,
-          offset.x, offset.y);
+    //NSLog(@"isize %0.1f %0.1f ssize %0.1f %0.1f scale %0.1f offset %0.1f %0.1f",
+    //      imageSize.width,imageSize.height,
+    //      scrollSize.width, scrollSize.height,
+    //      scale,
+    //      offset.x, offset.y);
     
     int height = [image size].height;
     int width = [image size].width;

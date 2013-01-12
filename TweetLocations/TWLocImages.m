@@ -16,41 +16,50 @@
     self->imageDictLock = [[NSLock alloc] init];
     return self;
 }
+- (void)getImageLock
+{
+    float lockDuration = 1.0;
+    while ([self->imageDictLock lockBeforeDate:[NSDate dateWithTimeIntervalSinceNow:lockDuration]] == NO) {
+        NSLog(@"LOCK LOCK CANNOT UNLOCK in %f seconds",lockDuration);
+        if (lockDuration < 5.0)
+            lockDuration+= 0.5 ;
+    }
+}
 
 - (NSArray*)fetchImages
 {
     NSArray* data = Nil;
-    [self->imageDictLock lock];
     @try {
+        [self getImageLock];
         data = [self fetchImageForURL:Nil];
         [self->imageDictLock unlock];
-        if (data != Nil && [[data class] isSubclassOfClass:[NSArray class]])
-            return data;
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+    if (data != Nil && [[data class] isSubclassOfClass:[NSArray class]])
+        return data;
     return Nil;
 }
 - (NSData*)imageData:(NSString*)url
 {
     NSData* data = Nil;
-    [self->imageDictLock lock];
     @try {
+        [self getImageLock];
         data = [self fetchImageForURL:url];
         [self->imageDictLock unlock];
-        if (data != Nil && [[data class] isSubclassOfClass:[NSData class]])
-            return data;
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+    if (data != Nil && [[data class] isSubclassOfClass:[NSData class]])
+        return data;
     return Nil;
 }
 - (void)deleteImageData:(NSString*)url
 {
-    [self->imageDictLock lock];
     @try {
+        [self getImageLock];
         [self deleteImageForURLFromContext:url];
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
@@ -60,15 +69,14 @@
 }
 - (void)imageData:(NSData*)data forURL:(NSString*)url
 {
-    [self->imageDictLock lock];
     @try {
+        [self getImageLock];
         if (data != Nil && url != Nil) {
             if ([self fetchImageForURL:url] == Nil) {
                 [self addImageObject:data forURL:url];
-            } else
-                NSLog(@"delined add of duplicate for %@",url);
+            } //else NSLog(@"delined add of duplicate for %@",url);
         } else
-            NSLog(@"Cannot keep image in dictionary, dictionary is Nil");
+            NSLog(@"Cannot keep image url%@ or data%@ is Nil",url,data);
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
@@ -93,6 +101,12 @@
         if (imageItem != Nil) {
             [imageItem setUrl:url];
             [imageItem setData:image];
+            [[self managedObjectContext] processPendingChanges];
+            NSError* error = [[NSError alloc] init];
+            if (![[self managedObjectContext] save:&error]) {
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            } else
+                NSLog(@"Saved thread image");
         } else {
             NSLog(@"ERROR ERROR did not create a new imageItem to store %@",url);
         }
@@ -113,15 +127,26 @@
         }
         id fetchReturn = [self imageFetch:url];
         if (fetchReturn == Nil) return;
-        if ([[fetchReturn class] isSubclassOfClass:[ImageItem class]])
+        if ([[fetchReturn class] isSubclassOfClass:[ImageItem class]]) {
             [[self managedObjectContext] deleteObject:fetchReturn];
+            [[self managedObjectContext] processPendingChanges];
+            NSError* error = [[NSError alloc] init];
+            if (![[self managedObjectContext] save:&error]) {
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            } else
+                NSLog(@"Saved thread image");
+        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
 
+static int totalImages = -1;
 - (NSInteger)numImages
 {
+    if (totalImages >= 0)
+        return totalImages;
+    
     NSArray* images = [self fetchImages];
     return [images count];
 }
@@ -136,6 +161,7 @@
 
 - (id)imageFetch:(NSString*)url
 {
+    //NSLog(@"FETCH %@",url);
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     // Edit the entity name as appropriate.
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
@@ -172,6 +198,8 @@
     }
     
     NSArray* results = [aFetchedResultsController fetchedObjects];
+    if (url == Nil)
+        totalImages = [results count];
     
     if (results != Nil && [results count] > 0) {
         NSLog(@"FETCH for %@ is %d images",url,[results count]);
@@ -188,16 +216,27 @@
     static NSThread* theThread = Nil;
     if (_managedObjectContext != nil) {
         if (theThread != Nil)
-            if ([theThread hash] != [[NSThread currentThread] hash])
-                NSLog(@"image context changed thread (base = %@) to %@", theThread, [NSThread currentThread]);
+            if ([theThread hash] != [[NSThread currentThread] hash]) {
+                NSNumber* hash = [NSNumber numberWithUnsignedInt:[[NSThread currentThread] hash]];
+                NSManagedObjectContext* context = [_mocDict objectForKey:hash];
+                if (context == Nil) {
+                    context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSConfinementConcurrencyType];
+                    [context setParentContext:_managedObjectContext];
+                    [_mocDict setObject:context forKey:hash];
+                    NSLog(@"image context created for thread %@", hash);
+                }
+                return context;
+            }
         return _managedObjectContext;
     }
     
-    theThread = [NSThread currentThread];
     NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
     if (coordinator != nil) {
-        _managedObjectContext = [[NSManagedObjectContext alloc] init];
+        _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
         [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+        theThread = [NSThread currentThread];
+        _mocDict = [[NSMutableDictionary alloc] initWithCapacity:0];
+        NSLog(@"setup initial image managedContext for thread %ud %@",[theThread hash],theThread);
     }
     return _managedObjectContext;
 }
@@ -225,7 +264,7 @@
     NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
                              [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
                              [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
-                             [NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
+                             //[NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
                              nil];
     if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
         NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
@@ -244,7 +283,10 @@
 - (void)saveContext
 {
     NSError *error = nil;
-    NSManagedObjectContext *managedObjectContext = self.managedObjectContext;
+    NSManagedObjectContext *managedObjectContext = _managedObjectContext;
+    NSManagedObjectContext *threadContext = [self managedObjectContext];
+    if (threadContext != managedObjectContext)
+        NSLog(@"SAVING FROM WRONG THREAD");
     if (managedObjectContext != nil) {
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
             // Replace this implementation with code to handle the error appropriately.
@@ -278,43 +320,38 @@
 {
     executing = YES;
     
-    @try {
-        NSArray* images = [master fetchImages];
-        if (images != Nil) {
-            [master->imageDictLock lock];
+    NSArray* images = [master fetchImages];
+    if (images != Nil) {
+        @try {
+            [master getImageLock];
             [images enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                 [[master managedObjectContext] deleteObject:obj];
                 NSLog(@"deleted image %d", idx);
                 if (idx == 50) *stop = YES;
             }];
-            
-            NSLog(@"processing deletes");
             [[master managedObjectContext] processPendingChanges];
+            NSError* error = [[NSError alloc] init];
+            if (![[master managedObjectContext] save:&error]) {
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            } else
+                NSLog(@"Saved thread image");
             [master->imageDictLock unlock];
-            
-            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                NSError *error = [[NSError alloc] init];
-                [master->imageDictLock lock];
-                @try {
-                    if (![[master managedObjectContext] save:&error]) {
-                        NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
-                    }
-                    [master->imageDictLock unlock];
-                    NSLog(@"Got a chance to save, YAY!");
-                } @catch (NSException *eee) {
-                    [master->imageDictLock unlock];
-                    NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-                }
+        } @catch (NSException *eee) {
+            [master->imageDictLock unlock];
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
+        
+        @try {
+            [[NSOperationQueue currentQueue] addOperationWithBlock:^{
                 if ([images count] > 0) {
                     DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
                     [[master theOtherQueue] addOperation:dip];
                     [[master theOtherQueue] setSuspended:NO];
                 }
             }];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
-    } @catch (NSException *eee) {
-        [master->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     executing = NO; finished = YES;
 }

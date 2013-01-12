@@ -21,6 +21,7 @@
 @property (strong, nonatomic) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSOperationQueue* theOtherQueue;
+@property (strong, nonatomic) NSMutableDictionary* mocDict;
 
 - (NSArray*)fetchImages;
 - (NSData*)imageData:(NSString*)url;

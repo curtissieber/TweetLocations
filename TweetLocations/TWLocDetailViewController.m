@@ -81,7 +81,10 @@
             } else {
                 [self.detailDescriptionLabel setTextColor:[UIColor whiteColor]];
                 [self.bigLabel setTextColor:[UIColor whiteColor]];
-            } [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+            }
+            [[_master updateQueue] addOperationWithBlock:^{
+                [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+            }];
             
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
                                           [tweet tweet], [tweet username]];
@@ -105,7 +108,7 @@
             
             NSData* imageData = [_master imageData:[tweet url]];
             if (imageData != Nil) {
-                NSLog(@"using cached data for %@",[tweet url]);
+                //NSLog(@"using cached data for %@",[tweet url]);
                 thisImageData = imageData;
                 UIImage *image = [[UIImage alloc] initWithData:imageData];
                                 
@@ -157,14 +160,6 @@
 - (IBAction)infoButtonHit:(id)sender
 {
     @try {
-        /*if ([_detailItem sourceDict] != Nil) {
-            NSDictionary* dict = [NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]];
-            NSString* dictionaryStr = [dict description];
-            [UIView animateWithDuration:0.4 animations:^{
-                _activityLabel.hidden = NO;
-                [_activityLabel setText:dictionaryStr];
-            }];
-        }*/
         if ([_detailItem origHTML] != Nil) {
             [UIView animateWithDuration:0.4 animations:^{
                 _activityLabel.hidden = NO;
@@ -300,13 +295,17 @@
                 if (latitude > -900) {
                     [self resizeForMap];
                     [self displayMap:timestamp lat:latitude lon:longitude];
-                    [_detailItem setLocationFromPic:[NSNumber numberWithBool:YES]];
-                    [_detailItem setLatitude:[NSNumber numberWithDouble:latitude]];
-                    [_detailItem setLongitude:[NSNumber numberWithDouble:longitude]];
+                    [[_master updateQueue] addOperationWithBlock:^{
+                        [_detailItem setLocationFromPic:[NSNumber numberWithBool:YES]];
+                        [_detailItem setLatitude:[NSNumber numberWithDouble:latitude]];
+                        [_detailItem setLongitude:[NSNumber numberWithDouble:longitude]];
+                        [_detailItem setUrl:urlStr];
+                    }];
+                } else {
+                    [[_master updateQueue] addOperationWithBlock:^{
+                        [_detailItem setUrl:urlStr];
+                    }];
                 }
-                [_detailItem setUrl:urlStr];
-                NSManagedObjectContext *context = [_master.fetchedResultsController managedObjectContext];
-                [context processPendingChanges];
                 
                 [_activityView stopAnimating];
             }];
@@ -390,7 +389,9 @@
     NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:url];
     if ([_detailItem origHTML] == Nil ||
         [url rangeOfString:@".tumblr.com/image/"].location != NSNotFound) {
-        [_detailItem setOrigHTML:html];
+        [[_master updateQueue] addOperationWithBlock:^{
+            [_detailItem setOrigHTML:html];
+        }];
         [_infoButton setHidden:NO];
         [self setupPicturesCollection];
     }
@@ -835,13 +836,13 @@ static bool isRetinaDisplay = NO;
         _pictures = Nil;
         
         bool isTumblr = [[_detailItem url] rangeOfString:@"tumblr.com"].location != NSNotFound ||
-        [[_detailItem url] rangeOfString:@"tmblr.co"].location != NSNotFound;
+                [[_detailItem url] rangeOfString:@"tmblr.co"].location != NSNotFound;
         bool isGWIP = [[_detailItem url] rangeOfString:@"guyswithiphones.com"].location != NSNotFound;
         bool isInstagram = [[_detailItem url] rangeOfString:@"/instagr.am/"].location != NSNotFound;
         bool isOwly = [[_detailItem url] rangeOfString:@"/ow.ly/"].location != NSNotFound;
         bool isMoby = [[_detailItem url] rangeOfString:@"/moby.to/"].location != NSNotFound;
         bool isYouTube = [[_detailItem url] rangeOfString:@"youtube.com/"].location != NSNotFound ||
-        [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
+                [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
         NSArray* urls = [[_detailItem origHTML] componentsSeparatedByString:@"\n"];
         NSSet* urlset = [NSSet setWithArray:urls];
         urlset = [urlset objectsPassingTest:^BOOL(id obj, BOOL *stop) {
@@ -889,12 +890,17 @@ static bool isRetinaDisplay = NO;
         NSLog(@"THE SET OF PICS:\n%@",[urlset description]);
         
         if ([urlset count] > 1) {
+            [_picCollection setHidden:NO];
+            [_picButton setHidden:NO];
             _pictures = [urlset allObjects];
             [_picCollection reloadData];
             [_picCollection setNeedsDisplay];
-            [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:YES scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
-            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:YES];
+            [_picCollection setNeedsLayout];
+            [_picCollection setNeedsUpdateConstraints];
+            [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
+            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
             [_picButton setHidden:NO];
+            [_picCollection setHidden:YES];
             [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
             __block CGRect origFrame = [_picButton frame];
             [UIView animateWithDuration:0.9 animations:^{

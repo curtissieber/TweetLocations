@@ -52,6 +52,8 @@
 
 @property (strong, nonatomic)     NSOperationQueue* theQueue;
 @property (strong, nonatomic)     NSOperationQueue* theOtherQueue;
+@property (strong, nonatomic)     NSOperationQueue* webQueue;
+@property (strong, nonatomic)     NSOperationQueue* updateQueue;
 @property (nonatomic, retain)     NSMutableSet* idSet;
 @property (nonatomic, retain)     NSMutableDictionary* tweetText;
 
