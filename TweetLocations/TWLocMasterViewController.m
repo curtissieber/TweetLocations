@@ -355,6 +355,9 @@ static bool NetworkAccessAllowed = NO;
                      }];
                  }];
              }];
+             UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"FAVORITEd" message:@"Tweet was favorited." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+             [alert setTag:ALERT_DUMMY];
+             [alert show];
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -1645,7 +1648,7 @@ static bool NetworkAccessAllowed = NO;
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
-    [self setQueuePriority:NSOperationQueuePriorityLow];
+    [self setQueuePriority:NSOperationQueuePriorityVeryLow];
     return self;
 }
 
@@ -1762,7 +1765,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
-    [self setQueuePriority:NSOperationQueuePriorityNormal];
+    [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
 
@@ -1877,7 +1880,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     executing = finished = NO;
     master = theMaster;
     listID = theListID;
-    [self setQueuePriority:NSOperationQueuePriorityNormal];
+    [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
 
@@ -1905,7 +1908,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     master = theMaster;
     listID = theListID;
     timeline = theTimeline;
-    [self setQueuePriority:NSOperationQueuePriorityNormal];
+    [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
 - (BOOL)isReady { return YES; }

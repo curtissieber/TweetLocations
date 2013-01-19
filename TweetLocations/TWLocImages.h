@@ -37,6 +37,6 @@
     TWLocImages* master;
     BOOL executing, finished;
 }
-- (id)initWithMaster:(TWLocImages*)theMaster ;
+- (id)initWithMaster:(TWLocImages*)theMaster;
 
 @end

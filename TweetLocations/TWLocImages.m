@@ -282,19 +282,26 @@ static int totalImages = -1;
 
 - (void)saveContext
 {
-    NSError *error = nil;
-    NSManagedObjectContext *managedObjectContext = _managedObjectContext;
-    NSManagedObjectContext *threadContext = [self managedObjectContext];
-    if (threadContext != managedObjectContext)
-        NSLog(@"SAVING FROM WRONG THREAD");
-    if (managedObjectContext != nil) {
-        if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
-            // Replace this implementation with code to handle the error appropriately.
-            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            abort();
+    @try {
+        [self getImageLock];
+        NSError *error = nil;
+        NSManagedObjectContext *managedObjectContext = _managedObjectContext;
+        NSManagedObjectContext *threadContext = [self managedObjectContext];
+        if (threadContext != managedObjectContext)
+            NSLog(@"SAVING FROM WRONG THREAD");
+        if (managedObjectContext != nil) {
+            if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+                abort();
+            }
+            NSLog(@"Image file saved");
         }
-        NSLog(@"Image file saved");
+        [self->imageDictLock unlock];
+    } @catch (NSException *eee) {
+        [self->imageDictLock unlock];
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
 
@@ -330,11 +337,6 @@ static int totalImages = -1;
                 if (idx == 50) *stop = YES;
             }];
             [[master managedObjectContext] processPendingChanges];
-            NSError* error = [[NSError alloc] init];
-            if (![[master managedObjectContext] save:&error]) {
-                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            } else
-                NSLog(@"Saved thread image");
             [master->imageDictLock unlock];
         } @catch (NSException *eee) {
             [master->imageDictLock unlock];
@@ -347,6 +349,10 @@ static int totalImages = -1;
                     DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
                     [[master theOtherQueue] addOperation:dip];
                     [[master theOtherQueue] setSuspended:NO];
+                } else {
+                    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+                    [alert show];
+                    [master saveContext];
                 }
             }];
         } @catch (NSException *eee) {

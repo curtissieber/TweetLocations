@@ -358,29 +358,10 @@
                         urlStr = [urlStr substringFromIndex:range.location];
                 }
                 [strResults addObject:urlStr];
+                *stop = ([strResults count] > 100);
             }
         }
     }];
-    return strResults;
-    
-    NSArray* matches = [detector matchesInString:html options:0 range:NSMakeRange(0, [html length])];
-        
-    //NSLog(@"got %d link matches", [matches count]);
-    
-    NSEnumerator* e = [matches objectEnumerator];
-    NSTextCheckingResult* current;
-    
-    while ((current = [e nextObject]) != Nil) {
-        if ([current resultType] == NSTextCheckingTypeLink) {
-            /*NSRange insideQuotes = NSMakeRange([current range].location+1, [current range].length-2);
-            NSMutableString* truncated = [[NSMutableString alloc]
-                                          initWithString:[html substringWithRange:insideQuotes]];
-            [truncated replaceOccurrencesOfString:@"\\/" withString:@"/" options:NSLiteralSearch range:NSMakeRange(0, [truncated length])];*/
-            [strResults addObject:[[current URL] absoluteString]];
-        }
-    }
-    //NSLog(@"giving %d links",[strResults count]);
-    
     return strResults;
 }
 
@@ -466,18 +447,21 @@
 
     NSMutableString* allMatches = [[NSMutableString alloc] initWithCapacity:256];
     
-    e = [strResults objectEnumerator];
-    while ((str = [e nextObject]) != Nil) {
-        [allMatches appendString:str];
-        [allMatches appendString:@"\n"];
-        [allMatches appendString:@"\n"];
-    }
-    [allMatches appendString:@"FULL URL LISTING\n\n"];
-    e = [htmlResults objectEnumerator];
-    while ((str = [e nextObject]) != Nil) {
-        [allMatches appendString:str];
-        [allMatches appendString:@"\n"];
-        [allMatches appendString:@"\n"];
+    if ([strResults count] > 0) {
+        e = [strResults objectEnumerator];
+        while ((str = [e nextObject]) != Nil) {
+            [allMatches appendString:str];
+            [allMatches appendString:@"\n"];
+            [allMatches appendString:@"\n"];
+        }
+    } else {
+        [allMatches appendString:@"FULL URL LISTING\n\n"];
+        e = [htmlResults objectEnumerator];
+        while ((str = [e nextObject]) != Nil) {
+            [allMatches appendString:str];
+            [allMatches appendString:@"\n"];
+            [allMatches appendString:@"\n"];
+        }
     }
 
     [html setString:allMatches];
