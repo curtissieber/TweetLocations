@@ -381,7 +381,9 @@ static bool NetworkAccessAllowed = NO;
              if (error != Nil) {
                  NSLog(@"request to access twitter accounts error: %@",
                        [error description]);
-                 [self STATUS:@"Request to access account error"];
+                 [_updateQueue addOperationWithBlock:^{
+                     [self STATUS:@"Request to access account error"];
+                 }];
              }
              NSLog(@"Twitter account access %@ granted",
                    granted ? @"YES, is" : @"NO, is not");
@@ -619,7 +621,9 @@ static bool NetworkAccessAllowed = NO;
         
         [self saveTweetDebugToFile:[NSString stringWithFormat:@"****************\ngetting tweets max=%lld min=%lld\n", _twitterIDMax, _twitterIDMin]];
         [self saveTweetDebugToFile:[NSString stringWithFormat:@"URL= %@\n", [url absoluteString]]];
-        [self STATUS:@"Requesting tweets"];
+        [_updateQueue addOperationWithBlock:^{
+            [self STATUS:@"Requesting tweets"];
+        }];
         
         [request performRequestWithHandler:
          ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
@@ -833,7 +837,7 @@ static bool NetworkAccessAllowed = NO;
         if (_theQueue != Nil && storedTweets > 0 &&
             !([timeline count] < (TWEETREQUESTSIZE/2) || _maxTweetsToGet < 1)) {
             NSLog(@"adding another getTweet to the Queue");
-            //[self STATUS:[NSString stringWithFormat:@"%d tweets",[_idSet count]]];
+
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
             [_webQueue setSuspended:NO];
             [TWLocMasterViewController incrementTasks];
@@ -845,7 +849,7 @@ static bool NetworkAccessAllowed = NO;
                 [self saveTweetDebugToFile:[NSString stringWithFormat:@"did not get a new twitterIDMax\n"]];
             [self saveTweetDebugToFile:[NSString stringWithFormat:@"new twitterIDMax %lld\n",_twitterIDMax]];
             NSLog(@"new TwitterIDMax %lld",_twitterIDMax);
-            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            [_updateQueue addOperationWithBlock:^{
                 [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
             }];
 
@@ -1435,6 +1439,27 @@ static bool NetworkAccessAllowed = NO;
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
     }];
+}
+
+- (int)unreadTweets
+{
+    __block int unreadReturn = 0;
+    @try {
+        NSFetchedResultsController* controller = [self fetchedResultsController];
+        if (controller != Nil) {
+            NSArray* tweets = [controller fetchedObjects];
+            if (tweets != Nil) {
+                [tweets enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                    Tweet* tweet = obj;
+                    if ([[tweet hasBeenRead] boolValue] != YES)
+                        unreadReturn++;
+                }];
+            }
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return unreadReturn;
 }
 
 #pragma mark - Fetched results controller

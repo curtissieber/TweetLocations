@@ -88,8 +88,11 @@
         ImageItem* image = [self imageFetch:url];
         if (image == Nil)
             return Nil;
-        if ([[image class] isSubclassOfClass:[ImageItem class]])
-            return [image data];
+        if ([[image class] isSubclassOfClass:[ImageItem class]]) {
+            ImageData* imageData = [image data];
+            NSData* data = [imageData data];
+            return data;
+        }
         return image;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -100,7 +103,10 @@
         ImageItem* imageItem = [NSEntityDescription insertNewObjectForEntityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
         if (imageItem != Nil) {
             [imageItem setUrl:url];
-            [imageItem setData:image];
+            ImageData* imageData = [NSEntityDescription insertNewObjectForEntityForName:@"ImageData" inManagedObjectContext:[self managedObjectContext]];
+            [imageData setData:image];
+            [imageItem setData:imageData];
+            totalImages++;
             [[self managedObjectContext] processPendingChanges];
             NSError* error = [[NSError alloc] init];
             if (![[self managedObjectContext] save:&error]) {
@@ -287,9 +293,12 @@ static int totalImages = -1;
         NSError *error = nil;
         NSManagedObjectContext *managedObjectContext = _managedObjectContext;
         NSManagedObjectContext *threadContext = [self managedObjectContext];
-        if (threadContext != managedObjectContext)
+        if (threadContext != managedObjectContext) {
             NSLog(@"SAVING FROM WRONG THREAD");
-        if (managedObjectContext != nil) {
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [self saveContext];
+            }];
+        } else if (managedObjectContext != nil) {
             if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
                 // Replace this implementation with code to handle the error appropriately.
                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
@@ -344,6 +353,7 @@ static int totalImages = -1;
         }
         
         @try {
+            [master saveContext];
             [[NSOperationQueue currentQueue] addOperationWithBlock:^{
                 if ([images count] > 0) {
                     DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
@@ -352,12 +362,16 @@ static int totalImages = -1;
                 } else {
                     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
                     [alert show];
-                    [master saveContext];
                 }
             }];
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
+    } else {
+        [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+            [alert show];
+        }];
     }
     executing = NO; finished = YES;
 }

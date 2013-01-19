@@ -68,6 +68,7 @@
 - (void)deleteTweet:(Tweet*)tweet;
 - (void)refreshTweet:(Tweet*)tweet;
 - (void)favoriteTweet:(Tweet*)tweet;
+- (int)unreadTweets;
 @end
 
 @interface TweetOperation : NSOperation {

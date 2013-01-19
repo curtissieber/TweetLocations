@@ -62,7 +62,11 @@
             [_activityView startAnimating];
             
             Tweet *tweet = self.detailItem;
-            self.title = [tweet timestamp];
+            int unread = 0;
+            if (_master != Nil)
+                unread = [_master unreadTweets];
+            NSString* titleString = [NSString stringWithFormat:@"(%d unred) %@",unread,[tweet timestamp]];
+            self.title = titleString;
             
             NSMutableString* detail = [[NSMutableString alloc] initWithFormat:@"[%@]:%@\n",
                                        [tweet username], [tweet tweet] ];

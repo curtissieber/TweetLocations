@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model name="" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1811" systemVersion="12C2034" minimumToolsVersion="Xcode 4.3" macOSVersion="Automatic" iOSVersion="Automatic">
-    <entity name="ImageItem" representedClassName="ImageItem" syncable="YES">
+    <entity name="ImageData" representedClassName="ImageData" syncable="YES">
         <attribute name="data" optional="YES" attributeType="Transformable" syncable="YES"/>
+        <relationship name="item" optional="YES" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="ImageItem" inverseName="data" inverseEntity="ImageItem" syncable="YES"/>
+    </entity>
+    <entity name="ImageItem" representedClassName="ImageItem" syncable="YES">
         <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="data" optional="YES" minCount="1" maxCount="1" deletionRule="Cascade" destinationEntity="ImageData" inverseName="item" inverseEntity="ImageData" syncable="YES"/>
     </entity>
     <elements>
         <element name="ImageItem" positionX="160" positionY="192" width="128" height="75"/>
+        <element name="ImageData" positionX="160" positionY="192" width="128" height="75"/>
     </elements>
 </model>

@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import "ImageItem.h"
+#import "ImageData.h"
 
 @interface TWLocImages : NSObject {
     @public
