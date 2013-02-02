@@ -53,6 +53,7 @@
 - (void)configureView
 {
     @try {
+        [self checkForVideo:Nil];
         [PhotoGetter setupImage:[_master redX] iview:_imageView sview:_scrollView button:_sizeButton];
 
         // Update the user interface for the detail item.
@@ -328,6 +329,8 @@
         return YES;
     if ([urlStr compare:@".gif" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
         return YES;
+    if ([urlStr rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
+        return YES;
     //NSLog(@"No");
     return NO;
 }
@@ -372,6 +375,8 @@
 - (void)findJPG:(NSMutableString*)html theUrlStr:(NSString*)url
 {
     NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:url];
+    [self.textView setText:html];
+    [self checkForVideo:[NSSet setWithArray:[html componentsSeparatedByString:@"\n"]]];
     if ([_detailItem origHTML] == Nil ||
         [url rangeOfString:@".tumblr.com/image/"].location != NSNotFound) {
         [[_master updateQueue] addOperationWithBlock:^{
@@ -386,7 +391,6 @@
         else 
             [self handleURL:replace];
     } else {
-        [self.textView setText:html];
         [_activityView stopAnimating];
     }
 }
@@ -475,15 +479,15 @@
     return Nil;
 }
 
-
+static MKCoordinateRegion region;
 - (void)displayMap:(NSString*)text lat:(double)latitude lon:(double)longitude
 {
     @try {
         [self.mapView setHidden:NO];
 
         CLLocationCoordinate2D coord = CLLocationCoordinate2DMake(latitude, longitude);
-        MKCoordinateRegion region = MKCoordinateRegionMake(coord,
-                                                           MKCoordinateSpanMake(0.1, 0.1));
+        region = MKCoordinateRegionMake(coord,
+                                                           MKCoordinateSpanMake(10.0, 10.0));
         
         NSArray* annotations = [self.mapView annotations];
         [self.mapView removeAnnotations:annotations];
@@ -495,10 +499,25 @@
         
         [self.mapView setCenterCoordinate:coord animated:YES];
         [self.mapView setRegion:region animated:YES];
+        
+        [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:3.0];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+}
 
+- (void)setMapRegion:(id)dummy
+{
+    @try {
+        region.span.latitudeDelta /= 3.0;
+        region.span.longitudeDelta /= 3.0;
+        [self.mapView setRegion:region animated:YES];
+        NSLog(@"REGION set to %0.3f %0.3f", region.span.latitudeDelta,region.span.longitudeDelta);
+        if (region.span.latitudeDelta > 0.003)
+            [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:2.0];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 
 #pragma mark SaveImage
@@ -684,7 +703,12 @@ static bool isRetinaDisplay = NO;
                 [self doDocumentsView];
             }
         } else if ([alertView tag] == ALERT_SAVEVIDEO) {
-            [self saveVideo];
+            NSString* chosen = [alertView buttonTitleAtIndex:buttonIndex];
+            if ([chosen compare:@"NO"] == NSOrderedSame)
+                return;
+            NSString* name = [[alertView textFieldAtIndex:0] text];
+            NSLog(@"saving movie with name %@",name);
+            [self saveVideo:name];
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -697,11 +721,9 @@ static bool isRetinaDisplay = NO;
     //NSLog(@"endScrollDrag velocity=(%f,%f)",velocity.x,velocity.y);
     if (velocity.x > 5) {
         [self.master nextTweet];
-        //[self configureView];
     }
     if (velocity.x < -5) {
         [self.master prevTweet];
-        //[self configureView];
     }
 }
 
@@ -720,7 +742,6 @@ static bool isRetinaDisplay = NO;
                 [_master nextTweet];
             else
                 NSLog(@"NIL MASTER IN tap");
-            //[self configureView];
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
@@ -734,7 +755,6 @@ static bool isRetinaDisplay = NO;
                 [_master nextTweet];
             else
                 NSLog(@"NIL MASTER IN tap");
-            //[self configureView];
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
@@ -748,7 +768,6 @@ static bool isRetinaDisplay = NO;
                 [_master prevTweet];
             else
                 NSLog(@"NIL MASTER IN tap");
-            //[self configureView];
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
@@ -901,9 +920,9 @@ static bool isRetinaDisplay = NO;
             } completion:^(BOOL finished) {
                 [_picButton setFrame:origFrame];
             }];
+            [self checkForVideo:[NSSet setWithArray:urls]];
         }
         
-        [self checkForVideo:[NSSet setWithArray:urls]];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
     }
@@ -950,29 +969,38 @@ static NSString* videoURL = Nil;
 
 - (void)checkForVideo:(NSSet*)urls
 {
-    __block bool hasVideo = NO;
-    [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-        NSString* theURL = obj;
-        if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
-            hasVideo = *stop = YES;
-            videoURL = theURL;
+    @try {
+        if (urls == Nil) {
+            [_videoButton setHidden:YES];
+            return;
         }
-    }];
-    [_videoButton setHidden:(!hasVideo)];
+        __block bool hasVideo = NO;
+        [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+            NSString* theURL = obj;
+            if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
+                hasVideo = *stop = YES;
+                videoURL = theURL;
+            }
+        }];
+        [_videoButton setHidden:(!hasVideo)];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 - (IBAction)videoButtonHit:(id)sender
 {
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SAVE VIDEO" message:[NSString stringWithFormat:@"Save the %@ video?",videoURL] delegate:self cancelButtonTitle:@"NO" otherButtonTitles:@"YES, save", nil];
+    [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
     alert.tag = ALERT_SAVEVIDEO;
     [alert show];
 }
-- (void)saveVideo
+- (void)saveVideo:(NSString*)additionalName
 {
     NSLog(@"Needing to save %@ to file", videoURL);
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     NSString* lastNamePart;
-    lastNamePart = [NSString stringWithFormat:@"%@%@",
+    lastNamePart = [NSString stringWithFormat:@"%@ %@%@", additionalName,
                     videoURL.lastPathComponent, @".mp4"];
     NSString* filename = [documentsDirectory
                           stringByAppendingPathComponent:

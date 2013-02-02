@@ -124,8 +124,9 @@
     @try {
         if (url == Nil) {
             if (_theOtherQueue == Nil) {
-                _theOtherQueue = [[NSOperationQueue alloc] init];
-                [_theOtherQueue setMaxConcurrentOperationCount:1];
+                //_theOtherQueue = [[NSOperationQueue alloc] init];
+                //[_theOtherQueue setMaxConcurrentOperationCount:1];
+                _theOtherQueue = [NSOperationQueue mainQueue];
             }
             DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:self];
             [_theOtherQueue addOperation:dip];
@@ -153,98 +154,117 @@ static int totalImages = -1;
     if (totalImages >= 0)
         return totalImages;
     
-    NSArray* images = [self fetchImages];
-    return [images count];
+    @try {
+        NSArray* images = [self fetchImages];
+        return [images count];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return 0;
 }
 - (NSInteger)sizeImages
 {
-    NSString* documentsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
-    NSString* database = [documentsDir stringByAppendingPathComponent:@"Images.sqlite"];
-    NSDictionary* filevalues = [[NSFileManager defaultManager] attributesOfItemAtPath:database error:Nil];
-    NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
-    return [fsize integerValue];
+    @try {
+        NSString* documentsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+        NSString* database = [documentsDir stringByAppendingPathComponent:@"Images.sqlite"];
+        NSDictionary* filevalues = [[NSFileManager defaultManager] attributesOfItemAtPath:database error:Nil];
+        NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
+        return [fsize integerValue];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+    return 0;
 }
 
 - (id)imageFetch:(NSString*)url
 {
-    //NSLog(@"FETCH %@",url);
-    NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
-    // Edit the entity name as appropriate.
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
-    [fetchRequest setEntity:entity];
-    if (url == Nil)
-        [fetchRequest setIncludesPropertyValues:NO];
-    
-    // Set the batch size to a suitable number.
-    if (url == Nil)
-        [fetchRequest setFetchBatchSize:20];
-    else
-        [fetchRequest setFetchBatchSize:1];
-    
-    // Edit the sort key as appropriate.
-    NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"url" ascending:YES];
-    NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorID, nil];
-    [fetchRequest setSortDescriptors:sortDescriptors];
-    if (url != Nil) {
-        NSPredicate* predicate = [NSPredicate predicateWithFormat:@"url == %@",url];
-        [fetchRequest setPredicate:predicate];
-    }
-    
-    // Edit the section name key path and cache name if appropriate.
-    // nil for section name key path means "no sections".
-    NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:[self managedObjectContext] sectionNameKeyPath:Nil cacheName:@"ImageItem"];
-    aFetchedResultsController.delegate = Nil;
-    
-    NSError *error = nil;
-    if (![aFetchedResultsController performFetch:&error]) {
-        // Replace this implementation with code to handle the error appropriately.
-        // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-        return Nil;
-    }
-    
-    NSArray* results = [aFetchedResultsController fetchedObjects];
-    if (url == Nil)
-        totalImages = [results count];
-    
-    if (results != Nil && [results count] > 0) {
-        NSLog(@"FETCH for %@ is %d images",url,[results count]);
+    @try {
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        // Edit the entity name as appropriate.
+        NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
+        [fetchRequest setEntity:entity];
         if (url == Nil)
-            return results;
-        return [results objectAtIndex:0];
+            [fetchRequest setIncludesPropertyValues:NO];
+        
+        // Set the batch size to a suitable number.
+        if (url == Nil)
+            [fetchRequest setFetchBatchSize:20];
+        else
+            [fetchRequest setFetchBatchSize:1];
+        
+        // Edit the sort key as appropriate.
+        NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"url" ascending:YES];
+        NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorID, nil];
+        [fetchRequest setSortDescriptors:sortDescriptors];
+        if (url != Nil) {
+            NSPredicate* predicate = [NSPredicate predicateWithFormat:@"url == %@",url];
+            [fetchRequest setPredicate:predicate];
+        }
+        
+        // Edit the section name key path and cache name if appropriate.
+        // nil for section name key path means "no sections".
+        NSFetchedResultsController *aFetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:[self managedObjectContext] sectionNameKeyPath:Nil cacheName:@"ImageItem"];
+        aFetchedResultsController.delegate = Nil;
+        
+        NSError *error = nil;
+        if (![aFetchedResultsController performFetch:&error]) {
+            // Replace this implementation with code to handle the error appropriately.
+            // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            return Nil;
+        }
+        
+        NSArray* results = [aFetchedResultsController fetchedObjects];
+        if (url == Nil)
+            totalImages = [results count];
+        
+        if (results != Nil && [results count] > 0) {
+            //NSLog(@"FETCH for %@ is %d images",url,[results count]);
+            if (url == Nil) {
+                NSLog(@"ALL IMAGES FETCH is %d images",[results count]);
+                return results;
+            }
+            return [results objectAtIndex:0];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-    
     return Nil;
 }
 
 - (NSManagedObjectContext *)managedObjectContext
 {
-    static NSThread* theThread = Nil;
-    if (_managedObjectContext != nil) {
-        if (theThread != Nil)
-            if ([theThread hash] != [[NSThread currentThread] hash]) {
-                NSNumber* hash = [NSNumber numberWithUnsignedInt:[[NSThread currentThread] hash]];
-                NSManagedObjectContext* context = [_mocDict objectForKey:hash];
-                if (context == Nil) {
-                    context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSConfinementConcurrencyType];
-                    [context setParentContext:_managedObjectContext];
-                    [_mocDict setObject:context forKey:hash];
-                    NSLog(@"image context created for thread %@", hash);
+    @try {
+        static NSThread* theThread = Nil;
+        if (_managedObjectContext != nil) {
+            if (theThread != Nil)
+                if ([theThread hash] != [[NSThread currentThread] hash]) {
+                    NSNumber* hash = [NSNumber numberWithUnsignedInt:[[NSThread currentThread] hash]];
+                    NSManagedObjectContext* context = [_mocDict objectForKey:hash];
+                    if (context == Nil) {
+                        context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSConfinementConcurrencyType];
+                        [context setParentContext:_managedObjectContext];
+                        [_mocDict setObject:context forKey:hash];
+                        NSLog(@"image context created for thread %@", hash);
+                    }
+                    return context;
                 }
-                return context;
-            }
+            return _managedObjectContext;
+        }
+        
+        NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
+        if (coordinator != nil) {
+            _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
+            [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+            theThread = [NSThread currentThread];
+            _mocDict = [[NSMutableDictionary alloc] initWithCapacity:0];
+            NSLog(@"setup initial image managedContext for thread %ud %@",[theThread hash],theThread);
+        }
         return _managedObjectContext;
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-    
-    NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
-    if (coordinator != nil) {
-        _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
-        [_managedObjectContext setPersistentStoreCoordinator:coordinator];
-        theThread = [NSThread currentThread];
-        _mocDict = [[NSMutableDictionary alloc] initWithCapacity:0];
-        NSLog(@"setup initial image managedContext for thread %ud %@",[theThread hash],theThread);
-    }
-    return _managedObjectContext;
+    return Nil;
 }
 
 - (NSManagedObjectModel *)managedObjectModel
@@ -252,8 +272,12 @@ static int totalImages = -1;
     if (_managedObjectModel != nil) {
         return _managedObjectModel;
     }
-    NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Images" withExtension:@"momd"];
-    _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+    @try {
+        NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Images" withExtension:@"momd"];
+        _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
     return _managedObjectModel;
 }
 
@@ -263,20 +287,24 @@ static int totalImages = -1;
         return _persistentStoreCoordinator;
     }
     
-    NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Images.sqlite"];
-    
-    NSError *error = nil;
-    _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-    NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
-                             [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
-                             [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
-                             //[NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
-                             nil];
-    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
-        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-        [[NSFileManager defaultManager] removeItemAtURL:storeURL error:nil];
-        NSLog(@"removed file at %@ due to error",[storeURL description]);
-        [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+    @try {
+        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Images.sqlite"];
+        
+        NSError *error = nil;
+        _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
+        NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
+                                 [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
+                                 [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
+                                 //[NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
+                                 nil];
+        if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
+            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            [[NSFileManager defaultManager] removeItemAtURL:storeURL error:nil];
+            NSLog(@"removed file at %@ due to error",[storeURL description]);
+            [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     return _persistentStoreCoordinator;
 }
@@ -303,7 +331,7 @@ static int totalImages = -1;
                 // Replace this implementation with code to handle the error appropriately.
                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-                abort();
+                //abort();
             }
             NSLog(@"Image file saved");
         }
@@ -336,7 +364,12 @@ static int totalImages = -1;
 {
     executing = YES;
     
-    NSArray* images = [master fetchImages];
+    NSArray* images = Nil;
+    @try {
+        images = [master fetchImages];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
     if (images != Nil) {
         @try {
             [master getImageLock];
@@ -368,10 +401,14 @@ static int totalImages = -1;
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
     } else {
-        [[NSOperationQueue currentQueue] addOperationWithBlock:^{
-            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
-            [alert show];
-        }];
+        @try {
+            [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+                UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+                [alert show];
+            }];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
     }
     executing = NO; finished = YES;
 }

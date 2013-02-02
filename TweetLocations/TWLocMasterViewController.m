@@ -735,15 +735,21 @@ static bool NetworkAccessAllowed = NO;
                 if (entities != Nil) {
                     NSArray* urlsArray = [entities objectForKey:@"urls"];
                     if (urlsArray != Nil && [urlsArray count] > 0) {
-                        NSDictionary* urls = [urlsArray objectAtIndex:0];
+                        if ([urlsArray count] > 1)
+                            NSLog(@"multiple urls items %@",[urlsArray componentsJoinedByString:@" , "]);
+                        NSDictionary* urls = [urlsArray lastObject];
                         if (urls != Nil) {
                             theUrl = [urls objectForKey:@"expanded_url"];
                             //NSLog(@"   url=%@",theUrl);
                         }
+                        if (urls == Nil || theUrl == Nil)
+                            NSLog(@"bad last urls item in %@ ???",[urlsArray componentsJoinedByString:@" , "]);
                     }
                     NSArray* media = [entities objectForKey:@"media"];
                     if (media != Nil && [media count] > 0) {
-                        NSDictionary* mediaItem = [media objectAtIndex:0];
+                        if ([media count] > 1)
+                            NSLog(@"multiple media items %@",[media componentsJoinedByString:@" , "]);
+                        NSDictionary* mediaItem = [media lastObject];
                         if (mediaItem != Nil) {
                             NSString* anotherURL = [mediaItem objectForKey:@"media_url"];
                             if (anotherURL != Nil && [anotherURL length] > 4) {
@@ -751,6 +757,8 @@ static bool NetworkAccessAllowed = NO;
                                 //NSLog(@"   url=%@",theUrl);
                             }
                         }
+                        if (mediaItem == Nil || theUrl == Nil)
+                            NSLog(@"bad last media item in %@ ???",[media componentsJoinedByString:@" , "]);
                     }
                 }
                 
