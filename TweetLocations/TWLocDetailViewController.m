@@ -896,33 +896,34 @@ static bool isRetinaDisplay = NO;
             urlset = [self removeTumblrDups:urlset];
         NSLog(@"THE SET OF PICS:\n%@",[urlset description]);
         
-        if ([urlset count] > 1) {
-            [_picCollection setHidden:NO];
-            [_picButton setHidden:NO];
-            _pictures = [urlset allObjects];
-            [_picCollection reloadData];
-            [_picCollection setNeedsDisplay];
-            [_picCollection setNeedsLayout];
-            [_picCollection setNeedsUpdateConstraints];
-            [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
-            [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
-            [_picButton setHidden:NO];
-            [_picCollection setHidden:YES];
-            [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
-            __block CGRect origFrame = [_picButton frame];
-            [UIView animateWithDuration:0.9 animations:^{
-                CGRect newFrame;
-                newFrame.origin.x = origFrame.origin.x - origFrame.size.width*2;
-                newFrame.origin.y = origFrame.origin.y;
-                newFrame.size.width = origFrame.size.width * 3;
-                newFrame.size.height = origFrame.size.height * 3;
-                [_picButton setFrame:newFrame];
-            } completion:^(BOOL finished) {
-                [_picButton setFrame:origFrame];
-            }];
-            [self checkForVideo:[NSSet setWithArray:urls]];
-        }
-        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            if ([urlset count] > 1) {
+                [_picCollection setHidden:NO];
+                [_picButton setHidden:NO];
+                _pictures = [urlset allObjects];
+                [_picCollection reloadData];
+                [_picCollection setNeedsDisplay];
+                [_picCollection setNeedsLayout];
+                [_picCollection setNeedsUpdateConstraints];
+                [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
+                [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
+                [_picButton setHidden:NO];
+                [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
+                __block CGRect origFrame = [_picButton frame];
+                [UIView animateWithDuration:0.9 animations:^{
+                    CGRect newFrame;
+                    newFrame.origin.x = origFrame.origin.x - origFrame.size.width*2;
+                    newFrame.origin.y = origFrame.origin.y;
+                    newFrame.size.width = origFrame.size.width * 3;
+                    newFrame.size.height = origFrame.size.height * 3;
+                    [_picButton setFrame:newFrame];
+                } completion:^(BOOL finished) {
+                    [_picButton setFrame:origFrame];
+                    [_picCollection setHidden:YES];
+                }];
+                [self checkForVideo:[NSSet setWithArray:urls]];
+            } 
+        }];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
     }
@@ -1072,6 +1073,7 @@ static NSString* videoURL = Nil;
     [dview setTheData:files];
     [dview setFilesizes:filesizes];
     [dview setTitle:@"Documents"];
+    [dview setDetailView:self];
     [dview setModalTransitionStyle:UIModalTransitionStyleCoverVertical];
     [dview setModalPresentationStyle:UIModalPresentationFullScreen];
     [self presentViewController:dview animated:YES completion:Nil];

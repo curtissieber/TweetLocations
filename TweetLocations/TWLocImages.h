@@ -13,6 +13,7 @@
 
 @interface TWLocImages : NSObject {
     @public
+    int totalImages;
     NSLock* imageDictLock;
     @protected
 }

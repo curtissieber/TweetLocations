@@ -1,20 +1,20 @@
 //
-//  TWLocImages.m
+//  TWFastImages.m
 //  TweetLocations
 //
 //  Created by Curtis Sieber on 12/16/12.
 //  Copyright (c) 2012 Curtsybear.com. All rights reserved.
 //
 
-#import "TWLocImages.h"
+#import "TWFastImages.h"
 
-@implementation TWLocImages
+@implementation TWFastImages
 
 - (id)init
 {
     self = [super init];
     self->imageDictLock = [[NSLock alloc] init];
-    totalImages = -1;
+    _urlDictionary = [[NSMutableDictionary alloc] initWithCapacity:100];
     return self;
 }
 - (void)getImageLock
@@ -109,6 +109,8 @@
             [imageItem setData:imageData];
             totalImages++;
             [[self managedObjectContext] processPendingChanges];
+            [_urlDictionary setObject:[NSNumber numberWithBool:YES] forKey:url];
+            NSLog(@"added url %@",url);
             NSError* error = [[NSError alloc] init];
             if (![[self managedObjectContext] save:&error]) {
                 NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
@@ -124,18 +126,21 @@
 - (void)deleteImageForURLFromContext:(NSString*)url {
     @try {
         if (url == Nil) {
-            if (_theOtherQueue == Nil) {
+            if ([self theOtherQueue] == Nil) {
                 //_theOtherQueue = [[NSOperationQueue alloc] init];
                 //[_theOtherQueue setMaxConcurrentOperationCount:1];
-                _theOtherQueue = [NSOperationQueue mainQueue];
+                [self setTheOtherQueue: [NSOperationQueue mainQueue]];
             }
-            DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:self];
-            [_theOtherQueue addOperation:dip];
+            TWFDeleteImagesOperation* dip = [[TWFDeleteImagesOperation alloc] initWithMaster:self andIndex:0];
+            [[self theOtherQueue] addOperation:dip];
             return;
         }
         id fetchReturn = [self imageFetch:url];
         if (fetchReturn == Nil) return;
         if ([[fetchReturn class] isSubclassOfClass:[ImageItem class]]) {
+            ImageItem* item = fetchReturn;
+            NSLog(@"removing url %@",[item url]);
+            [_urlDictionary removeObjectForKey:[item url]];
             [[self managedObjectContext] deleteObject:fetchReturn];
             [[self managedObjectContext] processPendingChanges];
             NSError* error = [[NSError alloc] init];
@@ -149,57 +154,52 @@
     }
 }
 
-- (NSInteger)numImages
+- (id)imageFetch:(NSString*)url
 {
-    if (totalImages >= 0)
-        return totalImages;
+    static NSFetchedResultsController* controller = Nil;
     
-    @try {
-        NSArray* images = [self fetchImages];
-        return [images count];
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    if (controller == Nil) {
+        NSLog(@"causing initial fetch");
+        controller = [self initialFetch];
     }
-    return 0;
-}
-- (NSInteger)sizeImages
-{
-    @try {
-        NSString* documentsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
-        NSString* database = [documentsDir stringByAppendingPathComponent:@"Images.sqlite"];
-        NSDictionary* filevalues = [[NSFileManager defaultManager] attributesOfItemAtPath:database error:Nil];
-        NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
-        return [fsize integerValue];
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+
+    if (url == Nil)
+        return [controller fetchedObjects];
+    NSNumber* urlexists = [_urlDictionary objectForKey:url];
+    if (urlexists == Nil) {
+        NSLog(@"URLDOESNOTEXIST NO %@",url);
+        return Nil;
     }
-    return 0;
+    NSLog(@"URLEXISTS YES %@",url);
+
+    NSArray* images = [controller fetchedObjects];
+    NSEnumerator* e = [images objectEnumerator];
+    ImageItem* item;
+    while ((item = [e nextObject]) != Nil && [[item url] isEqualToString:url] == NO) {
+        //NSLog(@"checking url %@",[item url]);
+    }
+    NSLog(@"ended with url %@", [item url]);
+    if ([[item url] isEqualToString:url] == NO)
+        return Nil;
+    NSLog(@"RETURN GOOD IMAGE %@", [item url]);
+    return item;
 }
 
-- (id)imageFetch:(NSString*)url
+- (NSFetchedResultsController*)initialFetch
 {
     @try {
         NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
         // Edit the entity name as appropriate.
         NSEntityDescription *entity = [NSEntityDescription entityForName:@"ImageItem" inManagedObjectContext:[self managedObjectContext]];
         [fetchRequest setEntity:entity];
-        if (url == Nil)
-            [fetchRequest setIncludesPropertyValues:NO];
         
         // Set the batch size to a suitable number.
-        if (url == Nil)
-            [fetchRequest setFetchBatchSize:20];
-        else
-            [fetchRequest setFetchBatchSize:1];
+        [fetchRequest setFetchBatchSize:20];
         
         // Edit the sort key as appropriate.
         NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"url" ascending:YES];
         NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorID, nil];
         [fetchRequest setSortDescriptors:sortDescriptors];
-        if (url != Nil) {
-            NSPredicate* predicate = [NSPredicate predicateWithFormat:@"url == %@",url];
-            [fetchRequest setPredicate:predicate];
-        }
         
         // Edit the section name key path and cache name if appropriate.
         // nil for section name key path means "no sections".
@@ -215,139 +215,30 @@
         }
         
         NSArray* results = [aFetchedResultsController fetchedObjects];
-        if (url == Nil)
-            totalImages = [results count];
+        totalImages = [results count];
         
         if (results != Nil && [results count] > 0) {
             //NSLog(@"FETCH for %@ is %d images",url,[results count]);
-            if (url == Nil) {
-                NSLog(@"ALL IMAGES FETCH is %d images",[results count]);
-                return results;
-            }
-            return [results objectAtIndex:0];
+            NSLog(@"ALL IMAGES FETCH is %d images",[results count]);
+            NSEnumerator* e = [results objectEnumerator];
+            ImageItem* item;
+            while ((item = [e nextObject]) != Nil)
+                [_urlDictionary setObject:[NSNumber numberWithBool:YES] forKey:[item url]];
         }
+        
+        return aFetchedResultsController;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
     return Nil;
-}
-
-- (NSManagedObjectContext *)managedObjectContext
-{
-    @try {
-        static NSThread* theThread = Nil;
-        if (_managedObjectContext != nil) {
-            if (theThread != Nil)
-                if ([theThread hash] != [[NSThread currentThread] hash]) {
-                    NSNumber* hash = [NSNumber numberWithUnsignedInt:[[NSThread currentThread] hash]];
-                    NSManagedObjectContext* context = [_mocDict objectForKey:hash];
-                    if (context == Nil) {
-                        context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSConfinementConcurrencyType];
-                        [context setParentContext:_managedObjectContext];
-                        [_mocDict setObject:context forKey:hash];
-                        NSLog(@"image context created for thread %@", hash);
-                    }
-                    return context;
-                }
-            return _managedObjectContext;
-        }
-        
-        NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
-        if (coordinator != nil) {
-            _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
-            [_managedObjectContext setPersistentStoreCoordinator:coordinator];
-            theThread = [NSThread currentThread];
-            _mocDict = [[NSMutableDictionary alloc] initWithCapacity:0];
-            NSLog(@"setup initial image managedContext for thread %ud %@",[theThread hash],theThread);
-        }
-        return _managedObjectContext;
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
-    return Nil;
-}
-
-- (NSManagedObjectModel *)managedObjectModel
-{
-    if (_managedObjectModel != nil) {
-        return _managedObjectModel;
-    }
-    @try {
-        NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Images" withExtension:@"momd"];
-        _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
-    return _managedObjectModel;
-}
-
-- (NSPersistentStoreCoordinator *)persistentStoreCoordinator
-{
-    if (_persistentStoreCoordinator != nil) {
-        return _persistentStoreCoordinator;
-    }
-    
-    @try {
-        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Images.sqlite"];
-        
-        NSError *error = nil;
-        _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-        NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:
-                                 [NSNumber numberWithBool:YES], NSMigratePersistentStoresAutomaticallyOption,
-                                 [NSNumber numberWithBool:YES], NSInferMappingModelAutomaticallyOption,
-                                 //[NSNumber numberWithBool:YES], NSSQLiteManualVacuumOption,
-                                 nil];
-        if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:options error:&error]) {
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            [[NSFileManager defaultManager] removeItemAtURL:storeURL error:nil];
-            NSLog(@"removed file at %@ due to error",[storeURL description]);
-            [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
-        }
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
-    return _persistentStoreCoordinator;
-}
-
-- (NSURL *)applicationDocumentsDirectory
-{
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
-}
-
-- (void)saveContext
-{
-    @try {
-        [self getImageLock];
-        NSError *error = nil;
-        NSManagedObjectContext *managedObjectContext = _managedObjectContext;
-        NSManagedObjectContext *threadContext = [self managedObjectContext];
-        if (threadContext != managedObjectContext) {
-            NSLog(@"SAVING FROM WRONG THREAD");
-            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                [self saveContext];
-            }];
-        } else if (managedObjectContext != nil) {
-            if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
-                // Replace this implementation with code to handle the error appropriately.
-                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-                //abort();
-            }
-            NSLog(@"Image file saved");
-        }
-        [self->imageDictLock unlock];
-    } @catch (NSException *eee) {
-        [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
 }
 
 @end
 
 #pragma mark DELETEIMAGESOPERATION background queue task
-@implementation DeleteImagesOperation
+@implementation TWFDeleteImagesOperation
 
-- (id)initWithMaster:(TWLocImages*)theMaster
+- (id)initWithMaster:(TWFastImages*)theMaster andIndex:(NSUInteger)idx
 {
     self = [super init];
     executing = finished = NO;
@@ -364,6 +255,7 @@
 {
     executing = YES;
     
+    int i;
     NSArray* images = Nil;
     @try {
         images = [master fetchImages];
@@ -372,12 +264,20 @@
     }
     if (images != Nil) {
         @try {
+            [master saveContext];
             [master getImageLock];
-            [images enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                [[master managedObjectContext] deleteObject:obj];
-                NSLog(@"deleted image %d", idx);
-                if (idx == 50) *stop = YES;
-            }];
+            id obj;
+            for (i=0; (index+i) < [images count] && i < 50;
+                 i++, obj = [images objectAtIndex:(index+i)]) {
+                if (obj != Nil) {
+                    ImageItem* item = obj;
+                    NSLog(@"deleting url %@",[item url]);
+                    if ([item url] != Nil)
+                        [[master urlDictionary] removeObjectForKey:[item url]];
+                    [[master managedObjectContext] deleteObject:obj];
+                    NSLog(@"deleting image %d", index+i);
+                }
+            }
             [[master managedObjectContext] processPendingChanges];
             [master->imageDictLock unlock];
         } @catch (NSException *eee) {
@@ -388,8 +288,9 @@
         @try {
             [master saveContext];
             [[NSOperationQueue currentQueue] addOperationWithBlock:^{
-                if ([images count] > 0) {
-                    DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
+                if ([images count] > index+i) {
+                    NSLog(@"still have %d images, queueing another delete", [images count]);
+                    TWFDeleteImagesOperation* dip = [[TWFDeleteImagesOperation alloc] initWithMaster:master andIndex:index+i];
                     [[master theOtherQueue] addOperation:dip];
                     [[master theOtherQueue] setSuspended:NO];
                 } else {

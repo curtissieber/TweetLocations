@@ -73,10 +73,10 @@ static bool NetworkAccessAllowed = NO;
     [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:[NSNumber numberWithLongLong:0]];
 }
 
-- (TWLocImages*)getImageServer
+- (TWIMAGE*)getImageServer
 {
     if (self->imageServer == Nil) {
-        self->imageServer = [[TWLocImages alloc] init];
+        self->imageServer = [[TWIMAGE alloc] init];
     }
     return self->imageServer;
 }
@@ -297,6 +297,7 @@ static bool NetworkAccessAllowed = NO;
         //Tweet *object = [[self fetchedResultsController] objectAtIndexPath:selected];
         //self.detailViewController.detailItem = object;
         [self.detailViewController setDetailItem:tweet];
+        [self.detailViewController openURL:[NSURL URLWithString:[tweet origURL]]];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -532,6 +533,12 @@ static bool NetworkAccessAllowed = NO;
         if ([alertView tag] == ALERT_NOTWITTER) {
             // not allowed to exit
             NSLog(@"No twitter accounts.  I'm going to sit and stew.");
+            if (_googleReaderLibrary) {
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                [TWLocMasterViewController incrementTasks];
+                [_webQueue addOperation:googleOp];
+                [_webQueue setSuspended:NO];
+            }
         }
         if ([alertView tag] == ALERT_SELECTACCOUNT) {
             NSString* accountName = [alertView buttonTitleAtIndex:buttonIndex];
@@ -876,6 +883,13 @@ static bool NetworkAccessAllowed = NO;
                         }
                         NSLog(@"Got a chance to save, YAY!");
                         [self.tableView reloadData];
+                        
+                        if (_googleReaderLibrary) {
+                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                            [TWLocMasterViewController incrementTasks];
+                            [_webQueue addOperation:googleOp];
+                            [_webQueue setSuspended:NO];
+                        }
                     } @catch (NSException *eee) {
                         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                     }
@@ -1028,13 +1042,15 @@ static bool NetworkAccessAllowed = NO;
 
 - (void)noTwitterAlert
 {
-    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"No Twitter Accounts"
-                                                    message:@"A twitter account must to be set up in the Settings for this device, and access must be allowed for this application"
-                                                   delegate:self
-                                          cancelButtonTitle:@"Understood, EXIT"
-                                          otherButtonTitles: nil];
-    [alert setTag:ALERT_NOTWITTER];
-    [alert show];
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+        UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"No Twitter Accounts"
+                                                        message:@"A twitter account must to be set up in the Settings for this device, and access must be allowed for this application"
+                                                       delegate:self
+                                              cancelButtonTitle:@"Understood, EXIT"
+                                              otherButtonTitles: nil];
+        [alert setTag:ALERT_NOTWITTER];
+        [alert show];
+    }];
 }
 
 - (void)setAllTweetsRead:(id)sender
@@ -1290,10 +1306,15 @@ static bool NetworkAccessAllowed = NO;
     }
 
     _tweetLibrary = YES;
-    _googleReaderLibrary = NO;
+    _googleReaderLibrary = YES;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    id thing = [defaults objectForKey:@"googleLibrary"];
+    NSNumber* thing = [defaults objectForKey:@"googleLibrary"];
     NSLog(@"googleLibrary is %@",thing);
+    _googleReaderLibrary = [thing boolValue];
+    
+    if (_googleReaderLibrary) {
+        _googleReader = [[GoogleReader alloc] init];
+    }
     
     if (_tweetLibrary) {
         self->twitterAccount = Nil;
@@ -1305,11 +1326,7 @@ static bool NetworkAccessAllowed = NO;
         [self getTwitterAccount];
     }
     
-    if (_googleReaderLibrary) {
-        _googleReader = [[GoogleReader alloc] init];
-        [_googleReader authenticate:YES];
-    }
-    
+    backgroundTaskNumber = UIBackgroundTaskInvalid;
     NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:3.0
                                                                           sinceDate:[NSDate date]]
                                               interval:0.7
@@ -1319,10 +1336,18 @@ static bool NetworkAccessAllowed = NO;
                                                repeats:YES];
     [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
 }
+static UIBackgroundTaskIdentifier backgroundTaskNumber;
 
 - (void)timerFireMethod:(NSTimer*)theTimer
 {
     @try {
+        if (queuedTasks > 0) {
+            if (backgroundTaskNumber == UIBackgroundTaskInvalid)
+                [self beginBackgroundTaskHolder];
+        } else {
+            if (backgroundTaskNumber != UIBackgroundTaskInvalid)
+                [self stopBackgroundTaskHolder];
+        }
         [_queueLabel setText:[NSString stringWithFormat:@"%d tasks",queuedTasks]];
         if (queuedTasks > 0)
             [self setTitle:[NSString stringWithFormat:@"Twitter %d",queuedTasks]];
@@ -1331,6 +1356,21 @@ static bool NetworkAccessAllowed = NO;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+}
+-(void)stopBackgroundTaskHolder {
+    NSLog(@"STOPPING BACKGROUND TASK %d", backgroundTaskNumber);
+    if (backgroundTaskNumber != UIBackgroundTaskInvalid) {
+        [[UIApplication sharedApplication] endBackgroundTask:backgroundTaskNumber];
+        backgroundTaskNumber = UIBackgroundTaskInvalid;
+        [imageServer saveContext];
+    }
+}
+-(void)beginBackgroundTaskHolder {
+    backgroundTaskNumber = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        [self stopBackgroundTaskHolder];
+        [self beginBackgroundTaskHolder];
+    }];
+    NSLog(@"STARTING BACKGROUND TASK %d", backgroundTaskNumber);
 }
 
 - (void)didReceiveMemoryWarning
@@ -1956,5 +1996,66 @@ masterViewController:(TWLocMasterViewController*)theMaster
     executing = NO; finished = YES;
 }
 
+
+@end
+
+#pragma mark GOOGLEOPERATION background queue task
+@implementation GoogleOperation
+
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription
+{
+    self = [super init];
+    executing = finished = NO;
+    master = theMaster;
+    rssFeed = theFeed;
+    subscription = theSubscription;
+    [self setQueuePriority:NSOperationQueuePriorityLow];
+    return self;
+}
+- (BOOL)isReady { return YES; }
+- (BOOL)isExecuting { return executing; }
+- (BOOL)isFinished { return finished; }
+
+- (void)main
+{
+    executing = YES;
+
+    if (rssFeed != Nil) {
+        // handle the rss contents if there are any
+    } else if (subscription != Nil) {
+        // queue grabbing the subscription contents
+    } else {
+        // if no feed, and no subscription identity, we should go grab the subscriptions
+        GoogleReader* reader = [master googleReader];
+        NSArray* subscriptionArray = [reader unreadRSSFeeds];
+        NSEnumerator* e = [subscriptionArray objectEnumerator];
+        NSDictionary* getSubscription = Nil;
+        while ((getSubscription = [e nextObject]) != Nil) {
+            if ([[getSubscription class] isSubclassOfClass:[NSDictionary class]]) {
+                NSLog(@"Subscription count=%@ id=%@", [getSubscription objectForKey:@"count"], [getSubscription objectForKey:@"id"]);
+                NSLog(@"%@",getSubscription);
+                /*
+                 2013-02-09 10:37:55.208 TweetLocations[9181:1303] Subscription label=(null) id=(null)
+                 2013-02-09 10:37:55.208 TweetLocations[9181:1303] {
+                 count = 3;
+                 id = "feed/http://thecodyxshow.tumblr.com/rss";
+                 newestItemTimestampUsec = 1360414836317738;
+                 }
+                 */
+                [self getItems:[getSubscription objectForKey:@"id"]];
+            }
+        }
+    }
+    
+    [TWLocMasterViewController decrementTasks];
+    executing = NO; finished = YES;
+}
+
+- (void)getItems:(NSString*)theID
+{
+    GoogleReader* reader = [master googleReader];
+    NSArray* items = [reader unreadItems:theID];
+    NSLog(@"item %@ contains %d items",theID,[items count]);
+}
 
 @end

@@ -10,15 +10,21 @@
 
 @interface GoogleReader : NSObject <UIAlertViewDelegate>
 
-@property (nonatomic) NSString* googleAccount;
-@property (nonatomic) NSString* googlePassword;
-@property (nonatomic) NSString* googleAuth;
-@property (nonatomic) NSString* googleToken;
+@property (nonatomic, retain) NSString* googleAccount;
+@property (nonatomic, retain) NSString* googlePassword;
+@property (nonatomic, retain) NSString* googleAuth;
+@property (nonatomic, retain) NSString* googleToken;
 @property (nonatomic) float googleTokenTime;
-@property (nonatomic) id googleUserInfo;
+@property (nonatomic, retain) NSMutableArray * cookies;
+
+@property (nonatomic, retain) NSString* strSID;
+@property (nonatomic, retain) NSString* strLSID;
+@property (nonatomic, retain) NSString* strAuth;
 
 - (BOOL)authenticate:(BOOL)again;
 - (BOOL)isAuthenticated;
 - (NSArray*)getStreams;
+- (NSArray *)unreadRSSFeeds;
+- (NSArray*)unreadItems:(NSString*)theID;
 
 @end

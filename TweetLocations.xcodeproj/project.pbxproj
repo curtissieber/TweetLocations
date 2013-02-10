@@ -37,6 +37,7 @@
 		E9C0F3BC15EA981300A55251 /* PhotoGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = E9C0F3BA15EA981300A55251 /* PhotoGetter.m */; };
 		E9C0F3BE15EA9B1300A55251 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C0F3BD15EA9B1300A55251 /* CoreLocation.framework */; };
 		E9C0F3C015EA9B1B00A55251 /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */; };
+		E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */ = {isa = PBXBuildFile; fileRef = E9CCDC7116BEDC2E002A42D4 /* TWFastImages.m */; };
 		E9D579DA168CDC3300ACBBC9 /* Image.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579D9168CDC3300ACBBC9 /* Image.m */; };
 		E9D579DD168CDC3E00ACBBC9 /* Group.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579DC168CDC3E00ACBBC9 /* Group.m */; };
 		E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */; };
@@ -104,6 +105,8 @@
 		E9C0F3BB15EA981300A55251 /* PhotoGetter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhotoGetter.h; sourceTree = "<group>"; };
 		E9C0F3BD15EA9B1300A55251 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
+		E9CCDC7116BEDC2E002A42D4 /* TWFastImages.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TWFastImages.m; sourceTree = "<group>"; };
+		E9CCDC7216BEDC2E002A42D4 /* TWFastImages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TWFastImages.h; sourceTree = "<group>"; };
 		E9D579D8168CDC3300ACBBC9 /* Image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Image.h; sourceTree = "<group>"; };
 		E9D579D9168CDC3300ACBBC9 /* Image.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Image.m; sourceTree = "<group>"; };
 		E9D579DB168CDC3E00ACBBC9 /* Group.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Group.h; path = ../Group.h; sourceTree = "<group>"; };
@@ -246,6 +249,8 @@
 				E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */,
 				E90E0673167E2ABE004BEC18 /* TWLocImages.h */,
 				E90E0674167E2ABE004BEC18 /* TWLocImages.m */,
+				E9CCDC7216BEDC2E002A42D4 /* TWFastImages.h */,
+				E9CCDC7116BEDC2E002A42D4 /* TWFastImages.m */,
 				E90E0677167E2C4E004BEC18 /* Images.xcdatamodeld */,
 				E984347216AB0F4D007B996A /* ImageItem.h */,
 				E984347316AB0F4D007B996A /* ImageItem.m */,
@@ -399,6 +404,7 @@
 				E9D579F8168E2F3200ACBBC9 /* DocumentViewController.m in Sources */,
 				E984347016AB0F42007B996A /* ImageData.m in Sources */,
 				E984347416AB0F4D007B996A /* ImageItem.m in Sources */,
+				E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

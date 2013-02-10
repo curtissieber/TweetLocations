@@ -15,6 +15,11 @@
 #import <Accounts/Accounts.h>
 #import "Tweet.h"
 #import "TWLocImages.h"
+#import "TWFastImages.h"
+
+// TWLocImages is the old, good one
+// TWFastImages is the new one I'm trying out
+#define TWIMAGE TWLocImages
 
 @interface TWLocMasterViewController : UITableViewController
         <NSFetchedResultsControllerDelegate,
@@ -28,7 +33,7 @@
     NSMutableDictionary* maxIDEachList;
     NSMutableArray* queueGetArray;
     
-    TWLocImages* imageServer;
+    TWIMAGE* imageServer;
 }
 
 @property (nonatomic, retain) NSString* tweetGroup;
@@ -60,7 +65,7 @@
 + (void)setNetworkAccessAllowed:(BOOL)allowed;
 - (BOOL)openURL:(NSURL *)url;
 - (void)killMax;
-- (TWLocImages*)getImageServer;
+- (TWIMAGE*)getImageServer;
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
 - (void)nextTweet;
@@ -106,5 +111,14 @@ masterViewController:(TWLocMasterViewController*)theMaster;
     NSArray* timeline;
 }
 - (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID;
+
+@end
+@interface GoogleOperation : NSOperation {
+    TWLocMasterViewController* master;
+    NSDictionary* subscription;
+    BOOL executing, finished;
+    NSArray* rssFeed;
+}
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription;
 
 @end

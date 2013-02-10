@@ -44,6 +44,9 @@
     return [theData count];
 }
 
+static NSString* theFileNameToShare = Nil;
+#define CANCELBUTTON @"HELL NO"
+#define OPENINBUTTON @"Open In..."
 - (void)tableView:(UITableView *)theTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     int row = [indexPath row];
@@ -58,11 +61,12 @@
     [docController setDelegate:self];
     [docController presentPreviewAnimated:YES];
     
+    theFileNameToShare = filename;
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE IT?"
                                                     message:@"Permanently delete the file?"
                                                    delegate:self
-                                          cancelButtonTitle:@"HELL NO"
-                                          otherButtonTitles:filename, nil];
+                                          cancelButtonTitle:CANCELBUTTON
+                                          otherButtonTitles:filename, OPENINBUTTON, nil];
     [alert show];
 }
 
@@ -70,11 +74,23 @@
 {
     return self;
 }
+
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     NSString* buttonStr = [alertView buttonTitleAtIndex:buttonIndex];
-    if ([buttonStr compare:@"HELL NO"] == NSOrderedSame) {
+    if ([buttonStr compare:CANCELBUTTON] == NSOrderedSame) {
         NSLog(@"NO DON'T DELETE FILE");
+    } else if ([buttonStr compare:OPENINBUTTON] == NSOrderedSame) {
+        NSLog(@"Found the OpenIn... button");
+        [docCtrl dismissPreviewAnimated:YES];
+        NSTimer* timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeInterval:3.0
+                                                                              sinceDate:[NSDate date]]
+                                                  interval:0.7
+                                                    target:self
+                                                  selector:@selector(openDocumentIn:)
+                                                  userInfo:Nil
+                                                   repeats:NO];
+        [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSDefaultRunLoopMode];
     } else {
         NSString* filename = [alertView buttonTitleAtIndex:buttonIndex];
         NSLog(@"YES I AM DELETING %@", filename);
@@ -84,6 +100,37 @@
         NSString* docString = [docDir stringByAppendingPathComponent:filename];
         [[NSFileManager defaultManager] removeItemAtPath:docString error:Nil];
     }
+}
+
+-(void)openDocumentIn:(NSTimer*)theTimer
+{
+    /*NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString* docDir = [paths objectAtIndex:0];
+    NSString* docString = [docDir stringByAppendingPathComponent:theFileNameToShare];
+    NSLog(@"creating a document interaction controller with %@", docString);
+    [UIDocumentInteractionController
+     interactionControllerWithURL:[NSURL fileURLWithPath:docString]];
+    docCtrl.delegate = self;*/
+    docCtrl.UTI = @"com.apple.quicktime-movie";
+    NSLog(@"presenting the open in ... menu");
+    [docCtrl presentOpenInMenuFromRect:CGRectZero
+                                           inView:_detailView.view
+                                         animated:YES];
+}
+
+-(void)documentInteractionController:(UIDocumentInteractionController *)controller
+       willBeginSendingToApplication:(NSString *)application {
+    NSLog(@"began sending to app %@", application);
+}
+
+-(void)documentInteractionController:(UIDocumentInteractionController *)controller
+          didEndSendingToApplication:(NSString *)application {
+    NSLog(@"ended sending to app %@", application);
+}
+
+-(void)documentInteractionControllerDidDismissOpenInMenu:
+(UIDocumentInteractionController *)controller {
+    NSLog(@"CANCELLED the open in ... menu");
 }
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil

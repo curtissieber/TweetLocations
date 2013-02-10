@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TWLocDetailViewController.h"
 
 @interface DocumentCell : UITableViewCell
 
@@ -20,6 +21,7 @@
                 UIDocumentInteractionController* docCtrl;
 }
 
+@property (nonatomic, retain) TWLocDetailViewController* detailView;
 @property (nonatomic, retain) NSArray* theData;
 @property (nonatomic, retain) NSArray* filesizes;
 @property (nonatomic, retain) IBOutlet UIButton* doneButton;
