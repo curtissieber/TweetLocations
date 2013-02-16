@@ -30,6 +30,7 @@
 #define ALERT_NOTWITTER (666)
 #define ALERT_SELECTACCOUNT (1776)
 #define ALERT_SETALLREAD (1999)
+#define ALERT_GOOGLE (0xdead)
 
 static int queuedTasks = 0;
 static UILabel* staticQueueLabel = Nil;
@@ -659,6 +660,16 @@ static NSMutableArray* urlQueue = Nil;
                 }];
             }
         }
+        if ([alertView tag] == ALERT_GOOGLE) {
+            NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
+            if ([buttonNameHit isEqualToString:@"NO"]) {
+            } else {
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                [TWLocMasterViewController incrementTasks];
+                [_webQueue addOperation:googleOp];
+                [_webQueue setSuspended:NO];
+            }
+        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -965,12 +976,6 @@ static NSMutableArray* urlQueue = Nil;
                         NSLog(@"Got a chance to save, YAY!");
                         [self.tableView reloadData];
                         
-                        if (_googleReaderLibrary) {
-                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
-                            [TWLocMasterViewController incrementTasks];
-                            [_webQueue addOperation:googleOp];
-                            [_webQueue setSuspended:NO];
-                        }
                     } @catch (NSException *eee) {
                         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                     }
@@ -995,6 +1000,19 @@ static NSMutableArray* urlQueue = Nil;
                         NSLog(@"Got a chance to save, YAY!");
                         [self.tableView reloadData];
                         
+                        if (_googleReaderLibrary) {
+                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                            [TWLocMasterViewController incrementTasks];
+                            [_webQueue addOperation:googleOp];
+                            [_webQueue setSuspended:NO];
+                        } else {
+                            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                                UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"GOOGLE NOT ENABLED" message:@"Should I grab the google stuff?" delegate:self cancelButtonTitle:@"NO" otherButtonTitles:@"YES do it!", nil];
+                                [alert setTag:ALERT_GOOGLE];
+                                [alert show];
+                                
+                            }];
+                        }
                         NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
                         Tweet* tweet;
                         while ((tweet = [e nextObject]) != Nil) {
@@ -1398,10 +1416,7 @@ static NSMutableArray* urlQueue = Nil;
     NSNumber* thing = [defaults objectForKey:@"googleLibrary"];
     NSLog(@"googleLibrary is %@",thing);
     _googleReaderLibrary = [thing boolValue];
-    
-    if (_googleReaderLibrary) {
-        _googleReader = [[GoogleReader alloc] init];
-    }
+    _googleReader = [[GoogleReader alloc] init];
     
     if (_tweetLibrary) {
         self->twitterAccount = Nil;

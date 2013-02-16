@@ -59,6 +59,7 @@
 
         // Update the user interface for the detail item.
         if (self.detailItem) {
+            [_activityLabel setHidden:YES];
             [self setupPicturesCollection];
             [_infoButton setHidden:([_detailItem origHTML] == Nil)];
             [_activityView startAnimating];

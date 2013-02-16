@@ -57,9 +57,11 @@
         [_googleAccount length] < 2 ||
         _googlePassword == Nil ||
         [_googlePassword length] < 2) {
-        UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"GOOGLE Authentication Needed" message:@"Enter the account and password for your google account" delegate:self cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
-        [alert setAlertViewStyle:UIAlertViewStyleLoginAndPasswordInput];
-        [alert show];
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"GOOGLE Authentication Needed" message:@"Enter the account and password for your google account" delegate:self cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+            [alert setAlertViewStyle:UIAlertViewStyleLoginAndPasswordInput];
+            [alert show];
+        }];
     } else {
         [self tryAuthentication];
     }
