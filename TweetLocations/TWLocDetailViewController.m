@@ -609,6 +609,8 @@ static UIBarButtonItem *doSomethingButton;
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
+    [_mapView setHidden:YES];
+    [_scrollView setHidden:YES];
     [self configureView];
     
     if ([[UIScreen mainScreen] respondsToSelector:@selector(displayLinkWithTarget:selector:)] &&
@@ -815,6 +817,10 @@ static UIBarButtonItem *doSomethingButton;
 {
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+            if (_picCollection && [_picCollection isHidden] == NO) {
+                [_picCollection setHidden:YES];
+                return;
+            }
             self.textView.alpha = 0.0;
             [UIView animateWithDuration:0.6 delay:0.01 options:UIViewAnimationOptionCurveLinear animations:^{
                 self.scrollView.alpha = 0.0;
