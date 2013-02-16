@@ -13,7 +13,7 @@
 
 @interface TWLocDetailViewController : UIViewController
             <UISplitViewControllerDelegate, UIScrollViewDelegate, UIAlertViewDelegate,
-            UICollectionViewDataSource, UICollectionViewDelegate>
+            UIActionSheetDelegate, UICollectionViewDataSource, UICollectionViewDelegate>
 {
                 NSData* thisImageData;
 }

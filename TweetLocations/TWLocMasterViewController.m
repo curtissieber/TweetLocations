@@ -139,6 +139,42 @@ static bool NetworkAccessAllowed = NO;
         NSIndexPath* nextindex = [self nextIndex:selected forTable:self.tableView];
         if (nextindex == Nil)
             return;
+        Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+            
+        [self.tableView selectRowAtIndexPath:nextindex
+                                    animated:YES
+                              scrollPosition:UITableViewScrollPositionMiddle];
+        
+        self.detailViewController.detailItem = object;
+        
+        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+        @try {
+            [self.tableView setNeedsDisplay];
+            [context processPendingChanges];
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+
+- (void)nextNewTweet
+{
+    @try {
+        NSLog(@"NEXT New TWEET");
+        NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
+        NSIndexPath* nextindex = [self nextIndex:selected forTable:self.tableView];
+        if (nextindex == Nil)
+            return;
         Tweet *object;
         @try {
             object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
@@ -1105,6 +1141,10 @@ static bool NetworkAccessAllowed = NO;
     }
 }
 
+- (void)refreshTweetsButton:(id)sender
+{
+    
+}
 - (void)refreshTweets:(id)sender
 {
     @try {

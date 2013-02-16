@@ -69,6 +69,7 @@
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
 - (void)nextTweet;
+- (void)nextNewTweet;
 - (void)prevTweet;
 - (void)deleteTweet:(Tweet*)tweet;
 - (void)refreshTweet:(Tweet*)tweet;

@@ -604,7 +604,7 @@ static MKCoordinateRegion region;
 #pragma mark view items
 
 static bool isRetinaDisplay = NO;
-
+static UIBarButtonItem *doSomethingButton;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -642,12 +642,17 @@ static bool isRetinaDisplay = NO;
                                               action:@selector(handleSwipeUp:)];
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionUp];
     [self.scrollView addGestureRecognizer:swipeGesture];
+    swipeGesture = [[UISwipeGestureRecognizer alloc]
+                                              initWithTarget:self
+                                              action:@selector(handleSwipeDown:)];
+    [swipeGesture setDirection:UISwipeGestureRecognizerDirectionDown];
+    [self.scrollView addGestureRecognizer:swipeGesture];
     
     if (_detailItem != Nil) {
         NSLog(@"started with a detail item defined");
     }
-    UIBarButtonItem *doSomethingButton = [[UIBarButtonItem alloc]
-                                      initWithBarButtonSystemItem:UIBarButtonSystemItemTrash
+    doSomethingButton = [[UIBarButtonItem alloc]
+                                      initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks
                                       target:self
                                       action:@selector(doSomething:)];
     self.navigationItem.rightBarButtonItem = doSomethingButton;
@@ -675,31 +680,63 @@ static bool isRetinaDisplay = NO;
 #define ALERT_DOSOMETHING (12345)
 #define ALERT_SAVEVIDEO (777)
 #define ALERT_TAG_NULL (1)
+#define DOSOMETHING_CANCEL @"CANCEL"
+#define DOSOMETHING_DELETE @"DELETE Tweet"
+#define DOSOMETHING_REFRESH @"Refesh Tweet Links"
+#define DOSOMETHING_FAVORITE @"Favorite Tweet"
+#define DOSOMETHING_DOCUMENTS @"View Saved Movies"
 - (void)doSomething:(id)sender
 {
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        UIActionSheet* action = [[UIActionSheet alloc] initWithTitle:@"What to do?" delegate:self cancelButtonTitle:DOSOMETHING_CANCEL destructiveButtonTitle:DOSOMETHING_DELETE otherButtonTitles:DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, nil];
+        [action setTag:ALERT_DOSOMETHING];
+        [action showFromBarButtonItem:doSomethingButton animated:YES];
+        return;
+    } 
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"What to do?"
                                                     message:@"Delete, ReGrab, or Favorite?"
                                                    delegate:self
-                                          cancelButtonTitle: @"CANCEL"
-                                          otherButtonTitles: @"DELETE TWEET", @"Refresh", @"Favorite", @"DOCUMENTS",nil];
+                                          cancelButtonTitle: DOSOMETHING_CANCEL
+                                          otherButtonTitles: DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_DELETE, nil];
     [alert setTag:ALERT_DOSOMETHING];
     [alert show];
 }
 
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    @try {
+        if ([actionSheet tag] == ALERT_DOSOMETHING) {
+            NSString* chosen = [actionSheet buttonTitleAtIndex:buttonIndex];
+            if ([chosen compare:DOSOMETHING_CANCEL] == NSOrderedSame)
+                return;
+            if ([chosen compare:DOSOMETHING_DELETE] == NSOrderedSame) {
+                [_master deleteTweet:_detailItem];
+            } else if ([chosen compare:DOSOMETHING_REFRESH] == NSOrderedSame) {
+                [_master refreshTweet:_detailItem];
+            } else if ([chosen compare:DOSOMETHING_FAVORITE] == NSOrderedSame) {
+                [_master favoriteTweet:_detailItem];
+            } else if ([chosen compare:DOSOMETHING_DOCUMENTS] == NSOrderedSame) {
+                [self doDocumentsView];
+            }
+        } 
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
     @try {
         if ([alertView tag] == ALERT_DOSOMETHING) {
             NSString* chosen = [alertView buttonTitleAtIndex:buttonIndex];
-            if ([chosen compare:@"CANCEL"] == NSOrderedSame)
+            if ([chosen compare:DOSOMETHING_CANCEL] == NSOrderedSame)
                 return;
-            if ([chosen compare:@"DELETE TWEET"] == NSOrderedSame) {
+            if ([chosen compare:DOSOMETHING_DELETE] == NSOrderedSame) {
                 [_master deleteTweet:_detailItem];
-            } else if ([chosen compare:@"Refresh"] == NSOrderedSame) {
+            } else if ([chosen compare:DOSOMETHING_REFRESH] == NSOrderedSame) {
                 [_master refreshTweet:_detailItem];
-            } else if ([chosen compare:@"Favorite"] == NSOrderedSame) {
+            } else if ([chosen compare:DOSOMETHING_FAVORITE] == NSOrderedSame) {
                 [_master favoriteTweet:_detailItem];
-            } else if ([chosen compare:@"DOCUMENTS"] == NSOrderedSame) {
+            } else if ([chosen compare:DOSOMETHING_DOCUMENTS] == NSOrderedSame) {
                 [self doDocumentsView];
             }
         } else if ([alertView tag] == ALERT_SAVEVIDEO) {
@@ -739,7 +776,7 @@ static bool isRetinaDisplay = NO;
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             if (_master != Nil)
-                [_master nextTweet];
+                [_master nextNewTweet];
             else
                 NSLog(@"NIL MASTER IN tap");
         }
@@ -786,6 +823,18 @@ static bool isRetinaDisplay = NO;
                 self.scrollView.hidden = YES;
                 self.scrollView.alpha = 1.0;
             }];
+        }
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+}
+
+- (IBAction)handleSwipeDown:(UIGestureRecognizer *)gestureRecognizer
+{
+    @try {
+        if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+            if (self.picCollection)
+                [self.picCollection setHidden:![self.picCollection isHidden]];
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
