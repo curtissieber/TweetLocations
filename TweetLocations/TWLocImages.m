@@ -112,8 +112,7 @@
             NSError* error = [[NSError alloc] init];
             if (![[self managedObjectContext] save:&error]) {
                 NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            } else
-                NSLog(@"Saved thread image");
+            } //else NSLog(@"Saved thread image");
         } else {
             NSLog(@"ERROR ERROR did not create a new imageItem to store %@",url);
         }
@@ -141,8 +140,7 @@
             NSError* error = [[NSError alloc] init];
             if (![[self managedObjectContext] save:&error]) {
                 NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            } else
-                NSLog(@"Saved thread image");
+            } //else NSLog(@"Saved thread image");
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);

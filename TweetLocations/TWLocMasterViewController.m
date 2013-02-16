@@ -115,6 +115,51 @@ static bool NetworkAccessAllowed = NO;
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
+static NSMutableArray* urlQueue = Nil;
+- (void)keepTrackofReadURLs:(NSString*)url
+{
+    @try {
+        if (!urlQueue)
+            urlQueue = [[NSMutableArray alloc] initWithCapacity:5];
+        if (urlQueue ) {
+            __block bool found = NO;
+            [urlQueue enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                NSString* e = obj;
+                if ([e isEqualToString:url])
+                    found = *stop = YES;
+            }];
+            if (found) {
+                NSLog(@"not doubleadding %@",url);
+                return;
+            }
+            [urlQueue addObject:url];
+            if ([urlQueue count] < 20)
+                return;
+            
+            NSString* deleteURL = [urlQueue objectAtIndex:0];
+            [urlQueue removeObjectAtIndex:0];
+            NSLog(@"Deleting image %@",deleteURL);
+            [self deleteImageData:deleteURL];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+- (void)dropReadURLs
+{
+    @try {
+        if (!urlQueue)
+            return;
+        [urlQueue enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* deleteURL = obj;
+            NSLog(@"Deleting image %@",deleteURL);
+            [self deleteImageData:deleteURL];
+        }];
+        [urlQueue removeAllObjects];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
 
 - (NSIndexPath*)nextIndex:(NSIndexPath*)index forTable:(UITableView*)table
 {
@@ -1114,8 +1159,10 @@ static bool NetworkAccessAllowed = NO;
             Tweet* tweet = Nil;
             NSEnumerator* e = [results objectEnumerator];
             while ((tweet = [e nextObject]) != Nil) {
-                if ([[tweet hasBeenRead] boolValue] == NO)
+                if ([[tweet hasBeenRead] boolValue] == NO) {
                     [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                    [self keepTrackofReadURLs:[tweet url]];
+                }
             }
             [self.tableView setNeedsDisplay];
             [context processPendingChanges];
@@ -1506,6 +1553,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             Tweet *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
             [_updateQueue addOperationWithBlock:^{
                 [object setHasBeenRead:[NSNumber numberWithBool:YES]];
+                [self keepTrackofReadURLs:[object url]];
             }];
             [[segue destinationViewController] setDetailItem:object];
             self.detailViewController = [segue destinationViewController];

@@ -68,6 +68,9 @@
 - (TWIMAGE*)getImageServer;
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
+- (void)deleteImageData:(NSString*)url;
+- (void)keepTrackofReadURLs:(NSString*)url;
+- (void)dropReadURLs;
 - (void)nextTweet;
 - (void)nextNewTweet;
 - (void)prevTweet;

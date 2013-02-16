@@ -37,6 +37,7 @@
             // Update the view.
             [self configureView];
             [_detailItem setHasBeenRead:[NSNumber numberWithBool:YES]];
+            [_master keepTrackofReadURLs:[_detailItem url]];
             NSManagedObjectContext *context = [_master.fetchedResultsController managedObjectContext];
             [context processPendingChanges];
         }
@@ -89,6 +90,7 @@
             }
             [[_master updateQueue] addOperationWithBlock:^{
                 [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                [_master keepTrackofReadURLs:[_detailItem url]];
             }];
             
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
@@ -325,6 +327,8 @@
     checkRange = NSMakeRange([urlStr length]-4, 4);
     if ([urlStr compare:@".jpg" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
         return YES;
+    if ([urlStr compare:@".jpg:large" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
+        return YES;
     if ([urlStr compare:@".png" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
         return YES;
     if ([urlStr compare:@".gif" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
@@ -409,12 +413,27 @@
             [strResults addObject:current];
         else if ([current rangeOfString:@"media.tumblr.com/"].location != NSNotFound)
             [strResults addObject:current];
+        else if ([current rangeOfString:@"pinterest.com/500"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinterest.com/550"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinterest.com/original"].location != NSNotFound)
+            [strResults addObject:current];
     }
     //NSLog(@"only %d links are images",[strResults count]);
     
     [strResults sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         NSMutableString* str1 = [[NSMutableString alloc] initWithString:obj1];
         NSMutableString* str2 = [[NSMutableString alloc] initWithString:obj2];
+        if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
+            return NSOrderedAscending;
+        if ([str1 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
+            [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
+            return NSOrderedAscending;
+        if ([str1 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
+            [str2 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
+            [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
+            return NSOrderedAscending;
         if ([str1 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             return NSOrderedAscending;
         if ([str2 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
@@ -777,9 +796,14 @@ static UIBarButtonItem *doSomethingButton;
 {
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
-            if (_master != Nil)
+            if (_master != Nil) {
+                if (_pictures && [_pictures count] > 1)
+                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [_master deleteImageData:obj];
+                        NSLog(@"deleting from pic collection %@",obj);
+                    }];
                 [_master nextNewTweet];
-            else
+            } else
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {
@@ -790,9 +814,14 @@ static UIBarButtonItem *doSomethingButton;
 {
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
-            if (_master != Nil)
+            if (_master != Nil) {
+                if (_pictures && [_pictures count] > 1)
+                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [_master deleteImageData:obj];
+                        NSLog(@"deleting from pic collection %@",obj);
+                    }];
                 [_master nextTweet];
-            else
+            } else
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {
@@ -803,9 +832,14 @@ static UIBarButtonItem *doSomethingButton;
 {
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
-            if (_master != Nil)
+            if (_master != Nil) {
+                if (_pictures && [_pictures count] > 1)
+                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [_master deleteImageData:obj];
+                        NSLog(@"deleting from pic collection %@",obj);
+                    }];
                 [_master prevTweet];
-            else
+            } else
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {

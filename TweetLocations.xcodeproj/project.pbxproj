@@ -14,6 +14,7 @@
 		E91D95D115EAC13200717A95 /* LocPin.png in Resources */ = {isa = PBXBuildFile; fileRef = E91D95D015EAC13200717A95 /* LocPin.png */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
 		E951013D16445EDB00A4505E /* GoogleReader.m in Sources */ = {isa = PBXBuildFile; fileRef = E951013C16445EDB00A4505E /* GoogleReader.m */; };
+		E9533BFB16CFE96400437954 /* change notes in Resources */ = {isa = PBXBuildFile; fileRef = E9533BFA16CFE96400437954 /* change notes */; };
 		E984347016AB0F42007B996A /* ImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = E984346F16AB0F42007B996A /* ImageData.m */; };
 		E984347416AB0F4D007B996A /* ImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = E984347316AB0F4D007B996A /* ImageItem.m */; };
 		E98D760F16457E8100E12BE1 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E98D760E16457E8100E12BE1 /* QuartzCore.framework */; };
@@ -77,6 +78,7 @@
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		E951013B16445EDB00A4505E /* GoogleReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GoogleReader.h; sourceTree = "<group>"; };
 		E951013C16445EDB00A4505E /* GoogleReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GoogleReader.m; sourceTree = "<group>"; };
+		E9533BFA16CFE96400437954 /* change notes */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "change notes"; sourceTree = "<group>"; };
 		E984346E16AB0F42007B996A /* ImageData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageData.h; sourceTree = "<group>"; };
 		E984346F16AB0F42007B996A /* ImageData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageData.m; sourceTree = "<group>"; };
 		E984347216AB0F4D007B996A /* ImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ImageItem.h; path = ../ImageItem.h; sourceTree = "<group>"; };
@@ -233,6 +235,7 @@
 		E9DE580115E94407005D75F6 /* TweetLocations */ = {
 			isa = PBXGroup;
 			children = (
+				E9533BFA16CFE96400437954 /* change notes */,
 				E9EB0AFA165FD728003264BC /* iPhone.storyboard */,
 				E9EB0AFC165FD728003264BC /* iPad.storyboard */,
 				E91D95C915EAB60C00717A95 /* TWLocApplication.h */,
@@ -374,6 +377,7 @@
 				E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */,
 				E9EB0B01165FD77A003264BC /* Settings.bundle in Resources */,
 				E9D579F7168E2F3200ACBBC9 /* DocumentViewController.storyboard in Resources */,
+				E9533BFB16CFE96400437954 /* change notes in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
