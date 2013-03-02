@@ -47,11 +47,17 @@
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-    if (_masterViewController != Nil) {
-        [_masterViewController dropReadURLs];
-        NSLog(@"dropping all read URL images");
-    }
+    NSLog(@"Background saving context");
     [self saveContext];
+    if (_masterViewController != Nil) {
+        [_masterViewController dropReadURLs:^{
+            NSLog(@"dropped all read URL images");
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                NSLog(@"Background saving context");
+                [self saveContext]; 
+            }];
+        }];
+    }
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
 }
 
@@ -88,20 +94,28 @@
 
 - (void)saveContext
 {
-    NSError *error = nil;
-    NSManagedObjectContext *managedObjectContext = [self managedObjectContext];
-    if (managedObjectContext != nil) {
-        if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
-             // Replace this implementation with code to handle the error appropriately.
-             // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-            abort();
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SAVING IMAGES" message:@"Image DB being saved" delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+    @try {
+        [alert show];
+        NSError *error = nil;
+        NSManagedObjectContext *managedObjectContext = [self managedObjectContext];
+        if (managedObjectContext != nil) {
+            if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+                abort();
+            }
+            NSLog(@"SAVED BEFORE background/terminate");
         }
-        NSLog(@"SAVED BEFORE background/terminate");
-    }
-    if (_masterViewController != Nil) {
-        [[_masterViewController getImageServer] saveContext];
-        NSLog(@"Images SAVED BEFORE background/terminate");
+        if (_masterViewController != Nil) {
+            [[_masterViewController getImageServer] saveContext];
+            NSLog(@"Images SAVED BEFORE background/terminate");
+        }
+        [alert dismissWithClickedButtonIndex:0 animated:YES];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        [alert dismissWithClickedButtonIndex:0 animated:YES];
     }
 }
 

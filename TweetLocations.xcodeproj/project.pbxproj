@@ -13,6 +13,7 @@
 		E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = E91D95CA15EAB60C00717A95 /* TWLocApplication.m */; };
 		E91D95D115EAC13200717A95 /* LocPin.png in Resources */ = {isa = PBXBuildFile; fileRef = E91D95D015EAC13200717A95 /* LocPin.png */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
+		E950AD4616E2932D0044656E /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E950AD4516E2932D0044656E /* Tweet.m */; };
 		E951013D16445EDB00A4505E /* GoogleReader.m in Sources */ = {isa = PBXBuildFile; fileRef = E951013C16445EDB00A4505E /* GoogleReader.m */; };
 		E9533BFB16CFE96400437954 /* change notes in Resources */ = {isa = PBXBuildFile; fileRef = E9533BFA16CFE96400437954 /* change notes */; };
 		E984347016AB0F42007B996A /* ImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = E984346F16AB0F42007B996A /* ImageData.m */; };
@@ -43,7 +44,6 @@
 		E9D579DD168CDC3E00ACBBC9 /* Group.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579DC168CDC3E00ACBBC9 /* Group.m */; };
 		E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */; };
 		E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */; };
-		E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579EB168DE45800ACBBC9 /* Tweet.m */; };
 		E9D579F3168E2D8D00ACBBC9 /* MovieGetter.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579F1168E2D8C00ACBBC9 /* MovieGetter.m */; };
 		E9D579F7168E2F3200ACBBC9 /* DocumentViewController.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */; };
 		E9D579F8168E2F3200ACBBC9 /* DocumentViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */; };
@@ -76,6 +76,9 @@
 		E91D95D015EAC13200717A95 /* LocPin.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LocPin.png; sourceTree = "<group>"; };
 		E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 2.xcdatamodel"; sourceTree = "<group>"; };
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = file; path = "TweetLocations 6.xcdatamodel"; sourceTree = "<group>"; };
+		E950AD4416E2932D0044656E /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
+		E950AD4516E2932D0044656E /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E951013B16445EDB00A4505E /* GoogleReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GoogleReader.h; sourceTree = "<group>"; };
 		E951013C16445EDB00A4505E /* GoogleReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GoogleReader.m; sourceTree = "<group>"; };
 		E9533BFA16CFE96400437954 /* change notes */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "change notes"; sourceTree = "<group>"; };
@@ -117,8 +120,6 @@
 		E9D579E2168CF49C00ACBBC9 /* TWLocPicCollectionCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TWLocPicCollectionCell.m; sourceTree = "<group>"; };
 		E9D579E4168D00DC00ACBBC9 /* AnimatedGif.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimatedGif.h; sourceTree = "<group>"; };
 		E9D579E5168D00DC00ACBBC9 /* AnimatedGif.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnimatedGif.m; sourceTree = "<group>"; };
-		E9D579EA168DE45800ACBBC9 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
-		E9D579EB168DE45800ACBBC9 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E9D579F1168E2D8C00ACBBC9 /* MovieGetter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MovieGetter.m; sourceTree = "<group>"; };
 		E9D579F2168E2D8C00ACBBC9 /* MovieGetter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MovieGetter.h; sourceTree = "<group>"; };
 		E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = DocumentViewController.storyboard; sourceTree = "<group>"; };
@@ -264,9 +265,9 @@
 				E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */,
 				E9D579F6168E2F3200ACBBC9 /* DocumentViewController.h */,
 				E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */,
+				E950AD4416E2932D0044656E /* Tweet.h */,
+				E950AD4516E2932D0044656E /* Tweet.m */,
 				E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */,
-				E9D579EA168DE45800ACBBC9 /* Tweet.h */,
-				E9D579EB168DE45800ACBBC9 /* Tweet.m */,
 				E9D579D8168CDC3300ACBBC9 /* Image.h */,
 				E9D579D9168CDC3300ACBBC9 /* Image.m */,
 				E9D579DB168CDC3E00ACBBC9 /* Group.h */,
@@ -403,12 +404,12 @@
 				E9D579DD168CDC3E00ACBBC9 /* Group.m in Sources */,
 				E9D579E3168CF49C00ACBBC9 /* TWLocPicCollectionCell.m in Sources */,
 				E9D579E6168D00DC00ACBBC9 /* AnimatedGif.m in Sources */,
-				E9D579EC168DE45800ACBBC9 /* Tweet.m in Sources */,
 				E9D579F3168E2D8D00ACBBC9 /* MovieGetter.m in Sources */,
 				E9D579F8168E2F3200ACBBC9 /* DocumentViewController.m in Sources */,
 				E984347016AB0F42007B996A /* ImageData.m in Sources */,
 				E984347416AB0F4D007B996A /* ImageItem.m in Sources */,
 				E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */,
+				E950AD4616E2932D0044656E /* Tweet.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,12 +558,13 @@
 			isa = XCVersionGroup;
 			children = (
 				E9F54C18167528A8002814EE /* TweetLocations 5.xcdatamodel */,
+				E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */,
 				E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */,
 				E9909DF1161F2658007CDA4D /* TweetLocations 3.xcdatamodel */,
 				E9072F2116573C3F000B1B07 /* TweetLocations 4.xcdatamodel */,
 				E9DE581415E94407005D75F6 /* TweetLocations.xcdatamodel */,
 			);
-			currentVersion = E9F54C18167528A8002814EE /* TweetLocations 5.xcdatamodel */;
+			currentVersion = E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */;
 			path = TweetLocations.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

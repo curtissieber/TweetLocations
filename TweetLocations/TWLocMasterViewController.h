@@ -21,6 +21,8 @@
 // TWFastImages is the new one I'm trying out
 #define TWIMAGE TWLocImages
 
+typedef void(^MasterCallback)(void);
+
 @interface TWLocMasterViewController : UITableViewController
         <NSFetchedResultsControllerDelegate,
          UIAlertViewDelegate>
@@ -70,7 +72,7 @@
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
 - (void)deleteImageData:(NSString*)url;
 - (void)keepTrackofReadURLs:(NSString*)url;
-- (void)dropReadURLs;
+- (void)dropReadURLs:(MasterCallback)callback;
 - (void)nextTweet;
 - (void)nextNewTweet;
 - (void)prevTweet;
@@ -84,20 +86,20 @@
     TWLocMasterViewController* master;
     Tweet* tweet;
     NSIndexPath* index;
+    NSString* replaceURL;
     BOOL executing, finished;
 }
-- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster;
+- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex masterViewController:(TWLocMasterViewController*)theMaster replaceURL:(NSString*)replace;
 @end
 
 @interface TweetImageOperation : NSOperation {
     TWLocMasterViewController* master;
     Tweet* tweet;
     NSIndexPath* index;
+    NSString* replaceURL;
     BOOL executing, finished;
 }
-- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster;
+- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex masterViewController:(TWLocMasterViewController*)theMaster replaceURL:(NSString*)replace;
 @end
 
 @interface GetTweetOperation : NSOperation {
@@ -121,9 +123,10 @@ masterViewController:(TWLocMasterViewController*)theMaster;
     TWLocMasterViewController* master;
     NSDictionary* subscription;
     NSString* subscriptionName;
+    NSString* streamName;
     BOOL executing, finished;
     NSArray* rssFeed;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription;
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription andStream:(NSString*)theStreamName;
 
 @end

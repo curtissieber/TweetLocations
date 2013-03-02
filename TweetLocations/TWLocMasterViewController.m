@@ -148,7 +148,7 @@ static NSMutableArray* urlQueue = Nil;
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
-- (void)dropReadURLs
+- (void)dropReadURLs:(MasterCallback)callback
 {
     @try {
         if (!urlQueue)
@@ -160,6 +160,8 @@ static NSMutableArray* urlQueue = Nil;
                 [self deleteImageData:deleteURL];
             }];
             [urlQueue removeAllObjects];
+            if (callback != Nil)
+                callback();
         }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -620,7 +622,7 @@ static NSMutableArray* urlQueue = Nil;
             // not allowed to exit
             NSLog(@"No twitter accounts.  I'm going to sit and stew.");
             if (_googleReaderLibrary) {
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
                 [_webQueue setSuspended:NO];
@@ -668,7 +670,7 @@ static NSMutableArray* urlQueue = Nil;
             NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
             if ([buttonNameHit isEqualToString:@"NO"]) {
             } else {
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
                 [_webQueue setSuspended:NO];
@@ -913,6 +915,9 @@ static NSMutableArray* urlQueue = Nil;
                             [tweet setListID:theListID];
                         else
                             [tweet setListID:[NSNumber numberWithLongLong:0]];
+                        [tweet setFromGoogleReader:[NSNumber numberWithBool:YES]];
+                        [tweet setGoogleID:Nil];
+                        [tweet setGoogleStream:Nil];
                         
                         [_idSet addObject:theID];
                         storedTweets++;
@@ -1005,7 +1010,7 @@ static NSMutableArray* urlQueue = Nil;
                         [self.tableView reloadData];
                         
                         if (_googleReaderLibrary) {
-                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil];
+                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
                             [TWLocMasterViewController incrementTasks];
                             [_webQueue addOperation:googleOp];
                             [_webQueue setSuspended:NO];
@@ -1026,7 +1031,8 @@ static NSMutableArray* urlQueue = Nil;
                                 if (indexPath != Nil) {
                                     TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                                                           index:indexPath
-                                                                           masterViewController:self];
+                                                                           masterViewController:self
+                                                                                     replaceURL:Nil];
                                     [TWLocMasterViewController incrementTasks];
                                     [_webQueue addOperation:top];
                                     [_webQueue setSuspended:NO];
@@ -1266,7 +1272,7 @@ static NSMutableArray* urlQueue = Nil;
                             __block NSString* url = [tweet url];
                             [context deleteObject:tweet];
                             [_idSet removeObject:[tweet tweetID]];
-                            [_webQueue addOperationWithBlock:^{
+                            [_updateQueue addOperationWithBlock:^{
                                 [[self getImageServer] deleteImageData:url];
                             }];
                         }
@@ -1838,14 +1844,14 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 #pragma mark TWEETOPERATION background queue task
 @implementation TweetOperation
 
-- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-            masterViewController:(TWLocMasterViewController*)theMaster
+- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex masterViewController:(TWLocMasterViewController*)theMaster replaceURL:(NSString*)replace
 {
     self = [super init];
     executing = finished = NO;
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
+    self->replaceURL = replace;
     [self setQueuePriority:NSOperationQueuePriorityVeryLow];
     return self;
 }
@@ -1859,7 +1865,9 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     // moved this to another operation
     TweetImageOperation* imageOperation = [[TweetImageOperation alloc] initWithTweet:self->tweet
                                                                                index:self->index
-                                                                masterViewController:self->master];
+                                                                masterViewController:self->master
+                                                                          replaceURL:replaceURL];
+    [imageOperation setQueuePriority:NSOperationQueuePriorityHigh];
     NSOperationQueue* queue = [NSOperationQueue currentQueue];
     [TWLocMasterViewController incrementTasks];
     [queue addOperation:imageOperation];
@@ -1875,14 +1883,16 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             executing = NO; finished = YES;
             return;
         }
-        if (([tweet url] == Nil) ||
-            ([[tweet url] length] < 4) ||
-            ([master imageData:[tweet url]] != Nil) ) {
+        if (replaceURL == Nil)
+            replaceURL = [tweet url];
+        if ((replaceURL == Nil) ||
+            ([replaceURL length] < 4) ||
+            ([master imageData:replaceURL] != Nil) ) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+        if ([TWLocDetailViewController imageExtension:replaceURL]) {
             [self tryImage];
         } else {
             NSURL* url = [NSURL URLWithString:[tweet url]];
@@ -1905,7 +1915,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             if (html != Nil) {
                 NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
                 if ([tweet origHTML] == Nil ||
-                    [[tweet url] rangeOfString:@"photoset_iframe"].location != NSNotFound) {
+                    [replaceURL rangeOfString:@"photoset_iframe"].location != NSNotFound) {
                     [[master updateQueue] addOperationWithBlock:^{
                         [tweet setOrigHTML:html];
                     }];
@@ -1915,13 +1925,15 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                         [tweet setUrl:replace];
                     }];
                     NSLog(@"URL_REPLACE %@",replace);
-                    if ([TWLocDetailViewController imageExtension:[tweet url]])
+                    replaceURL = replace;
+                    if ([TWLocDetailViewController imageExtension:replaceURL])
                         [self tryImage];
                     else {
                         TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
                                                                               index:index
-                                                               masterViewController:master];
-                        [top setQueuePriority:NSOperationQueuePriorityHigh];
+                                                               masterViewController:master
+                                                                         replaceURL:replaceURL];
+                        [top setQueuePriority:NSOperationQueuePriorityNormal];
                         [TWLocMasterViewController incrementTasks];
                         [[master webQueue] addOperation:top];
                         [[master webQueue] setSuspended:NO];
@@ -1930,7 +1942,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                     //    [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
                     //}];
                 } else
-                    NSLog(@"URL_DEADEND %@ links",[tweet url]);
+                    NSLog(@"URL_DEADEND %@ links",replaceURL);
             }
         }
         
@@ -1955,14 +1967,14 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 #pragma mark TWEETIMAGEOPERTATION background queue task
 @implementation TweetImageOperation
 
-- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex
-masterViewController:(TWLocMasterViewController*)theMaster
+- (id)initWithTweet:(Tweet*)theTweet index:(NSIndexPath*)theIndex masterViewController:(TWLocMasterViewController*)theMaster replaceURL:(NSString*)replace
 {
     self = [super init];
     executing = finished = NO;
     self->index = theIndex;
     self->tweet = theTweet;
     self->master = theMaster;
+    self->replaceURL = replace;
     [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
@@ -1974,7 +1986,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 - (void)tryImage
 {
     @try {
-        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[tweet url]]
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:replaceURL]
                                                  cachePolicy:NSURLRequestReturnCacheDataElseLoad
                                              timeoutInterval:30];
         NSURLResponse* response=nil;
@@ -1983,10 +1995,10 @@ masterViewController:(TWLocMasterViewController*)theMaster
                                                 returningResponse:&response
                                                             error:&error];
         if (imageData == Nil) {
-            NSLog(@"BAD IMAGE CONNECTION to %@",[tweet url]);
+            NSLog(@"BAD IMAGE CONNECTION to %@",replaceURL);
             return;
         } else {
-            NSLog(@"background imagedata size %d %@",[imageData length],[tweet url]);
+            NSLog(@"background imagedata size %d %@",[imageData length],replaceURL);
         }
         
         CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
@@ -2014,13 +2026,15 @@ masterViewController:(TWLocMasterViewController*)theMaster
                 [tweet setLatitude:[NSNumber numberWithDouble:lat]];
                 [tweet setLongitude:[NSNumber numberWithDouble:lon]];
                 NSLog(@" @ %0.1f,%01f",lat,lon);
+                if (index == Nil)
+                    index = [master.fetchedResultsController indexPathForObject:tweet];
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                     [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
                 }];
                 [[master.fetchedResultsController managedObjectContext] processPendingChanges];
             }];
         }
-        [master imageData:imageData forURL:[tweet url]];
+        [master imageData:imageData forURL:replaceURL];
 
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -2037,14 +2051,16 @@ masterViewController:(TWLocMasterViewController*)theMaster
             executing = NO; finished = YES;
             return;
         }
-        if (([tweet url] == Nil) ||
-            ([[tweet url] length] < 4) ||
-            ([master imageData:[tweet url]] != Nil) ) {
+        if (replaceURL == Nil)
+            replaceURL = [tweet url];
+        if ((replaceURL == Nil) ||
+            ([replaceURL length] < 4) ||
+            ([master imageData:replaceURL] != Nil) ) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:[tweet url]]) {
+        if ([TWLocDetailViewController imageExtension:replaceURL]) {
             [self tryImage];
             //[[NSOperationQueue mainQueue] addOperationWithBlock:^{
             //    [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
@@ -2127,7 +2143,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
 #pragma mark GOOGLEOPERATION background queue task
 @implementation GoogleOperation
 
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription andStream:(NSString*)theStreamName
 {
     self = [super init];
     executing = finished = NO;
@@ -2135,6 +2151,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     rssFeed = theFeed;
     subscription = theSubscription;
     subscriptionName = Nil;
+    streamName = theStreamName;
     [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
@@ -2181,7 +2198,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
                      sortid = E9F15B75;
                      title = "Yummy Ginger Men";
                      */
-                    GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscription:getSubscription];
+                    GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscription:getSubscription andStream:[getSubscription objectForKey:@"id"]];
                     [[NSOperationQueue currentQueue] addOperation:itemGetter];
                 }
             }
@@ -2194,7 +2211,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     executing = NO; finished = YES;
 }
 
-- (void)getItems:(NSString*)theID
+- (NSUInteger)getItems:(NSString*)theID
 {
     GoogleReader* reader = [master googleReader];
     NSArray* items = [reader unreadItems:theID];
@@ -2205,6 +2222,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     while ((item = [e nextObject]) != Nil) {
         [self performSelectorOnMainThread:@selector(addItem:) withObject:item waitUntilDone:YES];
     }
+    return [items count];
 /*
  (
  {
@@ -2255,7 +2273,14 @@ masterViewController:(TWLocMasterViewController*)theMaster
         NSString* title = [item objectForKey:@"title"];
         NSDictionary* summary = [item objectForKey:@"summary"];
         NSString* contents = [summary objectForKey:@"content"];
-        NSString* htmlURL = [item objectForKey:@"htmlUrl"];
+        NSDictionary* origin = [item objectForKey:@"origin"];
+        NSString* htmlURL = [origin objectForKey:@"htmlUrl"];
+        NSArray* alternate = [item objectForKey:@"alternate"];
+        if (alternate && [alternate count] > 0) {
+            NSDictionary* altitem = [alternate objectAtIndex:0];
+            htmlURL = [altitem objectForKey:@"href"];
+        }
+        NSString* googleID = [item objectForKey:@"id"];
         
         NSLog(@"adding item from %@: %@",username,title);
         NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
@@ -2267,7 +2292,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
         [tweet setFavorite:NO];
         [tweet setTimestamp:timestamp];
         [tweet setUsername:username];
-        [tweet setTweet:[NSString stringWithFormat:@"%@ %@",title,contents]];
+        [tweet setTweet:[NSString stringWithFormat:@"%@\n%@",title,contents]];
         [tweet setLatitude:[NSNumber numberWithDouble:-900]];
         [tweet setLongitude:[NSNumber numberWithDouble:-900]];
         [tweet setUrl:htmlURL];
@@ -2276,11 +2301,26 @@ masterViewController:(TWLocMasterViewController*)theMaster
         [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
         [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
         [tweet setListID:[NSNumber numberWithLongLong:0]];
+        [tweet setFromGoogleReader:[NSNumber numberWithBool:YES]];
+        [tweet setGoogleID:googleID];
+        [tweet setGoogleStream:streamName];
         
         [[master idSet] addObject:[NSNumber numberWithLongLong:[timestamp longLongValue]]];
+        [[master.fetchedResultsController managedObjectContext] processPendingChanges];
+        [[master tableView] setNeedsLayout];
+        [[master tableView] setNeedsDisplay];
+        if ([master theQueue] != Nil && NetworkAccessAllowed &&
+            [[tweet hasBeenRead] boolValue] == NO) {
+            TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
+                                                                  index:Nil
+                                                   masterViewController:master
+                                                             replaceURL:Nil];
+            [TWLocMasterViewController incrementTasks];
+            [[master webQueue] addOperation:top];
+            [[master webQueue] setSuspended:NO];
+        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
-
 @end

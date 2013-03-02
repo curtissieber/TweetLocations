@@ -37,6 +37,8 @@
             // Update the view.
             [self configureView];
             [_detailItem setHasBeenRead:[NSNumber numberWithBool:YES]];
+            if ([[_detailItem fromGoogleReader] boolValue] == YES)
+                [[_master googleReader] setRead:[_detailItem googleID] stream:[_detailItem googleStream]];
             [_master keepTrackofReadURLs:[_detailItem url]];
             NSManagedObjectContext *context = [_master.fetchedResultsController managedObjectContext];
             [context processPendingChanges];

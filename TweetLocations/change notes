@@ -1,12 +1,6 @@
-making it ask for google grab, if google is not enabled
-Google sucks right now, not getting the subcription list right - working on it
-   Also adding the operations for each subscription to return the items
-   not doing anything with the items right now, just finding them (unread only)
-also making the detail view autodrop the translucent status frame
-Working on the DetailController to make it threadsafe while fetching images
-    this requires going into the web thread, which then kicks back into the mainqueue
-    also doing the same for collection pictures
-    and there's a delete-image-queue operation thing that works the same
-Changing the tweet delete to: 
-    500-600 if not LOC and not FAV and not READ
-    600+ if not READ
+Made the saveContext image save  walk thru the imageQueueDrop, then the save the context
+The google grabber is working, and making pseudoTweets
+Am adding "fromGoogle" to the tweet DB -- DB upgrade should happen
+Also made it try to queue the initial grab of the googleItem, as a pseudoTweet
+having troubles with the final save of the images at the end
+fixed a buncha stuff that wants updating the tweet with the replacement URL quite right for the grabs

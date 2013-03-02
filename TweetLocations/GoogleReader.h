@@ -26,5 +26,6 @@
 - (NSArray*)getStreams;
 - (NSArray *)unreadRSSFeeds;
 - (NSArray*)unreadItems:(NSString*)theID;
+- (void)setRead:(NSString*)theID stream:(NSString*)theStream;
 
 @end
