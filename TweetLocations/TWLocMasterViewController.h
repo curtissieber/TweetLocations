@@ -120,6 +120,7 @@ masterViewController:(TWLocMasterViewController*)theMaster;
 @interface GoogleOperation : NSOperation {
     TWLocMasterViewController* master;
     NSDictionary* subscription;
+    NSString* subscriptionName;
     BOOL executing, finished;
     NSArray* rssFeed;
 }

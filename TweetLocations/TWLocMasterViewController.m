@@ -137,10 +137,12 @@ static NSMutableArray* urlQueue = Nil;
             if ([urlQueue count] < 20)
                 return;
             
-            NSString* deleteURL = [urlQueue objectAtIndex:0];
+            __block NSString* deleteURL = [urlQueue objectAtIndex:0];
             [urlQueue removeObjectAtIndex:0];
-            NSLog(@"Deleting image %@",deleteURL);
-            [self deleteImageData:deleteURL];
+            [_webQueue addOperationWithBlock:^{
+                NSLog(@"Deleting image %@",deleteURL);
+                [self deleteImageData:deleteURL];
+            }];
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -151,12 +153,14 @@ static NSMutableArray* urlQueue = Nil;
     @try {
         if (!urlQueue)
             return;
-        [urlQueue enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-            NSString* deleteURL = obj;
-            NSLog(@"Deleting image %@",deleteURL);
-            [self deleteImageData:deleteURL];
+        [_webQueue addOperationWithBlock:^{
+            [urlQueue enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                NSString* deleteURL = obj;
+                NSLog(@"Deleting image %@",deleteURL);
+                [self deleteImageData:deleteURL];
+            }];
+            [urlQueue removeAllObjects];
         }];
-        [urlQueue removeAllObjects];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -1179,7 +1183,6 @@ static NSMutableArray* urlQueue = Nil;
             while ((tweet = [e nextObject]) != Nil) {
                 if ([[tweet hasBeenRead] boolValue] == NO) {
                     [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
-                    [self keepTrackofReadURLs:[tweet url]];
                 }
             }
             [self.tableView setNeedsDisplay];
@@ -1251,14 +1254,21 @@ static NSMutableArray* urlQueue = Nil;
                     for (int i = rows-1; i > MAXTWEETS; i--) {
                         NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:sect];
                         Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
-                        if ([[tweet locationFromPic] boolValue] == NO &&
-                            [[tweet favorite] boolValue] == NO &&
-                            [[tweet hasBeenRead] boolValue] == YES) {
+                        bool deleteMe = [[tweet hasBeenRead] boolValue];
+                        if (i < MAXTWEETS+100) {
+                            if ([[tweet locationFromPic] boolValue] == YES)
+                                deleteMe = NO;
+                            if ([[tweet favorite] boolValue] == YES)
+                                deleteMe = NO;
+                        }
+                        if (deleteMe) {
                             //NSLog(@"removing %d tweet %@",i,tweet);
-                            NSString* url = [tweet url];
+                            __block NSString* url = [tweet url];
                             [context deleteObject:tweet];
                             [_idSet removeObject:[tweet tweetID]];
-                            [[self getImageServer] deleteImageData:url];
+                            [_webQueue addOperationWithBlock:^{
+                                [[self getImageServer] deleteImageData:url];
+                            }];
                         }
                     }
                 }
@@ -1283,7 +1293,9 @@ static NSMutableArray* urlQueue = Nil;
                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
             }
-            [[self getImageServer] saveContext];
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [[self getImageServer] saveContext];
+            }];
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -1359,6 +1371,14 @@ static NSMutableArray* urlQueue = Nil;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    if ([[NSThread currentThread] hash] == [[NSThread mainThread] hash] ) {
+        NSLog(@"dummy data imageData controller get:%@",[self imageData:@"dummy url"]);
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            NSLog(@"dispatching dummy data imageData controller get:%@",[self imageData:@"dummy url"]);
+        });
+    }
 
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc]
                                       initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
@@ -1464,7 +1484,9 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     if (backgroundTaskNumber != UIBackgroundTaskInvalid) {
         [[UIApplication sharedApplication] endBackgroundTask:backgroundTaskNumber];
         backgroundTaskNumber = UIBackgroundTaskInvalid;
-        [imageServer saveContext];
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            [imageServer saveContext];
+        }];
     }
 }
 -(void)beginBackgroundTaskHolder {
@@ -2112,6 +2134,7 @@ masterViewController:(TWLocMasterViewController*)theMaster
     master = theMaster;
     rssFeed = theFeed;
     subscription = theSubscription;
+    subscriptionName = Nil;
     [self setQueuePriority:NSOperationQueuePriorityLow];
     return self;
 }
@@ -2127,26 +2150,43 @@ masterViewController:(TWLocMasterViewController*)theMaster
         // handle the rss contents if there are any
     } else if (subscription != Nil) {
         // queue grabbing the subscription contents
-    } else {
-        // if no feed, and no subscription identity, we should go grab the subscriptions
-        GoogleReader* reader = [master googleReader];
-        NSArray* subscriptionArray = [reader unreadRSSFeeds];
-        NSEnumerator* e = [subscriptionArray objectEnumerator];
-        NSDictionary* getSubscription = Nil;
-        while ((getSubscription = [e nextObject]) != Nil) {
-            if ([[getSubscription class] isSubclassOfClass:[NSDictionary class]]) {
-                NSLog(@"Subscription count=%@ id=%@", [getSubscription objectForKey:@"count"], [getSubscription objectForKey:@"id"]);
-                NSLog(@"%@",getSubscription);
-                /*
-                 2013-02-09 10:37:55.208 TweetLocations[9181:1303] Subscription label=(null) id=(null)
-                 2013-02-09 10:37:55.208 TweetLocations[9181:1303] {
-                 count = 3;
-                 id = "feed/http://thecodyxshow.tumblr.com/rss";
-                 newestItemTimestampUsec = 1360414836317738;
-                 }
-                 */
-                [self getItems:[getSubscription objectForKey:@"id"]];
+        if ([[subscription class] isSubclassOfClass:[NSDictionary class]]) {
+            @try {
+                subscriptionName = [subscription objectForKey:@"title"];
+                [self getItems:[subscription objectForKey:@"id"]];
+            } @catch (NSException *eee) {
+                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
             }
+        }
+    } else {
+        @try {
+            // if no feed, and no subscription identity, we should go grab the subscriptions
+            GoogleReader* reader = [master googleReader];
+            NSArray* subscriptionArray = [reader getStreams];
+            NSEnumerator* e = [subscriptionArray objectEnumerator];
+            NSDictionary* getSubscription = Nil;
+            while ((getSubscription = [e nextObject]) != Nil) {
+                if ([[getSubscription class] isSubclassOfClass:[NSDictionary class]]) {
+                    NSLog(@"Adding GetSubscription title=%@ id=%@", [getSubscription objectForKey:@"title"], [getSubscription objectForKey:@"id"]);
+                    /*
+                     categories =     (
+                     {
+                     id = "user/08244464737233952669/label/red";
+                     label = red;
+                     }
+                     );
+                     firstitemmsec = 1348590243562;
+                     htmlUrl = "http://yummygingermen.tumblr.com/";
+                     id = "feed/http://yummygingermen.tumblr.com/rss";
+                     sortid = E9F15B75;
+                     title = "Yummy Ginger Men";
+                     */
+                    GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscription:getSubscription];
+                    [[NSOperationQueue currentQueue] addOperation:itemGetter];
+                }
+            }
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
     }
     
@@ -2159,6 +2199,88 @@ masterViewController:(TWLocMasterViewController*)theMaster
     GoogleReader* reader = [master googleReader];
     NSArray* items = [reader unreadItems:theID];
     NSLog(@"item %@ contains %d items",theID,[items count]);
+    
+    NSEnumerator* e = [items objectEnumerator];
+    NSDictionary* item;
+    while ((item = [e nextObject]) != Nil) {
+        [self performSelectorOnMainThread:@selector(addItem:) withObject:item waitUntilDone:YES];
+    }
+/*
+ (
+ {
+ alternate =     (
+ {
+ href = "http://dewittdailydoesit.tumblr.com/post/43229452343";
+ type = "text/html";
+ }
+ );
+ annotations =     (
+ );
+ categories =     (
+ "user/08244464737233952669/label/tumblr",
+ "user/08244464737233952669/state/com.google/reading-list",
+ "user/08244464737233952669/state/com.google/fresh",
+ cumshots
+ );
+ comments =     (
+ );
+ crawlTimeMsec = 1361028986087;
+ id = "tag:google.com,2005:reader/item/370e36db6bbb2609";
+ likingUsers =     (
+ );
+ origin =     {
+ htmlUrl = "http://dewittdailydoesit.tumblr.com/";
+ streamId = "feed/http://dewittdailydoesit.tumblr.com/rss";
+ title = "I&#39;M DEWITT, MOTHERFUCKER.";
+ };
+ published = 1361028982;
+ summary =     {
+ content = "<img src=\"http://25.media.tumblr.com/tumblr_mde3g173561qe273do1_500.gif\"><br><br><p>This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.</p>";
+ direction = ltr;
+ };
+ timestampUsec = 1361028986087925;
+ title = "This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.";
+ updated = 1361028982;
+ }
+ )
+
+ */
+}
+
+- (void)addItem:(NSDictionary*)item
+{
+    @try {
+        NSString* timestamp = [item objectForKey:@"timestampUsec"];
+        NSString* username = subscriptionName;
+        NSString* title = [item objectForKey:@"title"];
+        NSDictionary* summary = [item objectForKey:@"summary"];
+        NSString* contents = [summary objectForKey:@"content"];
+        NSString* htmlURL = [item objectForKey:@"htmlUrl"];
+        
+        NSLog(@"adding item from %@: %@",username,title);
+        NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
+        NSEntityDescription *entity = [[master.fetchedResultsController fetchRequest] entity];
+        Tweet* tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
+                                                     inManagedObjectContext:context];
+        [tweet setSourceDict:Nil];
+        [tweet setTweetID:[NSNumber numberWithLongLong:[timestamp longLongValue]]];
+        [tweet setFavorite:NO];
+        [tweet setTimestamp:timestamp];
+        [tweet setUsername:username];
+        [tweet setTweet:[NSString stringWithFormat:@"%@ %@",title,contents]];
+        [tweet setLatitude:[NSNumber numberWithDouble:-900]];
+        [tweet setLongitude:[NSNumber numberWithDouble:-900]];
+        [tweet setUrl:htmlURL];
+        [tweet setOrigURL:htmlURL];
+        [tweet setOrigHTML:Nil];
+        [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
+        [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
+        [tweet setListID:[NSNumber numberWithLongLong:0]];
+        
+        [[master idSet] addObject:[NSNumber numberWithLongLong:[timestamp longLongValue]]];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 
 @end

@@ -325,6 +325,7 @@
                 [self saveContext];
             }];
         } else if (managedObjectContext != nil) {
+            [managedObjectContext processPendingChanges];
             if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
                 // Replace this implementation with code to handle the error appropriately.
                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
@@ -384,16 +385,19 @@
         }
         
         @try {
-            [master saveContext];
-            [[NSOperationQueue currentQueue] addOperationWithBlock:^{
-                if ([images count] > 0) {
-                    DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
-                    [[master theOtherQueue] addOperation:dip];
-                    [[master theOtherQueue] setSuspended:NO];
-                } else {
-                    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
-                    [alert show];
-                }
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                __block NSOperationQueue* queue = [NSOperationQueue currentQueue];
+                [master saveContext];
+                [queue addOperationWithBlock:^{
+                    if ([images count] > 0) {
+                        DeleteImagesOperation* dip = [[DeleteImagesOperation alloc] initWithMaster:master];
+                        [[master theOtherQueue] addOperation:dip];
+                        [[master theOtherQueue] setSuspended:NO];
+                    } else {
+                        UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+                        [alert show];
+                    }
+                }];
             }];
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);

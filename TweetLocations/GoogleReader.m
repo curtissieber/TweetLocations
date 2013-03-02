@@ -207,14 +207,14 @@
     NSError* error = [[NSError alloc] init];
     NSData* data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
     
-    NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSLog(@"google subscription data = %@", respStr);
-    NSLog(@"google subscription response = %ld", (long)[response statusCode]);
-    NSLog(@"google subscription error = %ld", (long)[error code]);
+    //NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    //NSLog(@"google subscription data = %@", respStr);
+    //NSLog(@"google subscription response = %ld", (long)[response statusCode]);
+    //NSLog(@"google subscription error = %ld", (long)[error code]);
     
     NSMutableArray * feeds = [NSMutableArray array];
     if([response statusCode] == 200) {
-        if(respStr) {
+        if(data) {
             NSError *jsonError;
             NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableLeaves error:&jsonError];
 
@@ -314,13 +314,17 @@
     if(![self authenticate:NO])
         return Nil;
     
-    NSString * timestamp1970 = [NSString stringWithFormat:@"%ld", (long)[[NSDate dateWithTimeIntervalSince1970:0] timeIntervalSince1970]];
+    NSLog(@"getting unread items for %@",theID);
+    NSString * timestampBegin = [NSString stringWithFormat:@"%ld", (long)[[NSDate dateWithTimeIntervalSinceNow:-365*24*60*60] timeIntervalSince1970]];
     NSString * timestamp = [NSString stringWithFormat:@"%ld", (long)[[NSDate date] timeIntervalSince1970]];
     NSString* streamName = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes( NULL,	 (CFStringRef)theID,	 NULL,	 (CFStringRef)@"!’\"();:@&=+$,/?%#[]% ", kCFStringEncodingUTF8));
     NSString* readExclude = [NSString stringWithFormat:@"user/-/state/com.google/read"];
     readExclude = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes( NULL,	 (CFStringRef)readExclude,	 NULL,	 (CFStringRef)@"!’\"();:@&=+$,/?%#[]% ", kCFStringEncodingUTF8));
     
-    NSString * urlstr = [NSString stringWithFormat:@"http://www.google.com/reader/api/0/stream/items/ids?s=%@?n=1000?xt=%@?nt=%@?ot=%@&r=a&output=json?ck=%@&client=scroll", streamName, readExclude, timestamp, timestamp1970, timestamp];
+    NSString * urlstr = [NSString stringWithFormat:@"https://www.google.com/reader/api/0/stream/contents/%@?ot=%@&r=n&xt=%@&n=20&ck=%@&client=scroll",streamName,timestampBegin,readExclude,timestamp];
+    // https://www.google.com/reader/api/0/stream/contents/
+    // feed%2Fhttp%3A%2F%2Fthetubemonster.tumblr.com%2Frss?ot=1329505807&r=n&
+    // xt=user%2F-%2Fstate%2Fcom.google%2Fread&n=20&ck=1361041807&client=scroll
     NSURL* url = [NSURL URLWithString:urlstr];
     
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:60.0];
@@ -332,10 +336,10 @@
     NSError* error = [[NSError alloc] init];
     NSData* data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
     
-    NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSLog(@"google unreadItems data = %@", respStr);
-    NSLog(@"google unreadItems response = %ld", (long)[response statusCode]);
-    NSLog(@"google unreadItems error = %ld", (long)[error code]);
+    //NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    //NSLog(@"google unreadItems data = %@", respStr);
+    //NSLog(@"google unreadItems response = %ld", (long)[response statusCode]);
+    //NSLog(@"google unreadItems error = %ld", (long)[error code]);
     
     if([response statusCode] != 200) {
         // Handle when status code is not 200
@@ -348,7 +352,7 @@
     NSError *jsonError;
     json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableLeaves error:&jsonError];
     
-    items = [json objectForKey:@"itemRefs"];
+    items = [json objectForKey:@"items"];
     
     return items;
 }

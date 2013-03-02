@@ -56,7 +56,7 @@
     @try {
         [self checkForVideo:Nil];
         [PhotoGetter setupImage:[_master redX] iview:_imageView sview:_scrollView button:_sizeButton];
-
+        
         // Update the user interface for the detail item.
         if (self.detailItem) {
             [_activityLabel setHidden:YES];
@@ -97,7 +97,7 @@
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
                                           [tweet tweet], [tweet username]];
             CATransition* textTrans = [CATransition animation];
-            textTrans.duration = 0.8;
+            textTrans.duration = 0.4;
             textTrans.type = kCATransitionFade;
             textTrans.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
             [self.bigLabel.layer addAnimation:textTrans forKey:@"changeTextTransition"];
@@ -113,58 +113,80 @@
             
             [self.imageView setImage:Nil];
             [self.textView setText:Nil];
-            
-            NSData* imageData = [_master imageData:[tweet url]];
-            if (imageData != Nil) {
-                //NSLog(@"using cached data for %@",[tweet url]);
-                thisImageData = imageData;
-                UIImage *image = [[UIImage alloc] initWithData:imageData];
-                                
-                [self.scrollView setHidden:NO];
-                if ([PhotoGetter isGIFtype:[tweet url]])
-                    [PhotoGetter setupGIF:image
-                                      iview:self.imageView
-                                      sview:self.scrollView
-                                     button:self.sizeButton
-                                    rawData:imageData];
-                else
-                    [PhotoGetter setupImage:image
-                                      iview:self.imageView
-                                      sview:self.scrollView
-                                     button:self.sizeButton];
-                
-                if (latitude > -900 && longitude > -900) {
-                    [self resizeForMap];
-                    [self displayMap:[tweet timestamp]
-                                 lat:latitude
-                                 lon:longitude];
-                } 
-                
-                [_activityView stopAnimating];
-            } else if ([[tweet url] length] > 4) {
-                [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
-                [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
-                [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
-                [self handleURL:[tweet url]];
-            } else {
-                [UIView animateWithDuration:0.4 animations:^{
-                    self.scrollView.hidden = YES;
-                }];
-                NSMutableString* nonono = [[NSMutableString alloc]initWithCapacity:500];
-                for (int i=0; i < 5; i++)
-                    [nonono appendString:@"NO URL NO URL NO URL NO URL\n"];
-                [self.textView setText:nonono];
-                [[self sizeButton] setTitle:@"no url" forState:UIControlStateNormal];
-                [[self sizeButton] setTitle:@"no url" forState:UIControlStateHighlighted];
-                [[self sizeButton] setTitle:@"no url" forState:UIControlStateSelected];
-                [_activityView stopAnimating];
-            }
         }
+        [[_master webQueue] addOperationWithBlock:^{
+            [self imageConfig:[NSOperationQueue currentQueue]];
+        }];
     } @catch (NSException *eee) {
         [_activityView stopAnimating];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
+
+- (void)imageConfig:(NSOperationQueue*)mainQueue
+{
+    @try {
+        __block Tweet* tweet = _detailItem;
+        
+        __block NSData* imageData = [_master imageData:[tweet url]];
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            @try {
+                if (imageData != Nil) {
+                    //NSLog(@"using cached data for %@",[tweet url]);
+                    thisImageData = imageData;
+                    UIImage *image = [[UIImage alloc] initWithData:imageData];
+                    
+                    [self.scrollView setHidden:NO];
+                    if ([PhotoGetter isGIFtype:[tweet url]])
+                        [PhotoGetter setupGIF:image
+                                        iview:self.imageView
+                                        sview:self.scrollView
+                                       button:self.sizeButton
+                                      rawData:imageData];
+                    else
+                        [PhotoGetter setupImage:image
+                                          iview:self.imageView
+                                          sview:self.scrollView
+                                         button:self.sizeButton];
+                    
+                    double latitude = [[tweet latitude] doubleValue];
+                    double longitude = [[tweet longitude] doubleValue];
+                    if (latitude > -900 && longitude > -900) {
+                        [self resizeForMap];
+                        [self displayMap:[tweet timestamp]
+                                     lat:latitude
+                                     lon:longitude];
+                    }
+                    
+                    [_activityView stopAnimating];
+                } else if ([[tweet url] length] > 4) {
+                    [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
+                    [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
+                    [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
+                    [self handleURL:[tweet url]];
+                } else {
+                    [UIView animateWithDuration:0.4 animations:^{
+                        self.scrollView.hidden = YES;
+                    }];
+                    NSMutableString* nonono = [[NSMutableString alloc]initWithCapacity:500];
+                    for (int i=0; i < 5; i++)
+                        [nonono appendString:@"NO URL NO URL NO URL NO URL\n"];
+                    [self.textView setText:nonono];
+                    [[self sizeButton] setTitle:@"no url" forState:UIControlStateNormal];
+                    [[self sizeButton] setTitle:@"no url" forState:UIControlStateHighlighted];
+                    [[self sizeButton] setTitle:@"no url" forState:UIControlStateSelected];
+                    [_activityView stopAnimating];
+                }
+            } @catch (NSException *eee) {
+                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            }
+        }];
+    } @catch (NSException *eee) {
+        [_activityView stopAnimating];
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+
 - (IBAction)infoButtonHit:(id)sender
 {
     @try {
@@ -293,8 +315,10 @@
                 thisImageData = data;
                 [self.scrollView setHidden:NO];
                 if (_master != Nil) {
-                    [_master imageData:data forURL:urlStr];
-                    [[_master.fetchedResultsController managedObjectContext] processPendingChanges];
+                    [[_master webQueue] addOperationWithBlock:^{
+                        [_master imageData:data forURL:urlStr];
+                        [[_master.fetchedResultsController managedObjectContext] processPendingChanges];
+                    }];
                 }
                 if (originalTweet != _detailItem) { // oops we moved !!
                     [_activityView stopAnimating];
@@ -798,10 +822,13 @@ static UIBarButtonItem *doSomethingButton;
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             if (_master != Nil) {
-                if (_pictures && [_pictures count] > 1)
-                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                        [_master deleteImageData:obj];
-                        NSLog(@"deleting from pic collection %@",obj);
+                __block NSArray* pics = _pictures;
+                if (pics && [pics count] > 1)
+                    [[_master webQueue] addOperationWithBlock:^{
+                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                            [_master deleteImageData:obj];
+                            NSLog(@"deleting from pic collection %@",obj);
+                        }];
                     }];
                 [_master nextNewTweet];
             } else
@@ -816,10 +843,13 @@ static UIBarButtonItem *doSomethingButton;
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             if (_master != Nil) {
-                if (_pictures && [_pictures count] > 1)
-                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                        [_master deleteImageData:obj];
-                        NSLog(@"deleting from pic collection %@",obj);
+                __block NSArray* pics = _pictures;
+                if (pics && [pics count] > 1)
+                    [[_master webQueue] addOperationWithBlock:^{
+                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                            [_master deleteImageData:obj];
+                            NSLog(@"deleting from pic collection %@",obj);
+                        }];
                     }];
                 [_master nextTweet];
             } else
@@ -834,10 +864,13 @@ static UIBarButtonItem *doSomethingButton;
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             if (_master != Nil) {
-                if (_pictures && [_pictures count] > 1)
-                    [_pictures enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                        [_master deleteImageData:obj];
-                        NSLog(@"deleting from pic collection %@",obj);
+                __block NSArray* pics = _pictures;
+                if (pics && [pics count] > 1)
+                    [[_master webQueue] addOperationWithBlock:^{
+                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                            [_master deleteImageData:obj];
+                            NSLog(@"deleting from pic collection %@",obj);
+                        }];
                     }];
                 [_master prevTweet];
             } else
@@ -1008,6 +1041,8 @@ static UIBarButtonItem *doSomethingButton;
                     newFrame.size.height = origFrame.size.height * 3;
                     [_picButton setFrame:newFrame];
                 } completion:^(BOOL finished) {
+                    if (!finished)
+                        NSLog(@"reducing the collectionButton, tho not finished");
                     [_picButton setFrame:origFrame];
                     [_picCollection setHidden:YES];
                 }];
@@ -1177,41 +1212,56 @@ static NSString* videoURL = Nil;
         int idx = [indexPath row];
         //[[cell image] setImage:[_pictures objectAtIndex:idx]];
         [[cell image] setImage:[_master redX]];
-        PhotoGetter* getter = [[PhotoGetter alloc] init];
         NSString* urlstr = [_pictures objectAtIndex:idx];
         if (urlstr == Nil)
             return cell;
-        
-        NSData* picdata = [_master imageData:urlstr];
-        if (picdata == Nil) {
-            [getter getPhoto:[NSURL URLWithString:urlstr]
-                        into:[cell image]
-                      scroll:Nil
-                   sizelabel:Nil
-                    callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
-                        [_master imageData:imageData forURL:urlstr];
-                    }];
-        } else {
-            UIImage *image = [[UIImage alloc] initWithData:picdata];
-            
-            [self.scrollView setHidden:NO];
-            if ([PhotoGetter isGIFtype:urlstr])
-                [PhotoGetter setupGIF:image
-                                iview:[cell image]
-                                sview:Nil
-                               button:Nil
-                              rawData:picdata];
-            else
-                [PhotoGetter setupImage:image
-                                  iview:[cell image]
-                                  sview:Nil
-                                 button:Nil];
-        }
+        [[_master webQueue] addOperationWithBlock:^{
+            [self collectionCellPicture:urlstr imageView:[cell image]];
+        }];
         return cell;
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
     }
     return Nil;
+}
+
+- (void)collectionCellPicture:(NSString*)urlstr imageView:(UIImageView*)iview
+{
+    @try {
+        NSData* picdata = [_master imageData:urlstr];
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            PhotoGetter* getter = [[PhotoGetter alloc] init];
+            if (picdata == Nil) {
+                [getter getPhoto:[NSURL URLWithString:urlstr]
+                            into:iview
+                          scroll:Nil
+                       sizelabel:Nil
+                        callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
+                            [[_master webQueue] addOperationWithBlock:^{
+                                [_master imageData:imageData forURL:urlstr];
+                            }];
+                        }];
+            } else {
+                UIImage *image = [[UIImage alloc] initWithData:picdata];
+                
+                [self.scrollView setHidden:NO];
+                if ([PhotoGetter isGIFtype:urlstr])
+                    [PhotoGetter setupGIF:image
+                                    iview:iview
+                                    sview:Nil
+                                   button:Nil
+                                  rawData:picdata];
+                else
+                    [PhotoGetter setupImage:image
+                                      iview:iview
+                                      sview:Nil
+                                     button:Nil];
+            }
+
+        }];
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
