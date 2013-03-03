@@ -64,6 +64,9 @@ typedef void(^MasterCallback)(void);
 @property (nonatomic, retain)     NSMutableSet* idSet;
 @property (nonatomic, retain)     NSMutableDictionary* tweetText;
 
++ (void)incrementTasks;
++ (void)decrementTasks;
++ (int)numTasks;
 + (void)setNetworkAccessAllowed:(BOOL)allowed;
 - (BOOL)openURL:(NSURL *)url;
 - (void)killMax;
@@ -121,12 +124,13 @@ typedef void(^MasterCallback)(void);
 @end
 @interface GoogleOperation : NSOperation {
     TWLocMasterViewController* master;
-    NSDictionary* subscription;
+    NSArray* subscriptions;
     NSString* subscriptionName;
     NSString* streamName;
     BOOL executing, finished;
     NSArray* rssFeed;
+    NSMutableArray* tweetsToProcess;
 }
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription andStream:(NSString*)theStreamName;
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscriptions:(NSArray*)theSubscriptions andStream:(NSString*)theStreamName;
 
 @end

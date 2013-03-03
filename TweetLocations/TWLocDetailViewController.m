@@ -96,8 +96,8 @@
                 [_master keepTrackofReadURLs:[_detailItem url]];
             }];
             
-            NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@]",
-                                          [tweet tweet], [tweet username]];
+            NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"[%@]: %@",
+                                          [tweet username], [tweet tweet]];
             CATransition* textTrans = [CATransition animation];
             textTrans.duration = 0.4;
             textTrans.type = kCATransitionFade;
@@ -195,7 +195,8 @@
         if ([_detailItem origHTML] != Nil) {
             [UIView animateWithDuration:0.4 animations:^{
                 _activityLabel.hidden = NO;
-                [_activityLabel setText:[_detailItem origHTML]];
+                NSString* detail = [NSString stringWithFormat:@"[%@]: %@\n%@", [_detailItem username], [_detailItem tweet], [_detailItem origHTML]];
+                [_activityLabel setText:detail];
             }];
         }
     } @catch (NSException *eee) {

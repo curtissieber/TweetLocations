@@ -44,12 +44,16 @@
     // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
 }
 
+- (void)dummyTask:(id)dummy {}
+
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-    NSLog(@"Background saving context");
-    [self saveContext];
-    if (_masterViewController != Nil) {
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+    if ([TWLocMasterViewController numTasks] < 1) {
+        NSLog(@"Background saving context");
+        [self saveContext];
+    }
+    /*if (_masterViewController != Nil) {
         [_masterViewController dropReadURLs:^{
             NSLog(@"dropped all read URL images");
             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
@@ -57,7 +61,7 @@
                 [self saveContext]; 
             }];
         }];
-    }
+    }*/
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
 }
 

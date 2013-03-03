@@ -43,6 +43,10 @@ static UILabel* staticQueueLabel = Nil;
 {
     queuedTasks--;
 }
++ (int)numTasks
+{
+    return queuedTasks;
+}
 
 #pragma mark image
 
@@ -622,7 +626,7 @@ static NSMutableArray* urlQueue = Nil;
             // not allowed to exit
             NSLog(@"No twitter accounts.  I'm going to sit and stew.");
             if (_googleReaderLibrary) {
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
                 [_webQueue setSuspended:NO];
@@ -670,7 +674,7 @@ static NSMutableArray* urlQueue = Nil;
             NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
             if ([buttonNameHit isEqualToString:@"NO"]) {
             } else {
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
+                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
                 [_webQueue setSuspended:NO];
@@ -1010,7 +1014,7 @@ static NSMutableArray* urlQueue = Nil;
                         [self.tableView reloadData];
                         
                         if (_googleReaderLibrary) {
-                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscription:Nil andStream:Nil];
+                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
                             [TWLocMasterViewController incrementTasks];
                             [_webQueue addOperation:googleOp];
                             [_webQueue setSuspended:NO];
@@ -1372,6 +1376,23 @@ static NSMutableArray* urlQueue = Nil;
         self.contentSizeForViewInPopover = CGSizeMake(320.0, 600.0);
     }
     [super awakeFromNib];
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    if (scrollView.contentOffset.y < 44) {
+        self.tableView.scrollIndicatorInsets = UIEdgeInsetsMake(CGRectGetHeight(self.statusLabel.bounds) - MAX(scrollView.contentOffset.y, 0), 0, 0, 0);
+    } else {
+        self.tableView.scrollIndicatorInsets = UIEdgeInsetsZero;
+    }
+    
+    CGRect statusFrame = self.statusLabel.frame;
+    statusFrame.origin.y = scrollView.contentOffset.y; //MIN(scrollView.contentOffset.y, 0);
+    self.statusLabel.frame = statusFrame;
+    
+    CGRect queueFrame = self.queueLabel.frame;
+    queueFrame.origin.y = scrollView.contentOffset.y; //MIN(scrollView.contentOffset.y, 0);
+    self.queueLabel.frame = queueFrame;
 }
 
 - (void)viewDidLoad
@@ -2143,13 +2164,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 #pragma mark GOOGLEOPERATION background queue task
 @implementation GoogleOperation
 
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscription:(NSDictionary*)theSubscription andStream:(NSString*)theStreamName
+- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscriptions:(NSArray*)theSubscriptions andStream:(NSString*)theStreamName
 {
     self = [super init];
     executing = finished = NO;
     master = theMaster;
     rssFeed = theFeed;
-    subscription = theSubscription;
+    subscriptions = theSubscriptions;
     subscriptionName = Nil;
     streamName = theStreamName;
     [self setQueuePriority:NSOperationQueuePriorityLow];
@@ -2165,12 +2186,60 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 
     if (rssFeed != Nil) {
         // handle the rss contents if there are any
-    } else if (subscription != Nil) {
+    } else if (subscriptions != Nil) {
         // queue grabbing the subscription contents
-        if ([[subscription class] isSubclassOfClass:[NSDictionary class]]) {
+        if ([[subscriptions class] isSubclassOfClass:[NSArray class]]) {
             @try {
-                subscriptionName = [subscription objectForKey:@"title"];
-                [self getItems:[subscription objectForKey:@"id"]];
+                NSEnumerator* e = [subscriptions objectEnumerator];
+                NSDictionary* subscription = Nil;
+                tweetsToProcess = [[NSMutableArray alloc] initWithCapacity:100];
+                while ((subscription = [e nextObject]) != Nil) {
+                    subscriptionName = [subscription objectForKey:@"title"];
+                    [self getItems:[subscription objectForKey:@"id"]];
+                }
+                NSString* stat = [NSString stringWithFormat:@"Have retrieved %d Google items",[tweetsToProcess count]];
+                [[master updateQueue] addOperationWithBlock:^{
+                    NSString* status = [[master.detailViewController activityLabel] text];
+                    [[master.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\n%@",status,stat]];
+                    [master STATUS:stat];
+                }];
+                // TODO: need to sort the processing top-to-bottom
+                NSLog(@"sorting the new items");
+                [tweetsToProcess sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+                    Tweet* t1 = obj1;
+                    Tweet* t2 = obj2;
+                    long long a1 = [[t1 tweetID] longLongValue];
+                    long long a2 = [[t2 tweetID] longLongValue];
+                    if (a1 > a2) return NSOrderedAscending;
+                    if (a1 == a2) return NSOrderedSame;
+                    return NSOrderedDescending;
+                }];
+                NSLog(@"sorted the %d new items",[tweetsToProcess count]);
+                if ([tweetsToProcess count] > 4)
+                    for (int i=0; i < 4; i++)
+                        NSLog(@"Item %d: %@", i, [(Tweet*)[tweetsToProcess objectAtIndex:i] tweetID]);
+                e = [tweetsToProcess objectEnumerator];
+                Tweet* theTweet = Nil;
+                while ((theTweet = [e nextObject]) != Nil) {
+                    if ([master theQueue] != Nil && NetworkAccessAllowed &&
+                        [[theTweet hasBeenRead] boolValue] == NO) {
+                        @try {
+                            TweetOperation* top = [[TweetOperation alloc] initWithTweet:theTweet
+                                                                                  index:Nil
+                                                                   masterViewController:master
+                                                                             replaceURL:Nil];
+                            [TWLocMasterViewController incrementTasks];
+                            [[master webQueue] addOperation:top];
+                            [[master webQueue] setSuspended:NO];
+                        } @catch (NSException *eee) {
+                            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                        }
+                    }
+                }
+                NSLog(@"added %d TweetOperations",[tweetsToProcess count]);
+                [[master updateQueue] addOperationWithBlock:^{
+                    [master STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[[master idSet] count],[[master getImageServer] numImages], [[master getImageServer] sizeImages]/1024.0/1024.0]];
+                }];
             } @catch (NSException *eee) {
                 NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
             }
@@ -2180,28 +2249,22 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             // if no feed, and no subscription identity, we should go grab the subscriptions
             GoogleReader* reader = [master googleReader];
             NSArray* subscriptionArray = [reader getStreams];
-            NSEnumerator* e = [subscriptionArray objectEnumerator];
-            NSDictionary* getSubscription = Nil;
-            while ((getSubscription = [e nextObject]) != Nil) {
-                if ([[getSubscription class] isSubclassOfClass:[NSDictionary class]]) {
-                    NSLog(@"Adding GetSubscription title=%@ id=%@", [getSubscription objectForKey:@"title"], [getSubscription objectForKey:@"id"]);
-                    /*
-                     categories =     (
-                     {
-                     id = "user/08244464737233952669/label/red";
-                     label = red;
-                     }
-                     );
-                     firstitemmsec = 1348590243562;
-                     htmlUrl = "http://yummygingermen.tumblr.com/";
-                     id = "feed/http://yummygingermen.tumblr.com/rss";
-                     sortid = E9F15B75;
-                     title = "Yummy Ginger Men";
-                     */
-                    GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscription:getSubscription andStream:[getSubscription objectForKey:@"id"]];
-                    [[NSOperationQueue currentQueue] addOperation:itemGetter];
-                }
-            }
+            /*
+             categories =     (
+             {
+             id = "user/08244464737233952669/label/red";
+             label = red;
+             }
+             );
+             firstitemmsec = 1348590243562;
+             htmlUrl = "http://yummygingermen.tumblr.com/";
+             id = "feed/http://yummygingermen.tumblr.com/rss";
+             sortid = E9F15B75;
+             title = "Yummy Ginger Men";
+             */
+            GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscriptions:subscriptionArray andStream:Nil];
+            [TWLocMasterViewController incrementTasks];
+            [[NSOperationQueue currentQueue] addOperation:itemGetter];
         } @catch (NSException *eee) {
             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
         }
@@ -2221,6 +2284,14 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     NSDictionary* item;
     while ((item = [e nextObject]) != Nil) {
         [self performSelectorOnMainThread:@selector(addItem:) withObject:item waitUntilDone:YES];
+    }
+    if ([items count] > 0) {
+        NSString* stat = [NSString stringWithFormat:@"Added %d items from %@",[items count],subscriptionName];
+        [[master updateQueue] addOperationWithBlock:^{
+            NSString* status = [[master.detailViewController activityLabel] text];
+            [[master.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\n%@",status,stat]];
+            [master STATUS:stat];
+        }];
     }
     return [items count];
 /*
@@ -2275,20 +2346,37 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         NSString* contents = [summary objectForKey:@"content"];
         NSDictionary* origin = [item objectForKey:@"origin"];
         NSString* htmlURL = [origin objectForKey:@"htmlUrl"];
+        NSString* streamID = [origin objectForKey:@"streamId"];
         NSArray* alternate = [item objectForKey:@"alternate"];
         if (alternate && [alternate count] > 0) {
             NSDictionary* altitem = [alternate objectAtIndex:0];
             htmlURL = [altitem objectForKey:@"href"];
         }
         NSString* googleID = [item objectForKey:@"id"];
-        
-        NSLog(@"adding item from %@: %@",username,title);
+
+        BOOL duplicate = NO;
+        NSSet* dups = Nil;
+        NSNumber* theID = [NSNumber numberWithLongLong:[timestamp longLongValue]];
+        if (!duplicate) {
+            dups = [[master idSet] objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+                *stop = ([(NSNumber*)obj isEqualToNumber:theID]);
+                return *stop;
+            }];
+            if (dups != Nil && [dups count] > 0)
+                duplicate = YES;
+        }
+        if (duplicate) {
+            NSLog(@"refusing duplicate %@ in %@",theID,username);
+            return;
+        }
+
+        //NSLog(@"adding item from %@: %@",username,title);
         NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
         NSEntityDescription *entity = [[master.fetchedResultsController fetchRequest] entity];
         Tweet* tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
                                                      inManagedObjectContext:context];
         [tweet setSourceDict:Nil];
-        [tweet setTweetID:[NSNumber numberWithLongLong:[timestamp longLongValue]]];
+        [tweet setTweetID:theID];
         [tweet setFavorite:NO];
         [tweet setTimestamp:timestamp];
         [tweet setUsername:username];
@@ -2303,22 +2391,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         [tweet setListID:[NSNumber numberWithLongLong:0]];
         [tweet setFromGoogleReader:[NSNumber numberWithBool:YES]];
         [tweet setGoogleID:googleID];
-        [tweet setGoogleStream:streamName];
+        [tweet setGoogleStream:streamID];
         
-        [[master idSet] addObject:[NSNumber numberWithLongLong:[timestamp longLongValue]]];
+        [tweetsToProcess addObject:tweet];
+        [[master idSet] addObject:theID];
         [[master.fetchedResultsController managedObjectContext] processPendingChanges];
         [[master tableView] setNeedsLayout];
         [[master tableView] setNeedsDisplay];
-        if ([master theQueue] != Nil && NetworkAccessAllowed &&
-            [[tweet hasBeenRead] boolValue] == NO) {
-            TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
-                                                                  index:Nil
-                                                   masterViewController:master
-                                                             replaceURL:Nil];
-            [TWLocMasterViewController incrementTasks];
-            [[master webQueue] addOperation:top];
-            [[master webQueue] setSuspended:NO];
-        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }

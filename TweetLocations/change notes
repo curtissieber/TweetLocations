@@ -1,6 +1,15 @@
-Made the saveContext image save  walk thru the imageQueueDrop, then the save the context
-The google grabber is working, and making pseudoTweets
-Am adding "fromGoogle" to the tweet DB -- DB upgrade should happen
-Also made it try to queue the initial grab of the googleItem, as a pseudoTweet
-having troubles with the final save of the images at the end
-fixed a buncha stuff that wants updating the tweet with the replacement URL quite right for the grabs
+upsized the transparent info text item (STATUS)
+Changed the detail big text view to be [user]: text
+fixed the task increment for googleOperations
+made the googleOperations work on subscription arrays
+    and only queue the tweetgrabber after all subscriptions
+    have sorted the queue of tweetgrabbers
+gave up the idea of dropping images during backgrounder in AppDelegate
+    also made it await the completion of all tasks
+Trying to fix the setRead in the GoogleOperations
+Now I have googleID and streamID in the DB
+found out I was only grabbing 20 from each stream -- now 2000
+Made the status item in the master view float above the items
+
+
+

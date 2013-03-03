@@ -63,7 +63,7 @@
             [alert show];
         }];
     } else {
-        [self tryAuthentication];
+        return [self tryAuthentication];
     }
     return YES;
 }
@@ -314,14 +314,14 @@
     if(![self authenticate:NO])
         return Nil;
     
-    NSLog(@"getting unread items for %@",theID);
+    //NSLog(@"getting unread items for %@",theID);
     NSString * timestampBegin = [NSString stringWithFormat:@"%ld", (long)[[NSDate dateWithTimeIntervalSinceNow:-365*24*60*60] timeIntervalSince1970]];
     NSString * timestamp = [NSString stringWithFormat:@"%ld", (long)[[NSDate date] timeIntervalSince1970]];
     NSString* streamName = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes( NULL,	 (CFStringRef)theID,	 NULL,	 (CFStringRef)@"!’\"();:@&=+$,/?%#[]% ", kCFStringEncodingUTF8));
     NSString* readExclude = [NSString stringWithFormat:@"user/-/state/com.google/read"];
     readExclude = (NSString *)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes( NULL,	 (CFStringRef)readExclude,	 NULL,	 (CFStringRef)@"!’\"();:@&=+$,/?%#[]% ", kCFStringEncodingUTF8));
     
-    NSString * urlstr = [NSString stringWithFormat:@"https://www.google.com/reader/api/0/stream/contents/%@?ot=%@&r=n&xt=%@&n=20&ck=%@&client=scroll",streamName,timestampBegin,readExclude,timestamp];
+    NSString * urlstr = [NSString stringWithFormat:@"https://www.google.com/reader/api/0/stream/contents/%@?ot=%@&r=n&xt=%@&n=2000&ck=%@&client=scroll",streamName,timestampBegin,readExclude,timestamp];
     // https://www.google.com/reader/api/0/stream/contents/
     // feed%2Fhttp%3A%2F%2Fthetubemonster.tumblr.com%2Frss?ot=1329505807&r=n&
     // xt=user%2F-%2Fstate%2Fcom.google%2Fread&n=20&ck=1361041807&client=scroll
@@ -379,10 +379,11 @@ function set_article_read($id,$stream) {
         $data = 'a=user/-/state/com.google/read&async=true&s='.$stream.'&i='.$id.'&T='.$this->token;
         return $this->post_url($url,$data);
 */
+    if(![self authenticate:NO])
+        return;
+    [self requestToken];
+    
     NSString * urlstr = [NSString stringWithFormat:@"https://www.google.com/reader/api/0/edit-tag?pos=0?client=scroll"];
-    // https://www.google.com/reader/api/0/stream/contents/
-    // feed%2Fhttp%3A%2F%2Fthetubemonster.tumblr.com%2Frss?ot=1329505807&r=n&
-    // xt=user%2F-%2Fstate%2Fcom.google%2Fread&n=20&ck=1361041807&client=scroll
     NSURL* url = [NSURL URLWithString:urlstr];
     
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:60.0];
@@ -390,19 +391,21 @@ function set_article_read($id,$stream) {
     [request setAllHTTPHeaderFields:headers];
     [request setValue:[NSString stringWithFormat:@"GoogleLogin auth=%@", [self auth]] forHTTPHeaderField:@"Authorization"];
     [request setHTTPMethod:@"POST"];
-    NSString* httpData = [NSString stringWithFormat:@"a=user/-/state/com.google/read&async=true&s=%@&i=%@&T=%@", theStream, theID, _googleToken];
+    NSString* httpData = [NSString stringWithFormat:@"a=user/-/state/com.google/read&async=false&s=%@&i=%@&T=%@", theStream, theID, _googleToken];
     [request setHTTPBody:[httpData dataUsingEncoding:NSUTF8StringEncoding]];
     
     NSHTTPURLResponse* response = [[NSHTTPURLResponse alloc]init];
     NSError* error = [[NSError alloc] init];
     NSData* data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
     
-    //NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    //NSLog(@"google unreadItems data = %@", respStr);
-    //NSLog(@"google unreadItems response = %ld", (long)[response statusCode]);
-    //NSLog(@"google unreadItems error = %ld", (long)[error code]);
+    NSString* respStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSLog(@"google setRead URL = %@", url);
+    NSLog(@"google setRead httpData = %@", httpData);
+    NSLog(@"google setRead data = %@", respStr);
+    NSLog(@"google setRead response = %ld", (long)[response statusCode]);
+    NSLog(@"google setRead error = %ld", (long)[error code]);
     
-    if([response statusCode] != 200) {
+    if ([response statusCode] != 200) {
         // Handle when status code is not 200
         NSLog(@"google setRead error = %ld (in %@)\n%@", (long)[error code], theID, [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
     }

@@ -372,11 +372,14 @@
     if (images != Nil) {
         @try {
             [master getImageLock];
+            __block int deletecount = 0;
             [images enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                 [[master managedObjectContext] deleteObject:obj];
-                NSLog(@"deleted image %d", idx);
+                deletecount = idx;
+                //NSLog(@"deleted image %d", idx);
                 if (idx == 50) *stop = YES;
             }];
+            NSLog(@"Deleted %d images",deletecount);
             [[master managedObjectContext] processPendingChanges];
             [master->imageDictLock unlock];
         } @catch (NSException *eee) {
