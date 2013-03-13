@@ -39,6 +39,10 @@ static UILabel* staticQueueLabel = Nil;
 {
     queuedTasks++;
 }
++ (void)incrementTasks:(int)byNum
+{
+    queuedTasks+=byNum;
+}
 + (void)decrementTasks
 {
     queuedTasks--;
@@ -1888,7 +1892,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                                                                                index:self->index
                                                                 masterViewController:self->master
                                                                           replaceURL:replaceURL];
-    [imageOperation setQueuePriority:NSOperationQueuePriorityHigh];
+    [imageOperation setQueuePriority:NSOperationQueuePriorityLow];
     NSOperationQueue* queue = [NSOperationQueue currentQueue];
     [TWLocMasterViewController incrementTasks];
     [queue addOperation:imageOperation];
@@ -1954,7 +1958,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                                                                               index:index
                                                                masterViewController:master
                                                                          replaceURL:replaceURL];
-                        [top setQueuePriority:NSOperationQueuePriorityNormal];
+                        [top setQueuePriority:NSOperationQueuePriorityLow];
                         [TWLocMasterViewController incrementTasks];
                         [[master webQueue] addOperation:top];
                         [[master webQueue] setSuspended:NO];
@@ -2180,6 +2184,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 - (BOOL)isExecuting { return executing; }
 - (BOOL)isFinished { return finished; }
 
+int googleAddedItems = 0;
+
 - (void)main
 {
     executing = YES;
@@ -2193,7 +2199,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 NSEnumerator* e = [subscriptions objectEnumerator];
                 NSDictionary* subscription = Nil;
                 tweetsToProcess = [[NSMutableArray alloc] initWithCapacity:100];
-                while ((subscription = [e nextObject]) != Nil) {
+                while ((subscription = [e nextObject]) != Nil &&
+                       [tweetsToProcess count] < 100) {
                     subscriptionName = [subscription objectForKey:@"title"];
                     [self getItems:[subscription objectForKey:@"id"]];
                 }
@@ -2282,18 +2289,22 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     
     NSEnumerator* e = [items objectEnumerator];
     NSDictionary* item;
-    while ((item = [e nextObject]) != Nil) {
+    //googleAddedItems = [items count];
+    googleAddedItems = 0;
+    while ((item = [e nextObject]) != Nil &&
+           googleAddedItems < 100) {
+        googleAddedItems++;
         [self performSelectorOnMainThread:@selector(addItem:) withObject:item waitUntilDone:YES];
     }
-    if ([items count] > 0) {
-        NSString* stat = [NSString stringWithFormat:@"Added %d items from %@",[items count],subscriptionName];
+    if (googleAddedItems > 0) {
+        NSString* stat = [NSString stringWithFormat:@"Added %d items from %@",googleAddedItems,subscriptionName];
         [[master updateQueue] addOperationWithBlock:^{
             NSString* status = [[master.detailViewController activityLabel] text];
             [[master.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\n%@",status,stat]];
             [master STATUS:stat];
         }];
     }
-    return [items count];
+    return googleAddedItems;
 /*
  (
  {
@@ -2367,6 +2378,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         }
         if (duplicate) {
             NSLog(@"refusing duplicate %@ in %@",theID,username);
+            googleAddedItems--;
+            if (googleAddedItems < 0) googleAddedItems = 0;
             return;
         }
 

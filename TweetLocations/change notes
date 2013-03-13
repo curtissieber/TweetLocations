@@ -1,15 +1,5 @@
-upsized the transparent info text item (STATUS)
-Changed the detail big text view to be [user]: text
-fixed the task increment for googleOperations
-made the googleOperations work on subscription arrays
-    and only queue the tweetgrabber after all subscriptions
-    have sorted the queue of tweetgrabbers
-gave up the idea of dropping images during backgrounder in AppDelegate
-    also made it await the completion of all tasks
-Trying to fix the setRead in the GoogleOperations
-Now I have googleID and streamID in the DB
-found out I was only grabbing 20 from each stream -- now 2000
-Made the status item in the master view float above the items
-
-
-
+made all queue priorities VeryLow or Low, hope things stop locking up
+too many images die saving themseleves - only grab 100 Google things each time
+still need better recognition of pinterest things
+    probably rework the whole link processing
+and can I figure out vine links? someday perhaps
