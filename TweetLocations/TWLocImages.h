@@ -24,6 +24,7 @@
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) NSOperationQueue* theOtherQueue;
 @property (strong, nonatomic) NSMutableDictionary* mocDict;
+@property (retain, nonatomic) id masterViewController;
 
 - (NSArray*)fetchImages;
 - (NSData*)imageData:(NSString*)url;

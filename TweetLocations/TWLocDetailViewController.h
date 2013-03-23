@@ -30,6 +30,7 @@
 
 @property (strong, nonatomic) IBOutlet UIActivityIndicatorView* activityView;
 @property (strong, nonatomic) IBOutlet UITextView* activityLabel;
+@property (strong, nonatomic) IBOutlet UILabel* labelOverEverything;
 
 @property (retain, nonatomic) TWLocMasterViewController* master;
 

@@ -31,6 +31,7 @@
 #define ALERT_SELECTACCOUNT (1776)
 #define ALERT_SETALLREAD (1999)
 #define ALERT_GOOGLE (0xdead)
+#define ALERT_REFRESH (2001)
 
 static int queuedTasks = 0;
 static UILabel* staticQueueLabel = Nil;
@@ -86,6 +87,7 @@ static bool NetworkAccessAllowed = NO;
 {
     if (self->imageServer == Nil) {
         self->imageServer = [[TWIMAGE alloc] init];
+        [self->imageServer setMasterViewController:self];
     }
     return self->imageServer;
 }
@@ -674,10 +676,17 @@ static NSMutableArray* urlQueue = Nil;
                 }];
             }
         }
-        if ([alertView tag] == ALERT_GOOGLE) {
+        if ([alertView tag] == ALERT_REFRESH) {
             NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
-            if ([buttonNameHit isEqualToString:@"NO"]) {
-            } else {
+            if ([buttonNameHit isEqualToString:@"Twitter"]) {
+                [self refreshTweets:Nil];
+            } else if ([buttonNameHit isEqualToString:@"Google"]) {
+                if ([[self.detailViewController activityLabel] isHidden]) {
+                    [UIView animateWithDuration:0.4 animations:^{
+                        [self.detailViewController activityLabel].hidden = NO;
+                    }];
+                    [[self.detailViewController activityLabel] setText:@"Getting Google Items:"];
+                }
                 GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
@@ -1017,19 +1026,6 @@ static NSMutableArray* urlQueue = Nil;
                         NSLog(@"Got a chance to save, YAY!");
                         [self.tableView reloadData];
                         
-                        if (_googleReaderLibrary) {
-                            GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
-                            [TWLocMasterViewController incrementTasks];
-                            [_webQueue addOperation:googleOp];
-                            [_webQueue setSuspended:NO];
-                        } else {
-                            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                                UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"GOOGLE NOT ENABLED" message:@"Should I grab the google stuff?" delegate:self cancelButtonTitle:@"NO" otherButtonTitles:@"YES do it!", nil];
-                                [alert setTag:ALERT_GOOGLE];
-                                [alert show];
-                                
-                            }];
-                        }
                         NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
                         Tweet* tweet;
                         while ((tweet = [e nextObject]) != Nil) {
@@ -1225,7 +1221,29 @@ static NSMutableArray* urlQueue = Nil;
 
 - (void)refreshTweetsButton:(id)sender
 {
-    
+    @try {
+        [_updateQueue addOperationWithBlock:^{
+            NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+            [self.tableView setNeedsDisplay];
+            [context processPendingChanges];
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+            [self.tableView reloadData];
+
+            [self checkForMaxTweets];
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Twitter or Google?" message:@"grab twitter, or google?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Google", nil];
+            [alert setTag:ALERT_REFRESH];
+            [alert show];
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
 }
 - (void)refreshTweets:(id)sender
 {
@@ -1414,7 +1432,7 @@ static NSMutableArray* urlQueue = Nil;
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc]
                                       initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
                                       target:self
-                                      action:@selector(refreshTweets:)];
+                                      action:@selector(refreshTweetsButton:)];
     self.navigationItem.rightBarButtonItem = refreshButton;
     UIBarButtonItem *allRead = [[UIBarButtonItem alloc]
                                       initWithBarButtonSystemItem:UIBarButtonSystemItemTrash
@@ -1424,6 +1442,7 @@ static NSMutableArray* urlQueue = Nil;
     self.detailViewController = (TWLocDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
     [self.detailViewController setMaster:self];
     [[self.detailViewController activityLabel] setHidden:YES];
+    [[self.detailViewController labelOverEverything] setHidden:YES];
     [self setTitle:@"Twitter"];
     
     NSString *filePath = [[NSBundle mainBundle] pathForResource:@"LocPin" ofType:@"png"];
@@ -1938,6 +1957,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             NSMutableString* html = [[NSMutableString alloc] initWithData:data
                                                                  encoding:NSStringEncodingConversionAllowLossy];
             if (html != Nil) {
+                [html appendString:@"\n"];
+                [html appendString:[tweet tweet]];
                 NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
                 if ([tweet origHTML] == Nil ||
                     [replaceURL rangeOfString:@"photoset_iframe"].location != NSNotFound) {
@@ -2362,6 +2383,8 @@ int googleAddedItems = 0;
         if (alternate && [alternate count] > 0) {
             NSDictionary* altitem = [alternate objectAtIndex:0];
             htmlURL = [altitem objectForKey:@"href"];
+            if ([alternate count] > 1)
+                NSLog(@"choosing first item in alternate list %@", alternate);
         }
         NSString* googleID = [item objectForKey:@"id"];
 
@@ -2388,7 +2411,7 @@ int googleAddedItems = 0;
         NSEntityDescription *entity = [[master.fetchedResultsController fetchRequest] entity];
         Tweet* tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
                                                      inManagedObjectContext:context];
-        [tweet setSourceDict:Nil];
+        [tweet setSourceDict:[NSKeyedArchiver archivedDataWithRootObject:item]];
         [tweet setTweetID:theID];
         [tweet setFavorite:NO];
         [tweet setTimestamp:timestamp];

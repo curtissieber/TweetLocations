@@ -7,6 +7,8 @@
 //
 
 #import "TWLocImages.h"
+#import "TWLocMasterViewController.h"
+#import "TWLocDetailViewController.h"
 
 @implementation TWLocImages
 
@@ -312,9 +314,24 @@
     return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
+- (void)notify:(NSString*)text
+{
+    if (_masterViewController != Nil) {
+        [[[(TWLocMasterViewController*)_masterViewController detailViewController] labelOverEverything] setHidden:NO];
+        [[[(TWLocMasterViewController*)_masterViewController detailViewController] labelOverEverything] setText:@"SAVING IMAGE CONTEXT"];
+    }
+}
+- (void)dropNotify:(NSString*)text
+{
+    if (_masterViewController != Nil) {
+        [[[(TWLocMasterViewController*)_masterViewController detailViewController] labelOverEverything] setHidden:YES];
+    }
+}
+
 - (void)saveContext
 {
     @try {
+        [self performSelector:@selector(notify:) onThread:[NSThread mainThread] withObject:@"SAVING IMAGE CONTEXT" waitUntilDone:YES];
         [self getImageLock];
         NSError *error = nil;
         NSManagedObjectContext *managedObjectContext = _managedObjectContext;
@@ -339,6 +356,7 @@
         [self->imageDictLock unlock];
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
+    [self performSelector:@selector(dropNotify:) onThread:[NSThread mainThread] withObject:Nil waitUntilDone:YES];
 }
 
 @end

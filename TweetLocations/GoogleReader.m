@@ -108,6 +108,11 @@
         NSLog(@"google session data = %@", respStr);
         NSLog(@"google session response = %ld", (long)[response statusCode]);
         NSLog(@"google session error = %ld", (long)[error code]);
+        if ([response statusCode] != 200)
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting session keys", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+                [alert show];
+            }];
         
         _cookies = [[NSMutableArray alloc] initWithCapacity:1];
         NSArray* items = [respStr componentsSeparatedByString:@"\n"];
@@ -184,6 +189,11 @@
         NSLog(@"google token data = %@", respStr);
         NSLog(@"google token response = %ld", (long)[response statusCode]);
         NSLog(@"google token error = %ld", (long)[error code]);
+        if ([response statusCode] != 200)
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting session TOKEN", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+                [alert show];
+            }];
 
         _googleToken = respStr;
         _googleTokenTime = CACurrentMediaTime();
@@ -211,6 +221,11 @@
     //NSLog(@"google subscription data = %@", respStr);
     //NSLog(@"google subscription response = %ld", (long)[response statusCode]);
     //NSLog(@"google subscription error = %ld", (long)[error code]);
+    if ([response statusCode] != 200)
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting streams", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+            [alert show];
+        }];
     
     NSMutableArray * feeds = [NSMutableArray array];
     if([response statusCode] == 200) {
@@ -249,6 +264,11 @@
     NSLog(@"google unreadRSS data = %@", respStr);
     NSLog(@"google unreadRSS response = %ld", (long)[response statusCode]);
     NSLog(@"google unreadRSS error = %ld", (long)[error code]);
+    if ([response statusCode] != 200)
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting unread RSS feeds", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+            [alert show];
+        }];
 
     if([response statusCode] != 200) {
         // Handle when status code is not 200
@@ -299,6 +319,11 @@
     NSLog(@"google userID data = %@", respStr);
     NSLog(@"google userID response = %ld", (long)[response statusCode]);
     NSLog(@"google userID error = %ld", (long)[error code]);
+    if ([response statusCode] != 200)
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting user ID", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+            [alert show];
+        }];
     
     if([response statusCode] != 200) {
         // Handle when status code is not 200
@@ -340,6 +365,11 @@
     //NSLog(@"google unreadItems data = %@", respStr);
     //NSLog(@"google unreadItems response = %ld", (long)[response statusCode]);
     //NSLog(@"google unreadItems error = %ld", (long)[error code]);
+    if ([response statusCode] != 200)
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld getting unread items in %@", (long)[response statusCode], theID] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+            [alert show];
+        }];
     
     if([response statusCode] != 200) {
         // Handle when status code is not 200
@@ -404,6 +434,11 @@ function set_article_read($id,$stream) {
     NSLog(@"google setRead data = %@", respStr);
     NSLog(@"google setRead response = %ld", (long)[response statusCode]);
     NSLog(@"google setRead error = %ld", (long)[error code]);
+    if ([response statusCode] != 200)
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ERROR" message:[NSString stringWithFormat:@"Google Error %ld setting article to READ status", (long)[response statusCode]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles:nil];
+            [alert show];
+        }];
     
     if ([response statusCode] != 200) {
         // Handle when status code is not 200

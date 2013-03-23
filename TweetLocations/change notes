@@ -1,5 +1,12 @@
-made all queue priorities VeryLow or Low, hope things stop locking up
+*added the sourceDict from the item into the info box for the item
+*made the detail view do a bunch different threads for pics, hopefully less "locky"
+*keeping track of collectionPics in the readPics set, instead of always deleting them
+*broke up the refresh into twitter/google choice
+
+WISHLIST:
 too many images die saving themseleves - only grab 100 Google things each time
 still need better recognition of pinterest things
     probably rework the whole link processing
+and the movie links only arrive from a refresh?
 and can I figure out vine links? someday perhaps
+and having trouble with google things that have the pic in the content not the url

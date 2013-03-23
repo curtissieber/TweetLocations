@@ -195,7 +195,8 @@
         if ([_detailItem origHTML] != Nil) {
             [UIView animateWithDuration:0.4 animations:^{
                 _activityLabel.hidden = NO;
-                NSString* detail = [NSString stringWithFormat:@"[%@]: %@\n%@", [_detailItem username], [_detailItem tweet], [_detailItem origHTML]];
+                NSDictionary* dict = [NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]];
+                NSString* detail = [NSString stringWithFormat:@"[%@]: %@\n****\n%@\n****\n%@", [_detailItem username], [_detailItem tweet], dict, [_detailItem origHTML]];
                 [_activityLabel setText:detail];
             }];
         }
@@ -278,6 +279,8 @@
     URLFetcher* fetcher = [[URLFetcher alloc] init];
     [fetcher fetch:url urlCallback:^(NSMutableString *html) {
         if (html != Nil) {
+            [html appendString:@"\n"];
+            [html appendString:[_detailItem tweet]];
             [self.textView setText:[[self getURLs:html] componentsJoinedByString:@"\n\n"]];
             [self.scrollView setHidden:YES];
             [self findJPG:html theUrlStr:url];
@@ -304,36 +307,50 @@
     }
     
     [_activityView startAnimating];
-    PhotoGetter *getter = [[PhotoGetter alloc] init];
-    [getter setIsRetinaDisplay:isRetinaDisplay];
-    [getter getPhoto:url
-                into:self.imageView
-              scroll:self.scrollView
-           sizelabel:self.sizeButton
-            callback:^(float latitude, float longitude, NSString* timestamp, NSData* data) {
-                if (data == Nil) {
-                    [_activityView stopAnimating];
-                    return;
-                }
-                thisImageData = data;
-                [self.scrollView setHidden:NO];
-                if (_master != Nil) {
-                    [[_master webQueue] addOperationWithBlock:^{
-                        [_master imageData:data forURL:urlStr];
-                        [[_master.fetchedResultsController managedObjectContext] processPendingChanges];
-                    }];
-                }
+    [[_master webQueue] addOperationWithBlock:^{
+        NSData* picdata = [_master imageData:urlStr];
+        if (picdata != Nil) {
+            thisImageData = picdata;
+            [self.scrollView setHidden:NO];
+            [[_master updateQueue] addOperationWithBlock:^{
+                UIImage *image = [[UIImage alloc] initWithData:picdata];
+                if ([PhotoGetter isGIFtype:urlStr])
+                    [PhotoGetter setupGIF:image iview:self.imageView sview:self.scrollView button:self.sizeButton rawData:picdata];
+                else
+                    [PhotoGetter setupImage:image iview:self.imageView sview:self.scrollView button:self.sizeButton];
                 if (originalTweet != _detailItem) { // oops we moved !!
                     [_activityView stopAnimating];
                     return;
                 }
-                if (latitude > -900) {
+                CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)picdata, NULL);
+                NSDictionary* metadataNew = (__bridge NSDictionary *) CGImageSourceCopyPropertiesAtIndex(source,0,NULL);
+                //NSLog(@"%@",metadataNew);
+                NSDictionary* gpsInfo = [metadataNew objectForKey:@"{GPS}"];
+                id latitude = [gpsInfo objectForKey:@"Latitude"];
+                id latitudeRef = [gpsInfo objectForKey:@"LatitudeRef"];
+                id longitude = [gpsInfo objectForKey:@"Longitude"];
+                id longitudeRef = [gpsInfo objectForKey:@"LongitudeRef"];
+                NSDictionary* exifInfo = [metadataNew objectForKey:@"{Exif}"];
+                id timestamp = [exifInfo objectForKey:@"DateTimeOriginal"];
+                //NSLog(@"Lat=%@%@ Lon=%@%@ time=%@",latitude,latitudeRef,longitude,longitudeRef,timestamp);
+                float lat = -1000;
+                float lon = -1000;
+                if (latitude != Nil && latitudeRef != Nil &&
+                    longitude != Nil && longitudeRef != Nil) {
+                    lat = [(NSNumber*)latitude floatValue];
+                    if ([(NSString*)latitudeRef compare:@"S"] == NSOrderedSame)
+                        lat = 0-lat;
+                    lon = [(NSNumber*)longitude floatValue];
+                    if ([(NSString*)longitudeRef compare:@"W"] == NSOrderedSame)
+                        lon = 0-lon;
+                }
+                if (lat > -900) {
                     [self resizeForMap];
-                    [self displayMap:timestamp lat:latitude lon:longitude];
+                    [self displayMap:timestamp lat:lat lon:lon];
                     [[_master updateQueue] addOperationWithBlock:^{
                         [_detailItem setLocationFromPic:[NSNumber numberWithBool:YES]];
-                        [_detailItem setLatitude:[NSNumber numberWithDouble:latitude]];
-                        [_detailItem setLongitude:[NSNumber numberWithDouble:longitude]];
+                        [_detailItem setLatitude:[NSNumber numberWithDouble:lat]];
+                        [_detailItem setLongitude:[NSNumber numberWithDouble:lon]];
                         [_detailItem setUrl:urlStr];
                     }];
                 } else {
@@ -344,6 +361,51 @@
                 
                 [_activityView stopAnimating];
             }];
+            return;
+        }
+        [[_master updateQueue] addOperationWithBlock:^{
+            PhotoGetter *getter = [[PhotoGetter alloc] init];
+            [getter setIsRetinaDisplay:isRetinaDisplay];
+            [getter getPhoto:url
+                        into:self.imageView
+                      scroll:self.scrollView
+                   sizelabel:self.sizeButton
+                    callback:^(float latitude, float longitude, NSString* timestamp, NSData* data) {
+                        if (data == Nil) {
+                            [_activityView stopAnimating];
+                            return;
+                        }
+                        thisImageData = data;
+                        [self.scrollView setHidden:NO];
+                        if (_master != Nil) {
+                            [[_master webQueue] addOperationWithBlock:^{
+                                [_master imageData:data forURL:urlStr];
+                                [[_master.fetchedResultsController managedObjectContext] processPendingChanges];
+                            }];
+                        }
+                        if (originalTweet != _detailItem) { // oops we moved !!
+                            [_activityView stopAnimating];
+                            return;
+                        }
+                        if (latitude > -900) {
+                            [self resizeForMap];
+                            [self displayMap:timestamp lat:latitude lon:longitude];
+                            [[_master updateQueue] addOperationWithBlock:^{
+                                [_detailItem setLocationFromPic:[NSNumber numberWithBool:YES]];
+                                [_detailItem setLatitude:[NSNumber numberWithDouble:latitude]];
+                                [_detailItem setLongitude:[NSNumber numberWithDouble:longitude]];
+                                [_detailItem setUrl:urlStr];
+                            }];
+                        } else {
+                            [[_master updateQueue] addOperationWithBlock:^{
+                                [_detailItem setUrl:urlStr];
+                            }];
+                        }
+                        
+                        [_activityView stopAnimating];
+                    }];
+        }];
+    }];
     return YES;
 }
 
@@ -453,15 +515,28 @@
     [strResults sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         NSMutableString* str1 = [[NSMutableString alloc] initWithString:obj1];
         NSMutableString* str2 = [[NSMutableString alloc] initWithString:obj2];
+        if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
+            return NSOrderedAscending;
+        if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
             return NSOrderedAscending;
+        if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
             [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
             return NSOrderedAscending;
+        if ([str2 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
+            [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
             [str2 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
             [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
             return NSOrderedAscending;
+        if ([str2 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
+            [str1 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
+            [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             return NSOrderedAscending;
         if ([str2 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
@@ -829,8 +904,9 @@ static UIBarButtonItem *doSomethingButton;
                 if (pics && [pics count] > 1)
                     [[_master webQueue] addOperationWithBlock:^{
                         [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [_master deleteImageData:obj];
-                            NSLog(@"deleting from pic collection %@",obj);
+                            [_master keepTrackofReadURLs:obj];
+                            //[_master deleteImageData:obj];
+                            //  NSLog(@"deleting from pic collection %@",obj);
                         }];
                     }];
                 [_master nextNewTweet];
@@ -850,8 +926,9 @@ static UIBarButtonItem *doSomethingButton;
                 if (pics && [pics count] > 1)
                     [[_master webQueue] addOperationWithBlock:^{
                         [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [_master deleteImageData:obj];
-                            NSLog(@"deleting from pic collection %@",obj);
+                            [_master keepTrackofReadURLs:obj];
+                            //[_master deleteImageData:obj];
+                            // NSLog(@"deleting from pic collection %@",obj);
                         }];
                     }];
                 [_master nextTweet];
@@ -871,8 +948,9 @@ static UIBarButtonItem *doSomethingButton;
                 if (pics && [pics count] > 1)
                     [[_master webQueue] addOperationWithBlock:^{
                         [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [_master deleteImageData:obj];
-                            NSLog(@"deleting from pic collection %@",obj);
+                            [_master keepTrackofReadURLs:obj];
+                            //[_master deleteImageData:obj];
+                            // NSLog(@"deleting from pic collection %@",obj);
                         }];
                     }];
                 [_master prevTweet];
