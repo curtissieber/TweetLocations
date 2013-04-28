@@ -57,6 +57,8 @@
 {
     @try {
         [self checkForVideo:Nil];
+        [[self sizeButton] setEnabled:YES];
+        [[self sizeButton] setHidden:NO];
         [PhotoGetter setupImage:[_master redX] iview:_imageView sview:_scrollView button:_sizeButton];
         
         // Update the user interface for the detail item.
@@ -131,6 +133,8 @@
         __block Tweet* tweet = _detailItem;
         
         __block NSData* imageData = [_master imageData:[tweet url]];
+        [[self sizeButton] setEnabled:YES];
+        [[self sizeButton] setHidden:NO];
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             @try {
                 if (imageData != Nil) {
@@ -242,14 +246,14 @@
     CGRect mapFrame = [_mapView frame];
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
-    CGRect bigFrame = [_bigLabel frame];
+    __block CGRect bigFrame = [_bigLabel frame];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
     // map sits above the detail, but is hidden
     mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
-    // big label sits above the detail
-    bigFrame.origin.y = detailFrame.origin.y - bigFrame.size.height;
+    // big label starts at the very top
+    bigFrame.origin.y = 0;
     //scroll sits above the detail and resizes for such
     scrollFrame.size.height = detailFrame.origin.y;
     scrollFrame.origin.y = 0;
@@ -263,6 +267,12 @@
         [_textView setFrame:textFrame];
         [_mapView setFrame:mapFrame];
         [_detailDescriptionLabel setFrame:detailFrame];
+    } completion:^(BOOL finished) {
+        // big label ends at the very bottom
+        bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
+        [UIView animateWithDuration:1.4 animations:^{
+            [_bigLabel setFrame:bigFrame];
+        }];
     }];
 }
 
@@ -501,6 +511,8 @@
             [strResults addObject:current];
         else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             [strResults addObject:current];
+        else if ([current rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
+            [strResults addObject:current];
         else if ([current rangeOfString:@"media.tumblr.com/"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"pinterest.com/500"].location != NSNotFound)
@@ -508,6 +520,12 @@
         else if ([current rangeOfString:@"pinterest.com/550"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"pinterest.com/original"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinimg.com/500"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinimg.com/550"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinimg.com/original"].location != NSNotFound)
             [strResults addObject:current];
     }
     //NSLog(@"only %d links are images",[strResults count]);
@@ -523,11 +541,21 @@
             return NSOrderedAscending;
         if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
             return NSOrderedDescending;
+        if ([str1 rangeOfString:@"pinimg.com/original"].location != NSNotFound)
+            return NSOrderedAscending;
+        if ([str1 rangeOfString:@"pinimg.com/original"].location != NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
             [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
             return NSOrderedAscending;
         if ([str2 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
             [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
+            return NSOrderedDescending;
+        if ([str1 rangeOfString:@"pinimg.com/550"].location != NSNotFound &&
+            [str2 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
+            return NSOrderedAscending;
+        if ([str2 rangeOfString:@"pinimg.com/550"].location != NSNotFound &&
+            [str1 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
             return NSOrderedDescending;
         if ([str1 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
             [str2 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
@@ -537,9 +565,21 @@
             [str1 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
             [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
             return NSOrderedDescending;
+        if ([str1 rangeOfString:@"pinimg.com/500"].location != NSNotFound &&
+            [str2 rangeOfString:@"pinimg.com/550"].location == NSNotFound &&
+            [str2 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
+            return NSOrderedAscending;
+        if ([str2 rangeOfString:@"pinimg.com/500"].location != NSNotFound &&
+            [str1 rangeOfString:@"pinimg.com/550"].location == NSNotFound &&
+            [str1 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
+            return NSOrderedDescending;
         if ([str1 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             return NSOrderedAscending;
         if ([str2 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+            return NSOrderedDescending;
+        if ([str1 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
+            return NSOrderedAscending;
+        if ([str2 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
             return NSOrderedDescending;
         [str1 deleteCharactersInRange:NSMakeRange([str1 length]-4,4)];
         [str2 deleteCharactersInRange:NSMakeRange([str2 length]-4,4)];
@@ -635,8 +675,11 @@ static MKCoordinateRegion region;
         region.span.longitudeDelta /= 3.0;
         [self.mapView setRegion:region animated:YES];
         NSLog(@"REGION set to %0.3f %0.3f", region.span.latitudeDelta,region.span.longitudeDelta);
+        double delay = 2.0;
+        if (region.span.latitudeDelta < 0.1)
+            delay = 1.0;
         if (region.span.latitudeDelta > 0.003)
-            [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:2.0];
+            [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:delay];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -648,6 +691,8 @@ static MKCoordinateRegion region;
     @try {
         if (self.master == Nil)
             return;
+        [[self sizeButton] setEnabled:NO];
+        [[self sizeButton] setHidden:YES];
         NSData* imageData = thisImageData;
         if (imageData == Nil)
             imageData = [self.master imageData:[_detailItem url]];
@@ -1125,7 +1170,9 @@ static UIBarButtonItem *doSomethingButton;
                     if (!finished)
                         NSLog(@"reducing the collectionButton, tho not finished");
                     [_picButton setFrame:origFrame];
-                    [_picCollection setHidden:YES];
+                    [UIView animateWithDuration:1.0 animations:^{
+                        [_picCollection setHidden:YES];
+                    }];
                 }];
                 [self checkForVideo:[NSSet setWithArray:urls]];
             } 
@@ -1358,6 +1405,9 @@ static NSString* videoURL = Nil;
     @try {
         int idx = [indexPath row];
         NSLog(@"selected picture %d",idx);
+        [[self sizeButton] setEnabled:YES];
+        [[self sizeButton] setHidden:NO];
+
         [self openURL:[NSURL URLWithString:[_pictures objectAtIndex:idx]]];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );

@@ -63,13 +63,28 @@
                                         <rect key="frame" x="0.0" y="0.0" width="703" height="373"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     </imageView>
+                                    <button opaque="NO" alpha="0.69999999999999996" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="RvD-fd-Zut">
+                                        <rect key="frame" x="598" y="63" width="90" height="44"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="18"/>
+                                        <state key="normal" title="Images">
+                                            <color key="titleColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                                            <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <state key="highlighted">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="picturesButtonHit:" destination="4" eventType="touchUpInside" id="lHz-x0-eHR"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <connections>
                                     <outlet property="delegate" destination="4" id="HUE-sB-lR0"/>
                                 </connections>
                             </scrollView>
                             <label opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" alpha="0.5" contentMode="bottomLeft" lineBreakMode="tailTruncation" numberOfLines="5" baselineAdjustment="alignBaselines" minimumFontSize="9" id="Et5-xA-bXz">
-                                <rect key="frame" x="10" y="218" width="680" height="155"/>
+                                <rect key="frame" x="0.0" y="0.0" width="680" height="155"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                                 <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                 <string key="text">tweet
@@ -82,9 +97,9 @@ TWEET
                                 <size key="shadowOffset" width="2" height="2"/>
                             </label>
                             <collectionView hidden="YES" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" restorationIdentifier="" minimumZoomScale="0.0" maximumZoomScale="0.0" dataMode="prototypes" id="Zp6-Zw-f6B">
-                                <rect key="frame" x="0.0" y="0.0" width="623" height="120"/>
-                                <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
-                                <collectionViewFlowLayout key="collectionViewLayout" scrollDirection="horizontal" minimumLineSpacing="10" minimumInteritemSpacing="0.0" id="mHW-Ec-OFb">
+                                <rect key="frame" x="580" y="111" width="120" height="450"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES"/>
+                                <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="0.0" id="mHW-Ec-OFb">
                                     <size key="itemSize" width="120" height="120"/>
                                     <size key="headerReferenceSize" width="0.0" height="0.0"/>
                                     <size key="footerReferenceSize" width="0.0" height="0.0"/>
@@ -115,23 +130,8 @@ TWEET
                                     <outlet property="delegate" destination="4" id="Kuy-5v-zny"/>
                                 </connections>
                             </collectionView>
-                            <button opaque="NO" alpha="0.69999999999999996" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="RvD-fd-Zut">
-                                <rect key="frame" x="612" y="0.0" width="90" height="44"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="18"/>
-                                <state key="normal" title="Images">
-                                    <color key="titleColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
-                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <state key="highlighted">
-                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <connections>
-                                    <action selector="picturesButtonHit:" destination="4" eventType="touchUpInside" id="lHz-x0-eHR"/>
-                                </connections>
-                            </button>
                             <button hidden="YES" opaque="NO" alpha="0.60000002384185791" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="aO1-ij-yii">
-                                <rect key="frame" x="580" y="70" width="120" height="44"/>
+                                <rect key="frame" x="580" y="6" width="120" height="44"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
                                 <state key="normal" title="Download Video">
@@ -152,6 +152,7 @@ TWEET
                                 <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                                <dataDetectorType key="dataDetectorTypes" link="YES"/>
                             </textView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="0eb-rf-ck8">
                                 <rect key="frame" x="502" y="605" width="201" height="61"/>
@@ -174,12 +175,12 @@ TWEET
                                 <autoresizingMask key="autoresizingMask"/>
                                 <color key="color" red="0.99607849120000003" green="0.0" blue="0.21568629149999999" alpha="1" colorSpace="deviceRGB"/>
                             </activityIndicatorView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="infoLight" showsTouchWhenHighlighted="YES" lineBreakMode="middleTruncation" id="SlB-hm-qH4">
-                                <rect key="frame" x="665" y="577" width="18" height="19"/>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="SlB-hm-qH4">
+                                <rect key="frame" x="620" y="571" width="80" height="31"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
-                                <state key="normal">
-                                    <color key="titleColor" red="0.19607843459999999" green="0.30980393290000002" blue="0.52156865600000002" alpha="1" colorSpace="calibratedRGB"/>
+                                <fontDescription key="fontDescription" type="boldSystem" size="button"/>
+                                <state key="normal" title="MoreInfo">
+                                    <color key="titleColor" red="0.19607843137254902" green="0.30980392156862746" blue="0.52156862745098043" alpha="1" colorSpace="calibratedRGB"/>
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
                                 <state key="highlighted">
@@ -189,7 +190,7 @@ TWEET
                                     <action selector="infoButtonHit:" destination="4" eventType="touchUpInside" id="qVV-0Q-Ofd"/>
                                 </connections>
                             </button>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="top" text="pop-over label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="9" adjustsFontSizeToFit="NO" id="WI8-6Q-KZk">
+                            <label hidden="YES" opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="top" text="pop-over label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="9" adjustsFontSizeToFit="NO" id="WI8-6Q-KZk">
                                 <rect key="frame" x="210" y="342" width="300" height="300"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <color key="backgroundColor" red="0.011764707043766975" green="0.14901961386203766" blue="0.9803922176361084" alpha="0.12" colorSpace="deviceRGB"/>
@@ -339,6 +340,63 @@ TWEET
     <resources>
         <image name="LocPin.png" width="100" height="100"/>
     </resources>
+    <classes>
+        <class className="TWLocDetailViewController" superclassName="UIViewController">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocDetailViewController.h"/>
+            <relationships>
+                <relationship kind="action" name="doSave:"/>
+                <relationship kind="action" name="handleSwipeDown:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleSwipeLeft:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleSwipeRight:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleSwipeUp:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="handleTap:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="infoButtonHit:"/>
+                <relationship kind="action" name="panBigLabel:" candidateClass="UIGestureRecognizer"/>
+                <relationship kind="action" name="picturesButtonHit:"/>
+                <relationship kind="action" name="touchedStatus:"/>
+                <relationship kind="action" name="videoButtonHit:"/>
+                <relationship kind="outlet" name="activityLabel" candidateClass="UITextView"/>
+                <relationship kind="outlet" name="activityView" candidateClass="UIActivityIndicatorView"/>
+                <relationship kind="outlet" name="bigLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="detailDescriptionLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="imageView" candidateClass="UIImageView"/>
+                <relationship kind="outlet" name="infoButton" candidateClass="UIButton"/>
+                <relationship kind="outlet" name="labelOverEverything" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="mapView" candidateClass="MKMapView"/>
+                <relationship kind="outlet" name="picButton" candidateClass="UIButton"/>
+                <relationship kind="outlet" name="picCollection" candidateClass="UICollectionView"/>
+                <relationship kind="outlet" name="scrollView" candidateClass="UIScrollView"/>
+                <relationship kind="outlet" name="sizeButton" candidateClass="UIButton"/>
+                <relationship kind="outlet" name="textView" candidateClass="UITextView"/>
+                <relationship kind="outlet" name="videoButton" candidateClass="UIButton"/>
+            </relationships>
+        </class>
+        <class className="TWLocMasterViewController" superclassName="UITableViewController">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocMasterViewController.h"/>
+            <relationships>
+                <relationship kind="outlet" name="queueLabel" candidateClass="UILabel"/>
+                <relationship kind="outlet" name="statusLabel" candidateClass="UILabel"/>
+            </relationships>
+        </class>
+        <class className="TWLocPicCollectionCell" superclassName="UICollectionViewCell">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/TWLocPicCollectionCell.h"/>
+            <relationships>
+                <relationship kind="outlet" name="image" candidateClass="UIImageView"/>
+            </relationships>
+        </class>
+        <class className="UICollectionReusableView" superclassName="UIView">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/UICollectionReusableView.h"/>
+        </class>
+        <class className="UICollectionViewCell" superclassName="UICollectionReusableView">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/UICollectionViewCell.h"/>
+        </class>
+        <class className="UICollectionViewFlowLayout" superclassName="UICollectionViewLayout">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/UICollectionViewFlowLayout.h"/>
+        </class>
+        <class className="UICollectionViewLayout" superclassName="NSObject">
+            <source key="sourceIdentifier" type="project" relativePath="./Classes/UICollectionViewLayout.h"/>
+        </class>
+    </classes>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
         <simulatedStatusBarMetrics key="statusBar" statusBarStyle="blackTranslucent"/>
         <simulatedOrientationMetrics key="orientation"/>

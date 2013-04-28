@@ -1,12 +1,12 @@
-*added the sourceDict from the item into the info box for the item
-*made the detail view do a bunch different threads for pics, hopefully less "locky"
-*keeping track of collectionPics in the readPics set, instead of always deleting them
-*broke up the refresh into twitter/google choice
+
+added pinimg.com to the recognized and replace lists
+    tried to make the tumblr.com previews be at the top
+    and the instragram recogizes instagr.am and instragram.com
+    also mobli.com media_ files
+    for replaces, tried to allow .com/post/ to catch the odd tumblrs that are self-named
+and a bunch of tiny shifts of things on the detail view layout
 
 WISHLIST:
 too many images die saving themseleves - only grab 100 Google things each time
-still need better recognition of pinterest things
-    probably rework the whole link processing
-and the movie links only arrive from a refresh?
 and can I figure out vine links? someday perhaps
 and having trouble with google things that have the pic in the content not the url
