@@ -252,8 +252,8 @@
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
     // map sits above the detail, but is hidden
     mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
-    // big label starts at the very top
-    bigFrame.origin.y = 0;
+    // big label starts at the middle
+    bigFrame.origin.y = detailFrame.origin.y - bigFrame.size.height;
     //scroll sits above the detail and resizes for such
     scrollFrame.size.height = detailFrame.origin.y;
     scrollFrame.origin.y = 0;

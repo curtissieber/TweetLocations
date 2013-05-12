@@ -1,10 +1,6 @@
-
-added pinimg.com to the recognized and replace lists
-    tried to make the tumblr.com previews be at the top
-    and the instragram recogizes instagr.am and instragram.com
-    also mobli.com media_ files
-    for replaces, tried to allow .com/post/ to catch the odd tumblrs that are self-named
-and a bunch of tiny shifts of things on the detail view layout
+Tiny fixes
+  made the label barely jump at the bottom
+  got the images-button out of the scrollframe
 
 WISHLIST:
 too many images die saving themseleves - only grab 100 Google things each time
