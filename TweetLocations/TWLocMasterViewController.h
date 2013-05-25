@@ -16,10 +16,12 @@
 #import "Tweet.h"
 #import "TWLocImages.h"
 #import "TWFastImages.h"
+#import "TMCache.h"
 
 // TWLocImages is the old, good one
 // TWFastImages is the new one I'm trying out
-#define TWIMAGE TWLocImages
+// TMCache looks promising also
+#define TWIMAGE TMCache
 
 typedef void(^MasterCallback)(void);
 
@@ -70,12 +72,18 @@ typedef void(^MasterCallback)(void);
 + (void)setNetworkAccessAllowed:(BOOL)allowed;
 - (BOOL)openURL:(NSURL *)url;
 - (void)killMax;
+
 - (TWIMAGE*)getImageServer;
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
+- (void)backgroundImageData:(NSData*)data forURL:(NSString*)url;
 - (void)deleteImageData:(NSString*)url;
 - (void)keepTrackofReadURLs:(NSString*)url;
 - (void)dropReadURLs:(MasterCallback)callback;
+- (void)saveContext;
+- (long long)sizeImages;
+- (int)numImages;
+
 - (void)nextTweet;
 - (void)nextNewTweet;
 - (void)prevTweet;

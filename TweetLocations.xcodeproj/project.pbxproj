@@ -13,6 +13,10 @@
 		E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = E91D95CA15EAB60C00717A95 /* TWLocApplication.m */; };
 		E91D95D115EAC13200717A95 /* LocPin.png in Resources */ = {isa = PBXBuildFile; fileRef = E91D95D015EAC13200717A95 /* LocPin.png */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
+		E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E417510C8D001D9CD2 /* TMCache.m */; };
+		E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E617510C8D001D9CD2 /* TMDiskCache.m */; };
+		E94D54EB17510C8D001D9CD2 /* TMMemoryCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E817510C8D001D9CD2 /* TMMemoryCache.m */; };
+		E94D54ED175129FD001D9CD2 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */; };
 		E950AD4616E2932D0044656E /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E950AD4516E2932D0044656E /* Tweet.m */; };
 		E951013D16445EDB00A4505E /* GoogleReader.m in Sources */ = {isa = PBXBuildFile; fileRef = E951013C16445EDB00A4505E /* GoogleReader.m */; };
 		E9533BFB16CFE96400437954 /* change notes in Resources */ = {isa = PBXBuildFile; fileRef = E9533BFA16CFE96400437954 /* change notes */; };
@@ -76,7 +80,14 @@
 		E91D95D015EAC13200717A95 /* LocPin.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LocPin.png; sourceTree = "<group>"; };
 		E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 2.xcdatamodel"; sourceTree = "<group>"; };
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
-		E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = file; path = "TweetLocations 6.xcdatamodel"; sourceTree = "<group>"; };
+		E94D54E317510C8D001D9CD2 /* TMCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMCache.h; sourceTree = "<group>"; };
+		E94D54E417510C8D001D9CD2 /* TMCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TMCache.m; sourceTree = "<group>"; };
+		E94D54E517510C8D001D9CD2 /* TMDiskCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMDiskCache.h; sourceTree = "<group>"; };
+		E94D54E617510C8D001D9CD2 /* TMDiskCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TMDiskCache.m; sourceTree = "<group>"; };
+		E94D54E717510C8D001D9CD2 /* TMMemoryCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMMemoryCache.h; sourceTree = "<group>"; };
+		E94D54E817510C8D001D9CD2 /* TMMemoryCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TMMemoryCache.m; sourceTree = "<group>"; };
+		E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
+		E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 6.xcdatamodel"; sourceTree = "<group>"; };
 		E950AD4416E2932D0044656E /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
 		E950AD4516E2932D0044656E /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E951013B16445EDB00A4505E /* GoogleReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GoogleReader.h; sourceTree = "<group>"; };
@@ -155,6 +166,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E94D54ED175129FD001D9CD2 /* MediaPlayer.framework in Frameworks */,
 				E98D760F16457E8100E12BE1 /* QuartzCore.framework in Frameworks */,
 				E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */,
 				E9A222601604E25D001DC556 /* AssetsLibrary.framework in Frameworks */,
@@ -180,6 +192,19 @@
 				E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */,
 			);
 			name = samples;
+			sourceTree = "<group>";
+		};
+		E94D54E217510C8D001D9CD2 /* TMCache */ = {
+			isa = PBXGroup;
+			children = (
+				E94D54E317510C8D001D9CD2 /* TMCache.h */,
+				E94D54E417510C8D001D9CD2 /* TMCache.m */,
+				E94D54E517510C8D001D9CD2 /* TMDiskCache.h */,
+				E94D54E617510C8D001D9CD2 /* TMDiskCache.m */,
+				E94D54E717510C8D001D9CD2 /* TMMemoryCache.h */,
+				E94D54E817510C8D001D9CD2 /* TMMemoryCache.m */,
+			);
+			path = TMCache;
 			sourceTree = "<group>";
 		};
 		E9A159CE15EA700B00630EE4 /* icons */ = {
@@ -217,6 +242,7 @@
 		E9DE57F815E94407005D75F6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */,
 				E98D760E16457E8100E12BE1 /* QuartzCore.framework */,
 				E947096216051074001B67C2 /* SystemConfiguration.framework */,
 				E9A2225F1604E25D001DC556 /* AssetsLibrary.framework */,
@@ -256,6 +282,7 @@
 				E9CCDC7216BEDC2E002A42D4 /* TWFastImages.h */,
 				E9CCDC7116BEDC2E002A42D4 /* TWFastImages.m */,
 				E90E0677167E2C4E004BEC18 /* Images.xcdatamodeld */,
+				E94D54E217510C8D001D9CD2 /* TMCache */,
 				E984347216AB0F4D007B996A /* ImageItem.h */,
 				E984347316AB0F4D007B996A /* ImageItem.m */,
 				E984346E16AB0F42007B996A /* ImageData.h */,
@@ -410,6 +437,9 @@
 				E984347416AB0F4D007B996A /* ImageItem.m in Sources */,
 				E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */,
 				E950AD4616E2932D0044656E /* Tweet.m in Sources */,
+				E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */,
+				E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */,
+				E94D54EB17510C8D001D9CD2 /* TMMemoryCache.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

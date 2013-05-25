@@ -83,28 +83,39 @@ static bool NetworkAccessAllowed = NO;
     [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:[NSNumber numberWithLongLong:0]];
 }
 
+static int numImages = 0;
 - (TWIMAGE*)getImageServer
 {
     if (self->imageServer == Nil) {
+#if (TWIMAGE != TMCache)
         self->imageServer = [[TWIMAGE alloc] init];
         [self->imageServer setMasterViewController:self];
+#else
+        self->imageServer = [[TMCache alloc] initWithName:@"ImageFile"];
+        if (self->imageServer != Nil) {
+            NSLog(@"Created the cache, now counting it");
+            numImages = 0;
+            [[self->imageServer diskCache] enumerateObjectsWithBlock:^(TMDiskCache *cache, NSString *key, id<NSCoding> object, NSURL *fileURL) {
+                if (fileURL != Nil) {
+                    numImages++;
+                    //NSLog(@"FILEURL %@",fileURL);
+                }
+            }];
+            NSLog(@"enumerated the disk cache for %d items", numImages);
+        }
+#endif
     }
     return self->imageServer;
 }
 
-- (NSArray*)fetchImages
-{
-    @try {
-        return [[self getImageServer] fetchImages];
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
-    }
-    return Nil;
-}
 - (NSData*)imageData:(NSString*)url
 {
     @try {
+#if (TWIMAGE != TMCache)
         return [[self getImageServer] imageData:url];
+#else
+        return [[self getImageServer] objectForKey:url];
+#endif
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -113,7 +124,27 @@ static bool NetworkAccessAllowed = NO;
 - (void)deleteImageData:(NSString*)url
 {
     @try {
+#if (TWIMAGE != TMCache)
         [[self getImageServer] deleteImageData:url];
+#else
+        if (url != Nil) {
+            [[self getImageServer] objectForKey:url block:^(TMCache *cache, NSString *key, id object) {
+                if (object != Nil && key != Nil && [key length] > 0) {
+                    [[self getImageServer] removeObjectForKey:url];
+                    numImages--;
+                }
+            }];
+        } else {
+            [[self getImageServer] removeAllObjects:^(TMCache *cache) {
+                NSLog(@"removed everything setting images to 0");
+                numImages = 0;
+                [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+                    [alert show];
+                }];
+            }];
+        }
+#endif
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -121,11 +152,45 @@ static bool NetworkAccessAllowed = NO;
 - (void)imageData:(NSData*)data forURL:(NSString*)url
 {
     @try {
+#if (TWIMAGE != TMCache)
         [[self getImageServer] imageData:data forURL:url];
+#else
+        [[self getImageServer] setObject:data forKey:url];
+        numImages++;
+#endif
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
 }
+- (void)backgroundImageData:(NSData *)data forURL:(NSString *)url
+{
+    @try {
+#if (TWIMAGE != TMCache)
+        [[self getImageServer] imageData:data forURL:url];
+#else
+        [[self getImageServer] setObject:data forKey:url block:^(TMCache *cache, NSString *key, id object) {
+            NSLog(@"Stored %d image %@",[data length],url);
+            numImages++;
+        }];
+#endif
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+    }
+}
+- (long long)sizeImages
+{
+#if (TWIMAGE != TMCache)
+    return [[self getImageServer] sizeImages];
+#else
+    return [[self getImageServer] diskByteCount];
+#endif
+}
+- (int)numImages
+{
+    return numImages;
+}
+
+#pragma mark URL_WORKER
 static NSMutableArray* urlQueue = Nil;
 - (void)keepTrackofReadURLs:(NSString*)url
 {
@@ -140,17 +205,20 @@ static NSMutableArray* urlQueue = Nil;
                     found = *stop = YES;
             }];
             if (found) {
-                NSLog(@"not doubleadding %@",url);
+                NSLog(@"upending %@",url);
+                [urlQueue removeObject:url];
+                [urlQueue addObject:url];
                 return;
             }
             [urlQueue addObject:url];
             if ([urlQueue count] < 20)
                 return;
+            int urlCount = [urlQueue count];
             
             __block NSString* deleteURL = [urlQueue objectAtIndex:0];
             [urlQueue removeObjectAtIndex:0];
             [_webQueue addOperationWithBlock:^{
-                NSLog(@"Deleting image %@",deleteURL);
+                NSLog(@"Deleting image %d %@",urlCount,deleteURL);
                 [self deleteImageData:deleteURL];
             }];
         }
@@ -983,7 +1051,7 @@ static NSMutableArray* urlQueue = Nil;
             [self saveTweetDebugToFile:[NSString stringWithFormat:@"new twitterIDMax %lld\n",_twitterIDMax]];
             NSLog(@"new TwitterIDMax %lld",_twitterIDMax);
             [_updateQueue addOperationWithBlock:^{
-                [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
+                [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[self numImages], [self sizeImages]/1024.0/1024.0]];
             }];
 
             // now, let us do the next item in the queue
@@ -1047,7 +1115,7 @@ static NSMutableArray* urlQueue = Nil;
                         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
                     }
                     NSString* status = [[self.detailViewController activityLabel] text];
-                    [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nNote: currently storing %d images, of size %0.2fMB",status,[[self getImageServer] numImages], [[self getImageServer] sizeImages]/1024.0/1024.0]];
+                    [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nNote: currently storing %d images, of size %0.2fMB",status,[self numImages], [self sizeImages]/1024.0/1024.0]];
                 }];
             }
         }
@@ -1299,7 +1367,7 @@ static NSMutableArray* urlQueue = Nil;
                             [context deleteObject:tweet];
                             [_idSet removeObject:[tweet tweetID]];
                             [_updateQueue addOperationWithBlock:^{
-                                [[self getImageServer] deleteImageData:url];
+                                [self deleteImageData:url];
                             }];
                         }
                     }
@@ -1326,7 +1394,7 @@ static NSMutableArray* urlQueue = Nil;
                 NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
             }
             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                [[self getImageServer] saveContext];
+                [self saveContext];
             }];
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
@@ -1535,7 +1603,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         [[UIApplication sharedApplication] endBackgroundTask:backgroundTaskNumber];
         backgroundTaskNumber = UIBackgroundTaskInvalid;
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            [imageServer saveContext];
+            [self saveContext];
         }];
     }
 }
@@ -1686,6 +1754,14 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 }
 
 #pragma mark - Fetched results controller
+- (void)saveContext
+{
+#if (TWIMAGE != TMCache)
+    return [[self getImageServer] saveContext];
+#else
+    
+#endif
+}
 
 - (NSFetchedResultsController *)fetchedResultsController
 {
@@ -1927,11 +2003,18 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             executing = NO; finished = YES;
             return;
         }
+        if (replaceURL == Nil &&
+                 [tweet origHTML] != Nil) {
+            // this must be the first grab, but we've already tried to grab before
+            [TWLocMasterViewController decrementTasks];
+            executing = NO; finished = YES;
+            return;
+        }
         if (replaceURL == Nil)
             replaceURL = [tweet url];
         if ((replaceURL == Nil) ||
             ([replaceURL length] < 4) ||
-            ([master imageData:replaceURL] != Nil) ) {
+            ([master imageData:replaceURL] != Nil)) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
@@ -2266,7 +2349,7 @@ int googleAddedItems = 0;
                 }
                 NSLog(@"added %d TweetOperations",[tweetsToProcess count]);
                 [[master updateQueue] addOperationWithBlock:^{
-                    [master STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[[master idSet] count],[[master getImageServer] numImages], [[master getImageServer] sizeImages]/1024.0/1024.0]];
+                    [master STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[[master idSet] count],[master numImages], [master sizeImages]/1024.0/1024.0]];
                 }];
             } @catch (NSException *eee) {
                 NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);

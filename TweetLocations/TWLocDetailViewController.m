@@ -17,6 +17,7 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 #import <QuartzCore/CAAnimation.h>
 #import <QuartzCore/CAMediaTimingFunction.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 @interface TWLocDetailViewController ()
 @property (strong, nonatomic) UIPopoverController *masterPopoverController;
@@ -30,6 +31,7 @@
 - (void)setDetailItem:(id)newDetailItem
 {
     @try {
+        videoURL = Nil;
         if ( newDetailItem != Nil &&
             [[newDetailItem class] isSubclassOfClass:[Tweet class]] ) {
             _detailItem = newDetailItem;
@@ -1224,6 +1226,7 @@ static NSString* videoURL = Nil;
 - (void)checkForVideo:(NSSet*)urls
 {
     @try {
+        videoURL = Nil;
         if (urls == Nil) {
             [_videoButton setHidden:YES];
             return;
@@ -1234,9 +1237,11 @@ static NSString* videoURL = Nil;
             if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
                 hasVideo = *stop = YES;
                 videoURL = theURL;
+                NSLog(@"VIDEO URL = %@",theURL);
             }
         }];
         [_videoButton setHidden:(!hasVideo)];
+        [_previewVideoButton setHidden:(!hasVideo)];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -1248,6 +1253,37 @@ static NSString* videoURL = Nil;
     alert.tag = ALERT_SAVEVIDEO;
     [alert show];
 }
+- (IBAction)previewVideoButtonHit:(id)sender
+{
+    NSURL *url=[[NSURL alloc] initWithString:videoURL];
+    NSLog(@"VIDEO URL = %@",videoURL);
+    MPMoviePlayerController* moviePlayer=[[MPMoviePlayerController alloc] initWithContentURL:url];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayer];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerDidExitFullscreenNotification object:moviePlayer];
+    
+    moviePlayer.controlStyle=MPMovieControlStyleDefault;
+    //moviePlayer.shouldAutoplay=NO;
+    [moviePlayer play];
+    [self.view addSubview:moviePlayer.view];
+    [moviePlayer setFullscreen:YES animated:YES];
+}
+- (void) moviePlayBackDidFinish:(NSNotification*)notification
+{
+    
+    MPMoviePlayerController *player = [notification object];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerPlaybackDidFinishNotification object:player];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:MPMoviePlayerDidExitFullscreenNotification object:player];
+    
+    if ([player respondsToSelector:@selector(setFullscreen:animated:)])
+    {
+        [player.view removeFromSuperview];
+    }
+}
+
 - (void)saveVideo:(NSString*)additionalName
 {
     NSLog(@"Needing to save %@ to file", videoURL);

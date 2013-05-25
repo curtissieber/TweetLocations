@@ -1,8 +1,8 @@
-Tiny fixes
-  made the label barely jump at the bottom
-  got the images-button out of the scrollframe
+Tiny fix for distillery images from instagram that were not being recognized
+ADDED TMCACHE concept and began using it for images
+    fixed the too-many-images lockups
+trying to make a video preview also (don't know if this works right now)
 
 WISHLIST:
-too many images die saving themseleves - only grab 100 Google things each time
 and can I figure out vine links? someday perhaps
 and having trouble with google things that have the pic in the content not the url

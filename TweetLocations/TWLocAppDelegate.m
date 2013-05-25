@@ -112,7 +112,7 @@
             NSLog(@"SAVED BEFORE background/terminate");
         }
         if (_masterViewController != Nil) {
-            [[_masterViewController getImageServer] saveContext];
+            [_masterViewController saveContext];
             NSLog(@"Images SAVED BEFORE background/terminate");
         }
         [alert dismissWithClickedButtonIndex:0 animated:YES];

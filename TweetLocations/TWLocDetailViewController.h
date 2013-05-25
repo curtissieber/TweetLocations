@@ -36,6 +36,7 @@
 
 @property (retain, nonatomic) IBOutlet UIButton* infoButton;
 @property (retain, nonatomic) IBOutlet UIButton* videoButton;
+@property (retain, nonatomic) IBOutlet UIButton* previewVideoButton;
 @property (retain, nonatomic) IBOutlet UIButton* picButton;
 @property (retain, nonatomic) IBOutlet UICollectionView* picCollection;
 @property (retain, nonatomic) NSArray *pictures;
@@ -47,5 +48,6 @@
 - (IBAction)touchedStatus:(id)sender;
 - (IBAction)picturesButtonHit:(id)sender;
 - (IBAction)videoButtonHit:(id)sender;
+- (IBAction)previewVideoButtonHit:(id)sender;
 - (IBAction)infoButtonHit:(id)sender;
 @end
