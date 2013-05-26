@@ -98,7 +98,8 @@ static int numImages = 0;
             [[self->imageServer diskCache] enumerateObjectsWithBlock:^(TMDiskCache *cache, NSString *key, id<NSCoding> object, NSURL *fileURL) {
                 if (fileURL != Nil) {
                     numImages++;
-                    //NSLog(@"FILEURL %@",fileURL);
+                    if (numImages < 5)
+                        NSLog(@"FILEURL %@",fileURL);
                 }
             }];
             NSLog(@"enumerated the disk cache for %d items", numImages);
@@ -138,6 +139,7 @@ static int numImages = 0;
             [[self getImageServer] removeAllObjects:^(TMCache *cache) {
                 NSLog(@"removed everything setting images to 0");
                 numImages = 0;
+                [self checkToSeeIfAllDeleted];
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE COMPLETE" message:@"All images have been deleted from the local store." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
                     [alert show];
@@ -188,6 +190,19 @@ static int numImages = 0;
 - (int)numImages
 {
     return numImages;
+}
+
+- (void)checkToSeeIfAllDeleted
+{
+    NSURL* directory = [[[self getImageServer] diskCache] cacheURL];
+    NSFileManager* fManager = [NSFileManager defaultManager];
+    NSArray* files = [fManager contentsOfDirectoryAtURL:directory includingPropertiesForKeys:Nil options:0 error:Nil];
+    if ([files count] > 1) {
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"DELETE FAILED" message:[NSString stringWithFormat:@"%d file images still remain in the local store.",[files count]] delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+            [alert show];
+        }];
+    }
 }
 
 #pragma mark URL_WORKER
@@ -2004,8 +2019,10 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             return;
         }
         if (replaceURL == Nil &&
-                 [tweet origHTML] != Nil) {
+                 [tweet origHTML] != Nil &&
+            [TWLocDetailViewController imageExtension:[tweet url]] == NO) {
             // this must be the first grab, but we've already tried to grab before
+            // and it's not an image, so let's just forget it
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;

@@ -1,7 +1,6 @@
-Tiny fix for distillery images from instagram that were not being recognized
-ADDED TMCACHE concept and began using it for images
-    fixed the too-many-images lockups
-trying to make a video preview also (don't know if this works right now)
+made the buttons smaller and more hidden(ish)
+it wasn't queueing the regrabbing of images if they were deleted
+Checks to see if all images are deleted when they're deleted
 
 WISHLIST:
 and can I figure out vine links? someday perhaps

@@ -1229,6 +1229,7 @@ static NSString* videoURL = Nil;
         videoURL = Nil;
         if (urls == Nil) {
             [_videoButton setHidden:YES];
+            [_previewVideoButton setHidden:YES];
             return;
         }
         __block bool hasVideo = NO;
@@ -1255,6 +1256,13 @@ static NSString* videoURL = Nil;
 }
 - (IBAction)previewVideoButtonHit:(id)sender
 {
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"NOT WORKING" message:@"This isn't working right, not just yet" delegate:self cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+    [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
+    alert.tag = ALERT_TAG_NULL;
+    [alert show];
+
+    return;
+    
     NSURL *url=[[NSURL alloc] initWithString:videoURL];
     NSLog(@"VIDEO URL = %@",videoURL);
     MPMoviePlayerController* moviePlayer=[[MPMoviePlayerController alloc] initWithContentURL:url];
