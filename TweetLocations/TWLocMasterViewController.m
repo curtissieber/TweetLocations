@@ -1916,20 +1916,18 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         cell.textLabel.text = [[NSString alloc] initWithFormat:@"[%@]:%@",
                                [tweet username], [tweet tweet] ];
-        UIFont* font = [[cell textLabel] font];
-        CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font
-                                                   constrainedToSize:[cell textLabel].frame.size
-                                                       lineBreakMode:[[cell textLabel] lineBreakMode]];
-        CGRect frame = [cell.textLabel frame];
-        frame.size.height = descriptionHeight.height;
-        [cell.textLabel setFrame:frame];
-        CGRect detailFrame = [cell.detailTextLabel frame];
-        detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
-        [cell.detailTextLabel setFrame:detailFrame];
-        CGRect cellFrame = [cell frame];
-        cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
-        [cell setFrame:cellFrame]; //died once DEAD DEAD DEAD
-        [cell setTag:cellFrame.size.height];
+        //UIFont* font = [[cell textLabel] font];
+        //CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font constrainedToSize:[cell textLabel].frame.size lineBreakMode:[[cell textLabel] lineBreakMode]];
+        //CGRect frame = [cell.textLabel frame];
+        //frame.size.height = descriptionHeight.height;
+        //[cell.textLabel setFrame:frame];
+        //CGRect detailFrame = [cell.detailTextLabel frame];
+        //detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
+        //[cell.detailTextLabel setFrame:detailFrame];
+        //CGRect cellFrame = [cell frame];
+        //cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
+        //[cell setFrame:cellFrame]; //died once DEAD DEAD DEAD
+        //[cell setTag:cellFrame.size.height];
         
         NSMutableString* detail = [[NSMutableString alloc] initWithCapacity:100];
         if ([[tweet url] length] > 4)

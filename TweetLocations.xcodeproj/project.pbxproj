@@ -20,6 +20,7 @@
 		E950AD4616E2932D0044656E /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E950AD4516E2932D0044656E /* Tweet.m */; };
 		E951013D16445EDB00A4505E /* GoogleReader.m in Sources */ = {isa = PBXBuildFile; fileRef = E951013C16445EDB00A4505E /* GoogleReader.m */; };
 		E9533BFB16CFE96400437954 /* change notes in Resources */ = {isa = PBXBuildFile; fileRef = E9533BFA16CFE96400437954 /* change notes */; };
+		E9723DFD17807CA300BACB6F /* iPadnew.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9723DFB17807CA300BACB6F /* iPadnew.storyboard */; };
 		E984347016AB0F42007B996A /* ImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = E984346F16AB0F42007B996A /* ImageData.m */; };
 		E984347416AB0F4D007B996A /* ImageItem.m in Sources */ = {isa = PBXBuildFile; fileRef = E984347316AB0F4D007B996A /* ImageItem.m */; };
 		E98D760F16457E8100E12BE1 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E98D760E16457E8100E12BE1 /* QuartzCore.framework */; };
@@ -93,6 +94,7 @@
 		E951013B16445EDB00A4505E /* GoogleReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GoogleReader.h; sourceTree = "<group>"; };
 		E951013C16445EDB00A4505E /* GoogleReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GoogleReader.m; sourceTree = "<group>"; };
 		E9533BFA16CFE96400437954 /* change notes */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "change notes"; sourceTree = "<group>"; };
+		E9723DFC17807CA300BACB6F /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPadnew.storyboard; sourceTree = "<group>"; };
 		E984346E16AB0F42007B996A /* ImageData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageData.h; sourceTree = "<group>"; };
 		E984346F16AB0F42007B996A /* ImageData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageData.m; sourceTree = "<group>"; };
 		E984347216AB0F4D007B996A /* ImageItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ImageItem.h; path = ../ImageItem.h; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 				E9533BFA16CFE96400437954 /* change notes */,
 				E9EB0AFA165FD728003264BC /* iPhone.storyboard */,
 				E9EB0AFC165FD728003264BC /* iPad.storyboard */,
+				E9723DFB17807CA300BACB6F /* iPadnew.storyboard */,
 				E91D95C915EAB60C00717A95 /* TWLocApplication.h */,
 				E91D95CA15EAB60C00717A95 /* TWLocApplication.m */,
 				E9DE580A15E94407005D75F6 /* TWLocAppDelegate.h */,
@@ -392,6 +395,7 @@
 				E91D95D115EAC13200717A95 /* LocPin.png in Resources */,
 				E9BE456C15EAED8B004987B1 /* LocPinLinkGreen.png in Resources */,
 				E9BE456D15EAED8B004987B1 /* LocPinLink.png in Resources */,
+				E9723DFD17807CA300BACB6F /* iPadnew.storyboard in Resources */,
 				E9942A3F15F2ECD2000E2FA3 /* redX.png in Resources */,
 				E98FAEAE16063DB000CA371A /* Default.png in Resources */,
 				E98FAEB016063DB800CA371A /* Default@2x.png in Resources */,
@@ -446,6 +450,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		E9723DFB17807CA300BACB6F /* iPadnew.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				E9723DFC17807CA300BACB6F /* en */,
+			);
+			name = iPadnew.storyboard;
+			sourceTree = "<group>";
+		};
 		E9DE580415E94407005D75F6 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -534,6 +546,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "TweetLocations/TweetLocations-Prefix.pch";
 				INFOPLIST_FILE = "TweetLocations/TweetLocations-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -545,6 +558,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "TweetLocations/TweetLocations-Prefix.pch";
 				INFOPLIST_FILE = "TweetLocations/TweetLocations-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};

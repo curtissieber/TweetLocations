@@ -171,7 +171,9 @@
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
-                    [self handleURL:[tweet url]];
+                    //[self handleURL:[tweet url]];
+                    [self.textView setText:[tweet origHTML]];
+                    [_activityView stopAnimating];
                 } else {
                     [UIView animateWithDuration:0.4 animations:^{
                         self.scrollView.hidden = YES;
@@ -219,6 +221,7 @@
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
     CGRect bigFrame = [_bigLabel frame];
+    [_detailDescriptionLabel setHidden:YES];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
@@ -249,6 +252,7 @@
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
     __block CGRect bigFrame = [_bigLabel frame];
+    [_detailDescriptionLabel setHidden:YES];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
