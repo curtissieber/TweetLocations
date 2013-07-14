@@ -285,7 +285,7 @@ static NSMutableArray* urlQueue = Nil;
         if (nextindex == Nil)
             return;
         Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
-            
+        
         [self.tableView selectRowAtIndexPath:nextindex
                                     animated:YES
                               scrollPosition:UITableViewScrollPositionMiddle];
@@ -419,7 +419,7 @@ static NSMutableArray* urlQueue = Nil;
         int offset=0;
         if (selected.row+1 >= numRows)
             offset = -1;
-
+        
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
         @try {
             [context deleteObject:tweet];
@@ -544,7 +544,7 @@ static NSMutableArray* urlQueue = Nil;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
 }
 
 #pragma mark Twitter
@@ -585,7 +585,7 @@ static NSMutableArray* urlQueue = Nil;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
 }
 
 - (void)queueTweetGet:(NSNumber*)listID
@@ -598,7 +598,7 @@ static NSMutableArray* urlQueue = Nil;
                 }];
                 [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
             }
-
+            
             _maxTweetsToGet = NUMTWEETSTOGET;
             _twitterIDMax = -1;
             _twitterIDMin = -1;
@@ -623,7 +623,7 @@ static NSMutableArray* urlQueue = Nil;
                     NSLog(@"done setting up the ID array");
                 } else NSLog(@"NO TWEETS FETCHED! IS THE DB EMPTY?");
             }
-
+            
             _twitterIDMax = [self getMaxTweetID:listID];
             if (_twitterIDMax == -1)
                 _twitterIDMax = [self getMaxTweetID:Nil];
@@ -703,7 +703,7 @@ static NSMutableArray* urlQueue = Nil;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
 }
 
 #pragma mark Alerts
@@ -733,7 +733,7 @@ static NSMutableArray* urlQueue = Nil;
                 
                 ACAccountStore* accountStore = [[ACAccountStore alloc] init];
                 ACAccountType* accountType =
-                    [accountStore accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+                [accountStore accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
                 NSArray* accountArray = [accountStore accountsWithAccountType:accountType];
                 NSEnumerator* e = [accountArray objectEnumerator];
                 ACAccount* account = Nil;
@@ -779,7 +779,7 @@ static NSMutableArray* urlQueue = Nil;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
 }
 
 #pragma mark Tweets
@@ -854,7 +854,7 @@ static NSMutableArray* urlQueue = Nil;
                      }];
                      [self saveTweetDebugToFile:[NSString stringWithFormat:@"received %d tweets\n", [timeline count]]];
                      [self saveTweetDataToFile:responseData];
-
+                     
                      if (_theQueue != Nil) {
                          NSLog(@"adding storetweet size=%d to the Queue", [timeline count]);
                          StoreTweetOperation* storeTweetOp = [[StoreTweetOperation alloc] initWithMaster:self timeline:timeline andList:listID];
@@ -1036,7 +1036,7 @@ static NSMutableArray* urlQueue = Nil;
         [self saveTweetDebugToFile:blurb];
         
         _maxTweetsToGet -= [timeline count];
-        NSLog(@"got %d tweets, %lld more to get", [timeline count], _maxTweetsToGet);        
+        NSLog(@"got %d tweets, %lld more to get", [timeline count], _maxTweetsToGet);
         [_updateQueue addOperationWithBlock:^{
             NSString* listname = @"TIMELINE";
             if (theListID != Nil) {
@@ -1053,7 +1053,7 @@ static NSMutableArray* urlQueue = Nil;
         if (_theQueue != Nil && storedTweets > 0 &&
             !([timeline count] < (TWEETREQUESTSIZE/2) || _maxTweetsToGet < 1)) {
             NSLog(@"adding another getTweet to the Queue");
-
+            
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
             [_webQueue setSuspended:NO];
             [TWLocMasterViewController incrementTasks];
@@ -1068,7 +1068,7 @@ static NSMutableArray* urlQueue = Nil;
             [_updateQueue addOperationWithBlock:^{
                 [self STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[_idSet count],[self numImages], [self sizeImages]/1024.0/1024.0]];
             }];
-
+            
             // now, let us do the next item in the queue
             if (!twitterErrorDetected && [self->queueGetArray count] > 0) {
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
@@ -1296,7 +1296,7 @@ static NSMutableArray* urlQueue = Nil;
             UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ALL SET TO READ" message:@"All tweets have been set to READ" delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
             [alert setTag:ALERT_DUMMY];
             [alert show];
-         }];
+        }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -1318,7 +1318,7 @@ static NSMutableArray* urlQueue = Nil;
             }
             NSLog(@"Got a chance to save, YAY!");
             [self.tableView reloadData];
-
+            
             [self checkForMaxTweets];
             UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Twitter or Google?" message:@"grab twitter, or google?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Google", nil];
             [alert setTag:ALERT_REFRESH];
@@ -1511,16 +1511,16 @@ static NSMutableArray* urlQueue = Nil;
             NSLog(@"dispatching dummy data imageData controller get:%@",[self imageData:@"dummy url"]);
         });
     }
-
+    
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc]
                                       initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
                                       target:self
                                       action:@selector(refreshTweetsButton:)];
     self.navigationItem.rightBarButtonItem = refreshButton;
     UIBarButtonItem *allRead = [[UIBarButtonItem alloc]
-                                      initWithBarButtonSystemItem:UIBarButtonSystemItemTrash
-                                      target:self
-                                      action:@selector(setAllTweetsRead:)];
+                                initWithBarButtonSystemItem:UIBarButtonSystemItemTrash
+                                target:self
+                                action:@selector(setAllTweetsRead:)];
     self.navigationItem.leftBarButtonItem = allRead;
     self.detailViewController = (TWLocDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
     [self.detailViewController setMaster:self];
@@ -1562,7 +1562,7 @@ static NSMutableArray* urlQueue = Nil;
         [_statusLabel setBackgroundColor:[UIColor whiteColor]];
         NSLog(@"Network access is allowed, YAY!");
     }
-
+    
     _tweetLibrary = YES;
     _googleReaderLibrary = YES;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -1644,7 +1644,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 - (void)insertNewObject:(id)sender
 {
     return;
- }
+}
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
@@ -1833,7 +1833,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     }
     
     return _fetchedResultsController;
-}    
+}
 
 - (void)controllerWillChangeContent:(NSFetchedResultsController *)controller
 {
@@ -1886,13 +1886,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 }
 
 /*
-// Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed. 
+ // Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed.
  
  - (void)controllerDidChangeContent:(NSFetchedResultsController *)controller
-{
-    // In the simplest, most efficient, case, reload the table view.
-    [self.tableView reloadData];
-}
+ {
+ // In the simplest, most efficient, case, reload the table view.
+ [self.tableView reloadData];
+ }
  */
 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath
@@ -1905,7 +1905,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
 }
 
 - (void)cellSetup:(UITableViewCell *)cell forTweet:(Tweet*)tweet
@@ -1916,18 +1916,20 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         cell.textLabel.text = [[NSString alloc] initWithFormat:@"[%@]:%@",
                                [tweet username], [tweet tweet] ];
-        //UIFont* font = [[cell textLabel] font];
-        //CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font constrainedToSize:[cell textLabel].frame.size lineBreakMode:[[cell textLabel] lineBreakMode]];
-        //CGRect frame = [cell.textLabel frame];
-        //frame.size.height = descriptionHeight.height;
-        //[cell.textLabel setFrame:frame];
-        //CGRect detailFrame = [cell.detailTextLabel frame];
-        //detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
-        //[cell.detailTextLabel setFrame:detailFrame];
-        //CGRect cellFrame = [cell frame];
-        //cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
-        //[cell setFrame:cellFrame]; //died once DEAD DEAD DEAD
-        //[cell setTag:cellFrame.size.height];
+        UIFont* font = [[cell textLabel] font];
+        CGSize descriptionHeight = [cell.textLabel.text sizeWithFont:font
+                                                   constrainedToSize:[cell textLabel].frame.size
+                                                       lineBreakMode:[[cell textLabel] lineBreakMode]];
+        CGRect frame = [cell.textLabel frame];
+        frame.size.height = descriptionHeight.height;
+        [cell.textLabel setFrame:frame];
+        CGRect detailFrame = [cell.detailTextLabel frame];
+        detailFrame.origin.y = frame.size.height + frame.origin.y * 2;
+        [cell.detailTextLabel setFrame:detailFrame];
+        CGRect cellFrame = [cell frame];
+        cellFrame.size.height = detailFrame.origin.y + detailFrame.size.height;
+        [cell setFrame:cellFrame]; //died once DEAD DEAD DEAD
+        [cell setTag:cellFrame.size.height];
         
         NSMutableString* detail = [[NSMutableString alloc] initWithCapacity:100];
         if ([[tweet url] length] > 4)
@@ -2017,7 +2019,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             return;
         }
         if (replaceURL == Nil &&
-                 [tweet origHTML] != Nil &&
+            [tweet origHTML] != Nil &&
             [TWLocDetailViewController imageExtension:[tweet url]] == NO) {
             // this must be the first grab, but we've already tried to grab before
             // and it's not an image, so let's just forget it
@@ -2101,7 +2103,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
-
+    
     [TWLocMasterViewController decrementTasks];
     executing = NO; finished = YES;
 }
@@ -2179,7 +2181,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             }];
         }
         [master imageData:imageData forURL:replaceURL];
-
+        
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -2308,7 +2310,7 @@ int googleAddedItems = 0;
 - (void)main
 {
     executing = YES;
-
+    
     if (rssFeed != Nil) {
         // handle the rss contents if there are any
     } else if (subscriptions != Nil) {
@@ -2424,46 +2426,46 @@ int googleAddedItems = 0;
         }];
     }
     return googleAddedItems;
-/*
- (
- {
- alternate =     (
- {
- href = "http://dewittdailydoesit.tumblr.com/post/43229452343";
- type = "text/html";
- }
- );
- annotations =     (
- );
- categories =     (
- "user/08244464737233952669/label/tumblr",
- "user/08244464737233952669/state/com.google/reading-list",
- "user/08244464737233952669/state/com.google/fresh",
- cumshots
- );
- comments =     (
- );
- crawlTimeMsec = 1361028986087;
- id = "tag:google.com,2005:reader/item/370e36db6bbb2609";
- likingUsers =     (
- );
- origin =     {
- htmlUrl = "http://dewittdailydoesit.tumblr.com/";
- streamId = "feed/http://dewittdailydoesit.tumblr.com/rss";
- title = "I&#39;M DEWITT, MOTHERFUCKER.";
- };
- published = 1361028982;
- summary =     {
- content = "<img src=\"http://25.media.tumblr.com/tumblr_mde3g173561qe273do1_500.gif\"><br><br><p>This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.</p>";
- direction = ltr;
- };
- timestampUsec = 1361028986087925;
- title = "This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.";
- updated = 1361028982;
- }
- )
-
- */
+    /*
+     (
+     {
+     alternate =     (
+     {
+     href = "http://dewittdailydoesit.tumblr.com/post/43229452343";
+     type = "text/html";
+     }
+     );
+     annotations =     (
+     );
+     categories =     (
+     "user/08244464737233952669/label/tumblr",
+     "user/08244464737233952669/state/com.google/reading-list",
+     "user/08244464737233952669/state/com.google/fresh",
+     cumshots
+     );
+     comments =     (
+     );
+     crawlTimeMsec = 1361028986087;
+     id = "tag:google.com,2005:reader/item/370e36db6bbb2609";
+     likingUsers =     (
+     );
+     origin =     {
+     htmlUrl = "http://dewittdailydoesit.tumblr.com/";
+     streamId = "feed/http://dewittdailydoesit.tumblr.com/rss";
+     title = "I&#39;M DEWITT, MOTHERFUCKER.";
+     };
+     published = 1361028982;
+     summary =     {
+     content = "<img src=\"http://25.media.tumblr.com/tumblr_mde3g173561qe273do1_500.gif\"><br><br><p>This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.</p>";
+     direction = ltr;
+     };
+     timestampUsec = 1361028986087925;
+     title = "This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.";
+     updated = 1361028982;
+     }
+     )
+     
+     */
 }
 
 - (void)addItem:(NSDictionary*)item
@@ -2485,7 +2487,7 @@ int googleAddedItems = 0;
                 NSLog(@"choosing first item in alternate list %@", alternate);
         }
         NSString* googleID = [item objectForKey:@"id"];
-
+        
         BOOL duplicate = NO;
         NSSet* dups = Nil;
         NSNumber* theID = [NSNumber numberWithLongLong:[timestamp longLongValue]];
@@ -2503,7 +2505,7 @@ int googleAddedItems = 0;
             if (googleAddedItems < 0) googleAddedItems = 0;
             return;
         }
-
+        
         //NSLog(@"adding item from %@: %@",username,title);
         NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
         NSEntityDescription *entity = [[master.fetchedResultsController fetchRequest] entity];

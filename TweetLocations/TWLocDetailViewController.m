@@ -171,9 +171,7 @@
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
-                    //[self handleURL:[tweet url]];
-                    [self.textView setText:[tweet origHTML]];
-                    [_activityView stopAnimating];
+                    [self handleURL:[tweet url]];
                 } else {
                     [UIView animateWithDuration:0.4 animations:^{
                         self.scrollView.hidden = YES;
@@ -221,7 +219,6 @@
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
     CGRect bigFrame = [_bigLabel frame];
-    [_detailDescriptionLabel setHidden:YES];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
@@ -252,7 +249,6 @@
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
     __block CGRect bigFrame = [_bigLabel frame];
-    [_detailDescriptionLabel setHidden:YES];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
@@ -315,7 +311,7 @@
 {
     [self resizeWithoutMap];
     [self.mapView setHidden:YES];
-
+    
     Tweet* originalTweet = _detailItem;
     NSString* urlStr = [url description];
     if (![TWLocDetailViewController imageExtension:urlStr]) {
@@ -454,11 +450,11 @@
 {
     //NSLog(@"regex search started");
     /*NSError __autoreleasing *err = [[NSError alloc] init];
-    NSRegularExpression* regex = [[NSRegularExpression alloc]
-                                  initWithPattern:@"\"http:[^\"]*\""
-                                  options:NSRegularExpressionCaseInsensitive
-                                  error:&err];
-    NSArray* matches = [regex matchesInString:html options:0 range:NSMakeRange(0, [html length])];*/
+     NSRegularExpression* regex = [[NSRegularExpression alloc]
+     initWithPattern:@"\"http:[^\"]*\""
+     options:NSRegularExpressionCaseInsensitive
+     error:&err];
+     NSArray* matches = [regex matchesInString:html options:0 range:NSMakeRange(0, [html length])];*/
     NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     NSDataDetector* detector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:Nil];
     [detector enumerateMatchesInString:html options:0 range:NSMakeRange(0, [html length]) usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
@@ -498,7 +494,7 @@
     if (replace != Nil) {
         if ([TWLocDetailViewController imageExtension:replace])
             [self openURL:[NSURL URLWithString:replace]];
-        else 
+        else
             [self handleURL:replace];
     } else {
         [_activityView stopAnimating];
@@ -620,7 +616,7 @@
     else
         e = [htmlResults objectEnumerator];
     NSString* replaceStr = [URLFetcher canReplaceURL:url enumerator:e];
-
+    
     NSMutableString* allMatches = [[NSMutableString alloc] initWithCapacity:256];
     
     if ([strResults count] > 0) {
@@ -639,7 +635,7 @@
             [allMatches appendString:@"\n"];
         }
     }
-
+    
     [html setString:allMatches];
     if (replaceStr != Nil) {
         return replaceStr;
@@ -652,10 +648,10 @@ static MKCoordinateRegion region;
 {
     @try {
         [self.mapView setHidden:NO];
-
+        
         CLLocationCoordinate2D coord = CLLocationCoordinate2DMake(latitude, longitude);
         region = MKCoordinateRegionMake(coord,
-                                                           MKCoordinateSpanMake(10.0, 10.0));
+                                        MKCoordinateSpanMake(10.0, 10.0));
         
         NSArray* annotations = [self.mapView annotations];
         [self.mapView removeAnnotations:annotations];
@@ -706,35 +702,35 @@ static MKCoordinateRegion region;
             ALAssetsLibrary* library = [[ALAssetsLibrary alloc] init];
             [library writeImageDataToSavedPhotosAlbum:imageData metadata:Nil
                                       completionBlock:
-                 ^(NSURL *assetURL, NSError *error) {
-                     NSLog(@"Image write error=%@",error);
-                     NSLog(@"Image write url=%@",[assetURL description]);
-                     if (error != NULL)
-                     {
-                         UIAlertView *alert =
-                         [[UIAlertView alloc] initWithTitle:@"Save To Camera Roll FAILED"
-                                                    message:@"Oh my! What a disgrace!"
-                                                   delegate:self
-                                          cancelButtonTitle:@"Yah, Whatever"
-                                          otherButtonTitles: nil];
-                         [alert show];
-                         
-                     }
-                     else  // No errors
-                     {
-                         // Show message image successfully saved
-                         UIAlertView *alert =
-                         [[UIAlertView alloc] initWithTitle:@"Save To Camera Roll SUCCESS"
-                                                    message:@"Wheeeeeee! YAY!"
-                                                   delegate:self
-                                          cancelButtonTitle:@"Oh, that was FINE!"
-                                          otherButtonTitles: nil];
-                         [alert show];
-                     }
+             ^(NSURL *assetURL, NSError *error) {
+                 NSLog(@"Image write error=%@",error);
+                 NSLog(@"Image write url=%@",[assetURL description]);
+                 if (error != NULL)
+                 {
+                     UIAlertView *alert =
+                     [[UIAlertView alloc] initWithTitle:@"Save To Camera Roll FAILED"
+                                                message:@"Oh my! What a disgrace!"
+                                               delegate:self
+                                      cancelButtonTitle:@"Yah, Whatever"
+                                      otherButtonTitles: nil];
+                     [alert show];
                      
-                 }];
+                 }
+                 else  // No errors
+                 {
+                     // Show message image successfully saved
+                     UIAlertView *alert =
+                     [[UIAlertView alloc] initWithTitle:@"Save To Camera Roll SUCCESS"
+                                                message:@"Wheeeeeee! YAY!"
+                                               delegate:self
+                                      cancelButtonTitle:@"Oh, that was FINE!"
+                                      otherButtonTitles: nil];
+                     [alert show];
+                 }
+                 
+             }];
             /*UIImageWriteToSavedPhotosAlbum([UIImage imageWithData:imageData], self,
-                                           @selector(image:didFinishSavingWithError:contextInfo:), nil);*/
+             @selector(image:didFinishSavingWithError:contextInfo:), nil);*/
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
@@ -792,7 +788,7 @@ static UIBarButtonItem *doSomethingButton;
     } else {
         isRetinaDisplay = NO; // non-Retina display
     }
-
+    
     UIPanGestureRecognizer* panGesture = [[UIPanGestureRecognizer alloc]
                                           initWithTarget:self
                                           action:@selector(panBigLabel:)];
@@ -801,8 +797,8 @@ static UIBarButtonItem *doSomethingButton;
     [self.bigLabel addGestureRecognizer:panGesture];
     
     UITapGestureRecognizer* statusTouch = [[UITapGestureRecognizer alloc]
-                                          initWithTarget:self
-                                          action:@selector(touchedStatus:)];
+                                           initWithTarget:self
+                                           action:@selector(touchedStatus:)];
     [statusTouch setCancelsTouchesInView:YES];
     [statusTouch setDelaysTouchesBegan:YES];
     [_activityLabel addGestureRecognizer:statusTouch];
@@ -818,8 +814,8 @@ static UIBarButtonItem *doSomethingButton;
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionUp];
     [self.scrollView addGestureRecognizer:swipeGesture];
     swipeGesture = [[UISwipeGestureRecognizer alloc]
-                                              initWithTarget:self
-                                              action:@selector(handleSwipeDown:)];
+                    initWithTarget:self
+                    action:@selector(handleSwipeDown:)];
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionDown];
     [self.scrollView addGestureRecognizer:swipeGesture];
     
@@ -827,9 +823,9 @@ static UIBarButtonItem *doSomethingButton;
         NSLog(@"started with a detail item defined");
     }
     doSomethingButton = [[UIBarButtonItem alloc]
-                                      initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks
-                                      target:self
-                                      action:@selector(doSomething:)];
+                         initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks
+                         target:self
+                         action:@selector(doSomething:)];
     self.navigationItem.rightBarButtonItem = doSomethingButton;
 }
 
@@ -846,8 +842,8 @@ static UIBarButtonItem *doSomethingButton;
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionLeft];
     [theView addGestureRecognizer:swipeGesture];
     swipeGesture = [[UISwipeGestureRecognizer alloc]
-                                              initWithTarget:self
-                                              action:@selector(handleSwipeRight:)];
+                    initWithTarget:self
+                    action:@selector(handleSwipeRight:)];
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionRight];
     [theView addGestureRecognizer:swipeGesture];
 }
@@ -867,7 +863,7 @@ static UIBarButtonItem *doSomethingButton;
         [action setTag:ALERT_DOSOMETHING];
         [action showFromBarButtonItem:doSomethingButton animated:YES];
         return;
-    } 
+    }
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"What to do?"
                                                     message:@"Delete, ReGrab, or Favorite?"
                                                    delegate:self
@@ -893,7 +889,7 @@ static UIBarButtonItem *doSomethingButton;
             } else if ([chosen compare:DOSOMETHING_DOCUMENTS] == NSOrderedSame) {
                 [self doDocumentsView];
             }
-        } 
+        }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
     }
@@ -1098,13 +1094,13 @@ static UIBarButtonItem *doSomethingButton;
         _pictures = Nil;
         
         bool isTumblr = [[_detailItem url] rangeOfString:@"tumblr.com"].location != NSNotFound ||
-                [[_detailItem url] rangeOfString:@"tmblr.co"].location != NSNotFound;
+        [[_detailItem url] rangeOfString:@"tmblr.co"].location != NSNotFound;
         bool isGWIP = [[_detailItem url] rangeOfString:@"guyswithiphones.com"].location != NSNotFound;
         bool isInstagram = [[_detailItem url] rangeOfString:@"/instagr.am/"].location != NSNotFound;
         bool isOwly = [[_detailItem url] rangeOfString:@"/ow.ly/"].location != NSNotFound;
         bool isMoby = [[_detailItem url] rangeOfString:@"/moby.to/"].location != NSNotFound;
         bool isYouTube = [[_detailItem url] rangeOfString:@"youtube.com/"].location != NSNotFound ||
-                [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
+        [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
         NSArray* urls = [[_detailItem origHTML] componentsSeparatedByString:@"\n"];
         NSSet* urlset = [NSSet setWithArray:urls];
         urlset = [urlset objectsPassingTest:^BOOL(id obj, BOOL *stop) {
@@ -1181,7 +1177,7 @@ static UIBarButtonItem *doSomethingButton;
                     }];
                 }];
                 [self checkForVideo:[NSSet setWithArray:urls]];
-            } 
+            }
         }];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
@@ -1264,7 +1260,7 @@ static NSString* videoURL = Nil;
     [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
     alert.tag = ALERT_TAG_NULL;
     [alert show];
-
+    
     return;
     
     NSURL *url=[[NSURL alloc] initWithString:videoURL];
@@ -1433,7 +1429,7 @@ static NSString* videoURL = Nil;
                                       sview:Nil
                                      button:Nil];
             }
-
+            
         }];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
@@ -1455,7 +1451,7 @@ static NSString* videoURL = Nil;
         NSLog(@"selected picture %d",idx);
         [[self sizeButton] setEnabled:YES];
         [[self sizeButton] setHidden:NO];
-
+        
         [self openURL:[NSURL URLWithString:[_pictures objectAtIndex:idx]]];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
