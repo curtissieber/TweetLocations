@@ -309,6 +309,7 @@
 // should load the image
 -(BOOL)openURL:(NSURL *)url
 {
+    NSLog(@"detail URL:%@",[url absoluteString]);
     [self resizeWithoutMap];
     [self.mapView setHidden:YES];
     
@@ -460,6 +461,9 @@
     [detector enumerateMatchesInString:html options:0 range:NSMakeRange(0, [html length]) usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
         if ([result resultType] == NSTextCheckingTypeLink) {
             NSString* urlStr = [[result URL] absoluteString];
+            if ([urlStr characterAtIndex:[urlStr length]-1] == '\'' &&
+                [urlStr length] > 3)
+                urlStr = [urlStr substringToIndex:[urlStr length]-2];
             if ([urlStr compare:@"tel:" options:0 range:NSMakeRange(0, 4)] != NSOrderedSame) {
                 if ([urlStr rangeOfString:@"%5C"].location != NSNotFound) {
                     NSRange range = [urlStr rangeOfString:@"%5C"];
@@ -819,6 +823,13 @@ static UIBarButtonItem *doSomethingButton;
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionDown];
     [self.scrollView addGestureRecognizer:swipeGesture];
     
+    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc]
+                                              initWithTarget:self
+                                              action:@selector(handleURLTouch:)];
+    [longPress setCancelsTouchesInView:YES];
+    [longPress setDelaysTouchesBegan:YES];
+    [self.textView addGestureRecognizer:longPress];
+    
     if (_detailItem != Nil) {
         NSLog(@"started with a detail item defined");
     }
@@ -1037,6 +1048,30 @@ static UIBarButtonItem *doSomethingButton;
         if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
             if (self.picCollection)
                 [self.picCollection setHidden:![self.picCollection isHidden]];
+        }
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+    }
+}
+- (IBAction)handleURLTouch:(UIGestureRecognizer *)gestureRecognizer
+{
+    @try {
+        if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+            CGPoint location = [gestureRecognizer locationInView:[self textView]];
+            UITextPosition* position = [[self textView] closestPositionToPoint:location];
+            UITextPosition* textBegining = [[self textView] beginningOfDocument];
+            int start = [[self textView] offsetFromPosition:textBegining toPosition:position];
+            NSString* text = [[self textView] text];
+            if ([text length] > start) {
+                while ([text characterAtIndex:start] != '\n' && start > 0) start--;
+                start = start+1;
+                int end = start +1;
+                while ([text characterAtIndex:end] != '\n' && end < [text length]-1) end++;
+                NSLog(@"Text length = %d getting url at %d-%d",[text length],start,end);
+                NSString* urlStr = [text substringWithRange:NSMakeRange(start, end-start)] ;
+                NSLog(@"PRESSED URL: %@",urlStr);
+                [self openURL:[NSURL URLWithString:urlStr]];
+            } else NSLog(@"start %d beyond text",start);
         }
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );

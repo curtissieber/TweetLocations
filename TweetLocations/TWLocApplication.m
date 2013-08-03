@@ -12,6 +12,7 @@
 @implementation TWLocApplication
 
 - (BOOL)openURL:(NSURL *)url {
+    NSLog(@"app URL:%@",[url absoluteString]);
     if  ([[self.delegate class] isSubclassOfClass:[TWLocAppDelegate class]]) {
         TWLocAppDelegate* appDel = self.delegate;
         if (appDel != Nil &&

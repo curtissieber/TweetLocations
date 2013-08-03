@@ -72,6 +72,7 @@ static bool NetworkAccessAllowed = NO;
 // should load the image
 -(BOOL)openURL:(NSURL *)url
 {
+    NSLog(@"master URL:%@",[url absoluteString]);
     if (self.detailViewController != Nil)
         return [self.detailViewController openURL:url];
     return NO;
