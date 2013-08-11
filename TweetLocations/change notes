@@ -1,5 +1,7 @@
 
 ios7 - having to move some things around
-
-WISHLIST:
-and can I figure out vine links? someday perhaps
+trying to stop the selection in the edit-text, but keep the long-press action - done
+trying to help out the sorting mechanism and simplify it
+got the vine links, can see still frame, handling the video
+Also added the username as default for filename in save video
+Made the video preview a whole other webview controller, seems to work

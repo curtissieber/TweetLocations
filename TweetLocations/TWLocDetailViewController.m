@@ -12,6 +12,7 @@
 #import "URLFetcher.h"
 #import "MovieGetter.h"
 #import "DocumentViewController.h"
+#import "WebViewController.h"
 #import "TWLocPicCollectionCell.h"
 #import <ImageIO/CGImageDestination.h>
 #import <AssetsLibrary/AssetsLibrary.h>
@@ -293,7 +294,8 @@
         if (html != Nil) {
             [html appendString:@"\n"];
             [html appendString:[_detailItem tweet]];
-            [self.textView setText:[[self getURLs:html] componentsJoinedByString:@"\n\n"]];
+            html = [NSMutableString stringWithString:[[self getURLs:html] componentsJoinedByString:@"\n\n"]];
+            [self.textView setText:html];
             [self.scrollView setHidden:YES];
             [self findJPG:html theUrlStr:url];
         } else {
@@ -438,6 +440,10 @@
         return YES;
     if ([urlStr rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
         return YES;
+    if ([urlStr rangeOfString:@".jpg?"].location != NSNotFound)
+        return YES;
+    if ([urlStr rangeOfString:@".mp4?"].location != NSNotFound)
+        return YES;
     //NSLog(@"No");
     return NO;
 }
@@ -505,6 +511,27 @@
     }
 }
 
++ (NSArray*)sorts {
+    static NSArray* jpgSorted = Nil;
+    if (jpgSorted == Nil)
+        jpgSorted = [[NSArray alloc] initWithObjects:
+                     @"tumblr.com/video_file/",
+                     @".mp4?",
+                     @".jpg?",
+                     @"pinterest.com/original",
+                     @"pinterest.com/736",
+                     @"pinterest.com/550",
+                     @"pinterest.com/500",
+                     @"pinimg.com/original",
+                     @"pinimg.com/736",
+                     @"pinimg.com/550",
+                     @"pinimg.com/500",
+                     @".tumblr.com/image/",
+                     @".tumblr.com/previews/",
+                     @"media.tumblr.com/",
+                     nil];
+    return jpgSorted;
+}
 + (NSString*)staticFindJPG:(NSMutableString*)html theUrlStr:(NSString*)url
 {
     NSMutableArray* htmlResults = [self staticGetURLs:html];
@@ -515,15 +542,24 @@
     while ((current = [e nextObject]) != Nil) {
         if ([TWLocDetailViewController imageExtension:current])
             [strResults addObject:current];
-        else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
+        else if ([[TWLocDetailViewController sorts] indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* string = obj;
+            if ([string compare:current] == NSOrderedSame)
+                return (*stop = YES);
+            return NO;
+        }] != NSNotFound)
+            [strResults addObject:current];
+        /*else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"media.tumblr.com/"].location != NSNotFound)
             [strResults addObject:current];
-        else if ([current rangeOfString:@"pinterest.com/500"].location != NSNotFound)
+        else if ([current rangeOfString:@"pinterest.com/736"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"pinterest.com/550"].location != NSNotFound)
+            [strResults addObject:current];
+        else if ([current rangeOfString:@"pinterest.com/500"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"pinterest.com/original"].location != NSNotFound)
             [strResults addObject:current];
@@ -532,14 +568,29 @@
         else if ([current rangeOfString:@"pinimg.com/550"].location != NSNotFound)
             [strResults addObject:current];
         else if ([current rangeOfString:@"pinimg.com/original"].location != NSNotFound)
-            [strResults addObject:current];
+            [strResults addObject:current];*/
     }
     //NSLog(@"only %d links are images",[strResults count]);
     
     [strResults sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         NSMutableString* str1 = [[NSMutableString alloc] initWithString:obj1];
         NSMutableString* str2 = [[NSMutableString alloc] initWithString:obj2];
-        if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
+        NSInteger istr1 = [[TWLocDetailViewController sorts] indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* string = obj;
+            if ([string compare:str1] == NSOrderedSame)
+                return (*stop = YES);
+            return NO;
+        }];
+        NSInteger istr2 = [[TWLocDetailViewController sorts] indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* string = obj;
+            if ([string compare:str2] == NSOrderedSame)
+                return (*stop = YES);
+            return NO;
+        }];
+        if (istr1 < istr2) return NSOrderedDescending;
+        else if (istr1 > istr2) return NSOrderedAscending;
+        else return NSOrderedSame;
+        /*if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
             return NSOrderedAscending;
         if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
             return NSOrderedDescending;
@@ -586,7 +637,7 @@
         if ([str1 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
             return NSOrderedAscending;
         if ([str2 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
-            return NSOrderedDescending;
+            return NSOrderedDescending;*/
         [str1 deleteCharactersInRange:NSMakeRange([str1 length]-4,4)];
         [str2 deleteCharactersInRange:NSMakeRange([str2 length]-4,4)];
         
@@ -1063,10 +1114,10 @@ static UIBarButtonItem *doSomethingButton;
             int start = [[self textView] offsetFromPosition:textBegining toPosition:position];
             NSString* text = [[self textView] text];
             if ([text length] > start) {
-                while ([text characterAtIndex:start] != '\n' && start > 0) start--;
+                while (start > -1 && [text characterAtIndex:start] != '\n') start--;
                 start = start+1;
                 int end = start +1;
-                while ([text characterAtIndex:end] != '\n' && end < [text length]-1) end++;
+                while (end < [text length] && [text characterAtIndex:end] != '\n') end++;
                 NSLog(@"Text length = %d getting url at %d-%d",[text length],start,end);
                 NSString* urlStr = [text substringWithRange:NSMakeRange(start, end-start)] ;
                 NSLog(@"PRESSED URL: %@",urlStr);
@@ -1211,7 +1262,7 @@ static UIBarButtonItem *doSomethingButton;
                         [_picCollection setHidden:YES];
                     }];
                 }];
-                [self checkForVideo:[NSSet setWithArray:urls]];
+                //[self checkForVideo:[NSSet setWithArray:urls]];
             }
         }];
     } @catch (NSException *ee) {
@@ -1275,6 +1326,11 @@ static NSString* videoURL = Nil;
                 videoURL = theURL;
                 NSLog(@"VIDEO URL = %@",theURL);
             }
+            if ([theURL rangeOfString:@".mp4?"].location != NSNotFound) {
+                hasVideo = *stop = YES;
+                videoURL = theURL;
+                NSLog(@"VIDEO URL = %@",theURL);
+            }
         }];
         [_videoButton setHidden:(!hasVideo)];
         [_previewVideoButton setHidden:(!hasVideo)];
@@ -1286,34 +1342,59 @@ static NSString* videoURL = Nil;
 {
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SAVE VIDEO" message:[NSString stringWithFormat:@"Save the %@ video?",videoURL] delegate:self cancelButtonTitle:@"NO" otherButtonTitles:@"YES, save", nil];
     [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
+    [[alert textFieldAtIndex:0] setText:[_detailItem username]];
     alert.tag = ALERT_SAVEVIDEO;
     [alert show];
 }
+NSTimer* videoTimer = Nil;
 - (IBAction)previewVideoButtonHit:(id)sender
 {
-    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"NOT WORKING" message:@"This isn't working right, not just yet" delegate:self cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
-    [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
-    alert.tag = ALERT_TAG_NULL;
-    [alert show];
-    
-    return;
-    
-    NSURL *url=[[NSURL alloc] initWithString:videoURL];
+    NSLog(@"PREVIEW VIDEO URL = %@",videoURL);
+    UIStoryboard *webviewSB = [UIStoryboard storyboardWithName:@"WebViewController"
+                                                         bundle:Nil];
+    WebViewController *webView = [webviewSB instantiateInitialViewController];
+    [self presentViewController:webView animated:YES completion:^{
+        [webView grabMovie:videoURL];
+    }];
+
+    /*NSURL *url=[[NSURL alloc] initWithString:videoURL];
     NSLog(@"VIDEO URL = %@",videoURL);
+
     MPMoviePlayerController* moviePlayer=[[MPMoviePlayerController alloc] initWithContentURL:url];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayer];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerDidExitFullscreenNotification object:moviePlayer];
-    
-    moviePlayer.controlStyle=MPMovieControlStyleDefault;
-    //moviePlayer.shouldAutoplay=NO;
-    [moviePlayer play];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayer];
+    moviePlayer.shouldAutoplay = YES;
+    moviePlayer.initialPlaybackTime = 0;
+    moviePlayer.scalingMode = MPMovieScalingModeAspectFit;
+    moviePlayer.movieSourceType = MPMovieSourceTypeStreaming;
+    moviePlayer.fullscreen = YES;
+    [moviePlayer.view setFrame:[self view].frame];
     [self.view addSubview:moviePlayer.view];
-    [moviePlayer setFullscreen:YES animated:YES];
-}
-- (void) moviePlayBackDidFinish:(NSNotification*)notification
-{
+    [moviePlayer play];
     
+     */
+    /*videoTimer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:1.0] interval:0.5 target:self selector:@selector(videoTimerDidFire:) userInfo:moviePlayer repeats:YES];*/
+}
+/*- (void)videoTimerDidFire:(NSTimer*)timer
+{
+    NSLog(@"video timer");
+    MPMoviePlayerController *mplayer = timer.userInfo;
+    if ([mplayer playbackState] == MPMusicPlaybackStateStopped) {
+        NSLog(@"STOPPING VIDEO");
+        [mplayer stop];
+        [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                        name:MPMoviePlayerPlaybackDidFinishNotification object:mplayer];
+        [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                        name:MPMoviePlayerDidExitFullscreenNotification object:mplayer];
+        
+        [mplayer.view removeFromSuperview];
+    }
+}
+- (IBAction)moviePlayBackDidFinish:(NSNotification*)notification
+{
+    NSLog(@"Video Notification:%@", notification.name);
+
     MPMoviePlayerController *player = [notification object];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self
@@ -1321,11 +1402,8 @@ static NSString* videoURL = Nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:MPMoviePlayerDidExitFullscreenNotification object:player];
     
-    if ([player respondsToSelector:@selector(setFullscreen:animated:)])
-    {
-        [player.view removeFromSuperview];
-    }
-}
+    [player.view removeFromSuperview];
+}*/
 
 - (void)saveVideo:(NSString*)additionalName
 {
@@ -1333,8 +1411,13 @@ static NSString* videoURL = Nil;
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     NSString* lastNamePart;
+    NSMutableString* realFileName = [[NSMutableString alloc] initWithString:videoURL.lastPathComponent];
+    NSInteger questionMarkLocation = [realFileName rangeOfString:@"?"].location;
+    if (questionMarkLocation != NSNotFound) {
+        [realFileName deleteCharactersInRange:NSMakeRange(questionMarkLocation, [realFileName length]-questionMarkLocation)];
+    }
     lastNamePart = [NSString stringWithFormat:@"%@ %@%@", additionalName,
-                    videoURL.lastPathComponent, @".mp4"];
+                    realFileName, @".mp4"];
     NSString* filename = [documentsDirectory
                           stringByAppendingPathComponent:
                           lastNamePart];

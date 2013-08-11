@@ -12,6 +12,8 @@
 		E91D817716345F6400ED4283 /* Twitter.JSON.data.txt in Resources */ = {isa = PBXBuildFile; fileRef = E91D817616345F6300ED4283 /* Twitter.JSON.data.txt */; };
 		E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = E91D95CA15EAB60C00717A95 /* TWLocApplication.m */; };
 		E91D95D115EAC13200717A95 /* LocPin.png in Resources */ = {isa = PBXBuildFile; fileRef = E91D95D015EAC13200717A95 /* LocPin.png */; };
+		E92C1A1017B807B1009CE9E3 /* WebViewController.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E92C1A0F17B807B1009CE9E3 /* WebViewController.storyboard */; };
+		E92C1A1317B807DB009CE9E3 /* WebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E92C1A1217B807DB009CE9E3 /* WebViewController.m */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
 		E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E417510C8D001D9CD2 /* TMCache.m */; };
 		E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E617510C8D001D9CD2 /* TMDiskCache.m */; };
@@ -78,6 +80,9 @@
 		E91D95C915EAB60C00717A95 /* TWLocApplication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TWLocApplication.h; sourceTree = "<group>"; };
 		E91D95CA15EAB60C00717A95 /* TWLocApplication.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TWLocApplication.m; sourceTree = "<group>"; };
 		E91D95D015EAC13200717A95 /* LocPin.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LocPin.png; sourceTree = "<group>"; };
+		E92C1A0F17B807B1009CE9E3 /* WebViewController.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = WebViewController.storyboard; sourceTree = "<group>"; };
+		E92C1A1117B807DB009CE9E3 /* WebViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebViewController.h; sourceTree = "<group>"; };
+		E92C1A1217B807DB009CE9E3 /* WebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebViewController.m; sourceTree = "<group>"; };
 		E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 2.xcdatamodel"; sourceTree = "<group>"; };
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		E94D54E317510C8D001D9CD2 /* TMCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMCache.h; sourceTree = "<group>"; };
@@ -292,6 +297,9 @@
 				E9D579F4168E2F3200ACBBC9 /* DocumentViewController.storyboard */,
 				E9D579F6168E2F3200ACBBC9 /* DocumentViewController.h */,
 				E9D579F5168E2F3200ACBBC9 /* DocumentViewController.m */,
+				E92C1A0F17B807B1009CE9E3 /* WebViewController.storyboard */,
+				E92C1A1117B807DB009CE9E3 /* WebViewController.h */,
+				E92C1A1217B807DB009CE9E3 /* WebViewController.m */,
 				E950AD4416E2932D0044656E /* Tweet.h */,
 				E950AD4516E2932D0044656E /* Tweet.m */,
 				E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */,
@@ -383,6 +391,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E92C1A1017B807B1009CE9E3 /* WebViewController.storyboard in Resources */,
 				E9DE580615E94407005D75F6 /* InfoPlist.strings in Resources */,
 				E9DE582C15E98231005D75F6 /* sampleJSONtweets.json in Resources */,
 				E9A159D115EA703B00630EE4 /* TwitLoc57.png in Resources */,
@@ -437,6 +446,7 @@
 				E984347416AB0F4D007B996A /* ImageItem.m in Sources */,
 				E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */,
 				E950AD4616E2932D0044656E /* Tweet.m in Sources */,
+				E92C1A1317B807DB009CE9E3 /* WebViewController.m in Sources */,
 				E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */,
 				E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */,
 				E94D54EB17510C8D001D9CD2 /* TMMemoryCache.m in Sources */,
