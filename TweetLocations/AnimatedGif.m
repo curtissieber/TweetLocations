@@ -296,7 +296,7 @@ static AnimatedGif * instance;
             // UIImageViews want it in seconds.
             [imageView setAnimationDuration:total/100];
         } @catch (NSException *ee) {
-            NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+            NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
         }
 		
 		// Repeat infinite

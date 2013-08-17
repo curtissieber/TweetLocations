@@ -61,7 +61,7 @@ static UILabel* staticQueueLabel = Nil;
         NSLog(@"%@",thestatus);
         [_statusLabel setText:thestatus];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -119,7 +119,7 @@ static int numImages = 0;
         return [[self getImageServer] objectForKey:url];
 #endif
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return Nil;
 }
@@ -149,7 +149,7 @@ static int numImages = 0;
         }
 #endif
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)imageData:(NSData*)data forURL:(NSString*)url
@@ -162,7 +162,7 @@ static int numImages = 0;
         numImages++;
 #endif
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)backgroundImageData:(NSData *)data forURL:(NSString *)url
@@ -177,7 +177,7 @@ static int numImages = 0;
         }];
 #endif
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (long long)sizeImages
@@ -239,7 +239,7 @@ static NSMutableArray* urlQueue = Nil;
             }];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)dropReadURLs:(MasterCallback)callback
@@ -258,7 +258,7 @@ static NSMutableArray* urlQueue = Nil;
                 callback();
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -306,10 +306,10 @@ static NSMutableArray* urlQueue = Nil;
             }
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -335,7 +335,7 @@ static NSMutableArray* urlQueue = Nil;
                 NSLog(@"nothing unread, going back to %@",[object timestamp]);
             }
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
         
         [self.tableView selectRowAtIndexPath:nextindex
@@ -357,10 +357,10 @@ static NSMutableArray* urlQueue = Nil;
             }
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -392,7 +392,7 @@ static NSMutableArray* urlQueue = Nil;
             Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
             self.detailViewController.detailItem = object;
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
         
         NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
@@ -407,7 +407,7 @@ static NSMutableArray* urlQueue = Nil;
         }
         NSLog(@"Got a chance to save, YAY!");
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)deleteTweet:(Tweet*)tweet
@@ -426,7 +426,7 @@ static NSMutableArray* urlQueue = Nil;
             [context deleteObject:tweet];
             [context processPendingChanges];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
         [self.tableView reloadData];
         
@@ -447,7 +447,7 @@ static NSMutableArray* urlQueue = Nil;
         }
         NSLog(@"Got a chance to save, YAY!");
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)refreshTweet:(Tweet*)tweet
@@ -481,7 +481,7 @@ static NSMutableArray* urlQueue = Nil;
         [self.detailViewController setDetailItem:tweet];
         [self.detailViewController openURL:[NSURL URLWithString:[tweet origURL]]];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -533,7 +533,7 @@ static NSMutableArray* urlQueue = Nil;
                              }
                              NSLog(@"Got a chance to save, YAY!");
                          } @catch (NSException *eee) {
-                             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                             NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                          }
                      }];
                  }];
@@ -543,7 +543,7 @@ static NSMutableArray* urlQueue = Nil;
              [alert show];
          }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -584,7 +584,7 @@ static NSMutableArray* urlQueue = Nil;
              }
          }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -638,7 +638,7 @@ static NSMutableArray* urlQueue = Nil;
             [_webQueue addOperation:getTweetOp];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (long long)getMaxTweetID:(NSNumber*)theListID
@@ -702,7 +702,7 @@ static NSMutableArray* urlQueue = Nil;
         NSLog(@"Trying to get the twitter account selection");
         [alert show];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -757,6 +757,7 @@ static NSMutableArray* urlQueue = Nil;
                 NSLog(@"deleting all images");
                 [_theQueue addOperationWithBlock:^{
                     [self deleteImageData:Nil]; // removes all image data
+                    [self checkForMaxTweets];
                 }];
             }
         }
@@ -778,7 +779,7 @@ static NSMutableArray* urlQueue = Nil;
             }
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -871,7 +872,7 @@ static NSMutableArray* urlQueue = Nil;
              }
          }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1029,7 +1030,7 @@ static NSMutableArray* urlQueue = Nil;
                 }
                 
             } @catch (NSException* eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
         }
         NSString* blurb = [NSString stringWithFormat:@"Done storing %d tweets (%d real tweets)",[timeline count], storedTweets];
@@ -1087,7 +1088,7 @@ static NSMutableArray* urlQueue = Nil;
                         [self.tableView reloadData];
                         
                     } @catch (NSException *eee) {
-                        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                     }
                 }];
                 NSLog(@"Done with current list %@",theListID);
@@ -1128,7 +1129,7 @@ static NSMutableArray* urlQueue = Nil;
                             }
                         }
                     } @catch (NSException *eee) {
-                        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                     }
                     NSString* status = [[self.detailViewController activityLabel] text];
                     [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nNote: currently storing %d images, of size %0.2fMB",status,[self numImages], [self sizeImages]/1024.0/1024.0]];
@@ -1136,7 +1137,7 @@ static NSMutableArray* urlQueue = Nil;
             }
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1200,7 +1201,7 @@ static NSMutableArray* urlQueue = Nil;
                                  NSLog(@"Adding list %@ ID=%@",listName,listID);
                              }
                          } @catch (NSException *eee) {
-                             NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                             NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                          }
                      }];
              }
@@ -1210,7 +1211,7 @@ static NSMutableArray* urlQueue = Nil;
              }];
          }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return returnDict;
 }
@@ -1233,7 +1234,7 @@ static NSMutableArray* urlQueue = Nil;
             [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:theListID];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1270,7 +1271,7 @@ static NSMutableArray* urlQueue = Nil;
             @try {
                 results = [context executeFetchRequest:fetchRequest error:&theError];
             } @catch (NSException* eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
             Tweet* tweet = Nil;
             NSEnumerator* e = [results objectEnumerator];
@@ -1292,14 +1293,14 @@ static NSMutableArray* urlQueue = Nil;
                 NSLog(@"Got a chance to save, YAY!");
                 [self.tableView reloadData];
             } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
             UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ALL SET TO READ" message:@"All tweets have been set to READ" delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
             [alert setTag:ALERT_DUMMY];
             [alert show];
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1326,7 +1327,7 @@ static NSMutableArray* urlQueue = Nil;
             [alert show];
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)refreshTweets:(id)sender
@@ -1351,7 +1352,7 @@ static NSMutableArray* urlQueue = Nil;
             [self getTwitterLists];
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1391,7 +1392,7 @@ static NSMutableArray* urlQueue = Nil;
             }
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
     [_updateQueue addOperationWithBlock:^{
@@ -1414,7 +1415,7 @@ static NSMutableArray* urlQueue = Nil;
             }];
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     }];
 }
@@ -1436,7 +1437,7 @@ static NSMutableArray* urlQueue = Nil;
         [saveFileHandle closeFile];
         NSLog(@"Succeeded! Saved to file %@", filename);
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)saveTweetDebugToFile:(NSString*)someString
@@ -1453,7 +1454,7 @@ static NSMutableArray* urlQueue = Nil;
         [saveFileHandle writeData:[someString dataUsingEncoding:NSUTF8StringEncoding]];
         [saveFileHandle closeFile];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)deleteTweetDataFile
@@ -1469,7 +1470,7 @@ static NSMutableArray* urlQueue = Nil;
             NSLog(@"blew it! cannot create %@", filename);
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1610,7 +1611,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         else
             [self setTitle:@"Twitter"];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 -(void)stopBackgroundTaskHolder {
@@ -1638,7 +1639,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         NSLog(@"MEMORY WARNING in master view");
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -1672,7 +1673,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         [self configureCell:cell atIndexPath:indexPath];
         return cell;
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return Nil;
 }
@@ -1731,7 +1732,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             [self.detailViewController setMaster:self];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     [_updateQueue addOperationWithBlock:^{
         @try {
@@ -1743,7 +1744,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             }
             NSLog(@"Got a chance to save, YAY!");
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     }];
 }
@@ -1764,7 +1765,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             }
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return unreadReturn;
 }
@@ -1829,7 +1830,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             } else NSLog(@"NO TWEETS FETCHED! IS THE DB EMPTY?");
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         return Nil;
     }
     
@@ -1904,7 +1905,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         [self cellSetup:cell forTweet:tweet];
         
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -1971,7 +1972,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
              [cell.imageView setImage:self.redX];*/
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -2098,11 +2099,11 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
                 [context processPendingChanges];
             } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
     [TWLocMasterViewController decrementTasks];
@@ -2184,7 +2185,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         [master imageData:imageData forURL:replaceURL];
         
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -2219,11 +2220,11 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
                 [context processPendingChanges];
             } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
         }];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
     [TWLocMasterViewController decrementTasks];
@@ -2361,7 +2362,7 @@ int googleAddedItems = 0;
                             [[master webQueue] addOperation:top];
                             [[master webQueue] setSuspended:NO];
                         } @catch (NSException *eee) {
-                            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                         }
                     }
                 }
@@ -2370,7 +2371,7 @@ int googleAddedItems = 0;
                     [master STATUS:[NSString stringWithFormat:@"%d tweets: %d images %0.2fMB",[[master idSet] count],[master numImages], [master sizeImages]/1024.0/1024.0]];
                 }];
             } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
         }
     } else {
@@ -2395,7 +2396,7 @@ int googleAddedItems = 0;
             [TWLocMasterViewController incrementTasks];
             [[NSOperationQueue currentQueue] addOperation:itemGetter];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     }
     
@@ -2536,7 +2537,7 @@ int googleAddedItems = 0;
         [[master tableView] setNeedsLayout];
         [[master tableView] setNeedsDisplay];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 @end

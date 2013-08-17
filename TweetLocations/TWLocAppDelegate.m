@@ -117,7 +117,7 @@
         }
         [alert dismissWithClickedButtonIndex:0 animated:YES];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         [alert dismissWithClickedButtonIndex:0 animated:YES];
     }
 }

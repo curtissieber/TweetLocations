@@ -38,7 +38,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (data != Nil && [[data class] isSubclassOfClass:[NSArray class]])
         return data;
@@ -53,7 +53,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (data != Nil && [[data class] isSubclassOfClass:[NSData class]])
         return data;
@@ -67,7 +67,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)imageData:(NSData*)data forURL:(NSString*)url
@@ -83,7 +83,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (id)fetchImageForURL:(NSString*)url {
@@ -98,7 +98,7 @@
         }
         return image;
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)addImageObject:(NSData*)image forURL:(NSString*)url {
@@ -119,7 +119,7 @@
             NSLog(@"ERROR ERROR did not create a new imageItem to store %@",url);
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)deleteImageForURLFromContext:(NSString*)url {
@@ -145,7 +145,7 @@
             } //else NSLog(@"Saved thread image");
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -158,7 +158,7 @@
         NSArray* images = [self fetchImages];
         return [images count];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return 0;
 }
@@ -171,7 +171,7 @@
         NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
         return [fsize integerValue];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return 0;
 }
@@ -227,7 +227,7 @@
             return [results objectAtIndex:0];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return Nil;
 }
@@ -262,7 +262,7 @@
         }
         return _managedObjectContext;
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return Nil;
 }
@@ -276,7 +276,7 @@
         NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Images" withExtension:@"momd"];
         _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return _managedObjectModel;
 }
@@ -304,7 +304,7 @@
             [_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return _persistentStoreCoordinator;
 }
@@ -354,7 +354,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     [self performSelector:@selector(dropNotify:) onThread:[NSThread mainThread] withObject:Nil waitUntilDone:YES];
 }
@@ -385,7 +385,7 @@
     @try {
         images = [master fetchImages];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (images != Nil) {
         @try {
@@ -402,7 +402,7 @@
             [master->imageDictLock unlock];
         } @catch (NSException *eee) {
             [master->imageDictLock unlock];
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
         
         @try {
@@ -421,7 +421,7 @@
                 }];
             }];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     } else {
         @try {
@@ -430,7 +430,7 @@
                 [alert show];
             }];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     }
     executing = NO; finished = YES;

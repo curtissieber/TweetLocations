@@ -36,7 +36,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (data != Nil && [[data class] isSubclassOfClass:[NSArray class]])
         return data;
@@ -51,7 +51,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (data != Nil && [[data class] isSubclassOfClass:[NSData class]])
         return data;
@@ -65,7 +65,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)imageData:(NSData*)data forURL:(NSString*)url
@@ -81,7 +81,7 @@
         [self->imageDictLock unlock];
     } @catch (NSException *eee) {
         [self->imageDictLock unlock];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (id)fetchImageForURL:(NSString*)url {
@@ -96,7 +96,7 @@
         }
         return image;
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)addImageObject:(NSData*)image forURL:(NSString*)url {
@@ -120,7 +120,7 @@
             NSLog(@"ERROR ERROR did not create a new imageItem to store %@",url);
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)deleteImageForURLFromContext:(NSString*)url {
@@ -150,7 +150,7 @@
                 NSLog(@"Saved thread image");
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -228,7 +228,7 @@
         
         return aFetchedResultsController;
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return Nil;
 }
@@ -260,7 +260,7 @@
     @try {
         images = [master fetchImages];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     if (images != Nil) {
         @try {
@@ -282,7 +282,7 @@
             [master->imageDictLock unlock];
         } @catch (NSException *eee) {
             [master->imageDictLock unlock];
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
         
         @try {
@@ -299,7 +299,7 @@
                 }
             }];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     } else {
         @try {
@@ -308,7 +308,7 @@
                 [alert show];
             }];
         } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
         }
     }
     executing = NO; finished = YES;

@@ -52,7 +52,7 @@
         }
     } @catch (NSException *eee) {
         [_activityView stopAnimating];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -104,7 +104,7 @@
             NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"[%@]: %@",
                                           [tweet username], [tweet tweet]];
             CATransition* textTrans = [CATransition animation];
-            textTrans.duration = 0.4;
+            textTrans.duration = 0.2;
             textTrans.type = kCATransitionFade;
             textTrans.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
             [self.bigLabel.layer addAnimation:textTrans forKey:@"changeTextTransition"];
@@ -126,7 +126,7 @@
         }];
     } @catch (NSException *eee) {
         [_activityView stopAnimating];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -174,7 +174,7 @@
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
                     [self handleURL:[tweet url]];
                 } else {
-                    [UIView animateWithDuration:0.4 animations:^{
+                    [UIView animateWithDuration:0.2 animations:^{
                         self.scrollView.hidden = YES;
                     }];
                     NSMutableString* nonono = [[NSMutableString alloc]initWithCapacity:500];
@@ -187,12 +187,12 @@
                     [_activityView stopAnimating];
                 }
             } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
         }];
     } @catch (NSException *eee) {
         [_activityView stopAnimating];
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -200,7 +200,7 @@
 {
     @try {
         if ([_detailItem origHTML] != Nil) {
-            [UIView animateWithDuration:0.4 animations:^{
+            [UIView animateWithDuration:0.2 animations:^{
                 _activityLabel.hidden = NO;
                 NSDictionary* dict = [NSKeyedUnarchiver unarchiveObjectWithData:[_detailItem sourceDict]];
                 NSString* detail = [NSString stringWithFormat:@"[%@]: %@\n****\n%@\n****\n%@", [_detailItem username], [_detailItem tweet], dict, [_detailItem origHTML]];
@@ -208,7 +208,7 @@
             }];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -256,7 +256,7 @@
     // map sits above the detail, but is hidden
     mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
     // big label starts at the middle
-    bigFrame.origin.y = detailFrame.origin.y - bigFrame.size.height;
+    bigFrame.origin.y = (totalFrame.size.height - bigFrame.size.height)*4.0/5.0;
     //scroll sits above the detail and resizes for such
     scrollFrame.size.height = detailFrame.origin.y;
     scrollFrame.origin.y = 0;
@@ -273,7 +273,7 @@
     } completion:^(BOOL finished) {
         // big label ends at the very bottom
         bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
-        [UIView animateWithDuration:1.4 animations:^{
+        [UIView animateWithDuration:0.5 animations:^{
             [_bigLabel setFrame:bigFrame];
         }];
     }];
@@ -721,7 +721,7 @@ static MKCoordinateRegion region;
         
         [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:3.0];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -738,7 +738,7 @@ static MKCoordinateRegion region;
         if (region.span.latitudeDelta > 0.003)
             [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:delay];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 
@@ -788,7 +788,7 @@ static MKCoordinateRegion region;
              @selector(image:didFinishSavingWithError:contextInfo:), nil);*/
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 // gets called at the end of the save action
@@ -835,6 +835,7 @@ static UIBarButtonItem *doSomethingButton;
 	// Do any additional setup after loading the view, typically from a nib.
     [_mapView setHidden:YES];
     [_scrollView setHidden:YES];
+    [_detailDescriptionLabel setHidden:YES];
     [self configureView];
     
     if ([[UIScreen mainScreen] respondsToSelector:@selector(displayLinkWithTarget:selector:)] &&
@@ -953,7 +954,7 @@ static UIBarButtonItem *doSomethingButton;
             }
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
@@ -981,7 +982,7 @@ static UIBarButtonItem *doSomethingButton;
             [self saveVideo:name];
         }
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
@@ -999,7 +1000,7 @@ static UIBarButtonItem *doSomethingButton;
 
 - (IBAction)touchedStatus:(id)sender
 {
-    [UIView animateWithDuration:0.4 animations:^{
+    [UIView animateWithDuration:0.2 animations:^{
         _activityLabel.hidden = YES;
     }];
 }
@@ -1023,7 +1024,7 @@ static UIBarButtonItem *doSomethingButton;
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 - (IBAction)handleSwipeLeft:(UIGestureRecognizer *)gestureRecognizer
@@ -1045,7 +1046,7 @@ static UIBarButtonItem *doSomethingButton;
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 - (IBAction)handleSwipeRight:(UIGestureRecognizer *)gestureRecognizer
@@ -1067,7 +1068,7 @@ static UIBarButtonItem *doSomethingButton;
                 NSLog(@"NIL MASTER IN tap");
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
@@ -1080,7 +1081,7 @@ static UIBarButtonItem *doSomethingButton;
                 return;
             }
             self.textView.alpha = 0.0;
-            [UIView animateWithDuration:0.6 delay:0.01 options:UIViewAnimationOptionCurveLinear animations:^{
+            [UIView animateWithDuration:0.8 delay:0.01 options:UIViewAnimationOptionCurveLinear animations:^{
                 self.scrollView.alpha = 0.0;
                 self.textView.alpha = 1.0;
             } completion:^(BOOL finished) {
@@ -1089,7 +1090,7 @@ static UIBarButtonItem *doSomethingButton;
             }];
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
@@ -1101,7 +1102,7 @@ static UIBarButtonItem *doSomethingButton;
                 [self.picCollection setHidden:![self.picCollection isHidden]];
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 - (IBAction)handleURLTouch:(UIGestureRecognizer *)gestureRecognizer
@@ -1125,7 +1126,7 @@ static UIBarButtonItem *doSomethingButton;
             } else NSLog(@"start %d beyond text",start);
         }
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
@@ -1145,7 +1146,7 @@ static UIBarButtonItem *doSomethingButton;
         newFrame.origin.y = origFrame.origin.y + move.y;
         [self.bigLabel setFrame:newFrame];
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
@@ -1247,7 +1248,7 @@ static UIBarButtonItem *doSomethingButton;
                 [_picButton setHidden:NO];
                 [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
                 __block CGRect origFrame = [_picButton frame];
-                [UIView animateWithDuration:0.9 animations:^{
+                [UIView animateWithDuration:0.4 animations:^{
                     CGRect newFrame;
                     newFrame.origin.x = origFrame.origin.x - origFrame.size.width*2;
                     newFrame.origin.y = origFrame.origin.y;
@@ -1258,7 +1259,7 @@ static UIBarButtonItem *doSomethingButton;
                     if (!finished)
                         NSLog(@"reducing the collectionButton, tho not finished");
                     [_picButton setFrame:origFrame];
-                    [UIView animateWithDuration:1.0 animations:^{
+                    [UIView animateWithDuration:0.4 animations:^{
                         [_picCollection setHidden:YES];
                     }];
                 }];
@@ -1266,7 +1267,7 @@ static UIBarButtonItem *doSomethingButton;
             }
         }];
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 - (NSSet*)removeTumblrDups:(NSSet*)urlset
@@ -1298,7 +1299,7 @@ static UIBarButtonItem *doSomethingButton;
             }
         }];
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
     return retset;
 }
@@ -1335,7 +1336,7 @@ static NSString* videoURL = Nil;
         [_videoButton setHidden:(!hasVideo)];
         [_previewVideoButton setHidden:(!hasVideo)];
     } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [eee callStackSymbols]);
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
 - (IBAction)videoButtonHit:(id)sender
@@ -1510,7 +1511,7 @@ NSTimer* videoTimer = Nil;
         }];
         return cell;
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
     return Nil;
 }
@@ -1550,7 +1551,7 @@ NSTimer* videoTimer = Nil;
             
         }];
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
@@ -1572,7 +1573,7 @@ NSTimer* videoTimer = Nil;
         
         [self openURL:[NSURL URLWithString:[_pictures objectAtIndex:idx]]];
     } @catch (NSException *ee) {
-        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[ee callStackSymbols] );
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
 
