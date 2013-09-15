@@ -110,7 +110,7 @@
             [self.bigLabel.layer addAnimation:textTrans forKey:@"changeTextTransition"];
             self.bigLabel.text = bigDetail;
             
-            if (latitude > -900 && longitude > -900) {
+            if (latitude > -900 && longitude > -900 && [_detailItem locationFromPic]) {
                 [self resizeForMap];
                 [self displayMap:[tweet tweet] lat:latitude lon:longitude];
             } else {
@@ -160,7 +160,7 @@
                     
                     double latitude = [[tweet latitude] doubleValue];
                     double longitude = [[tweet longitude] doubleValue];
-                    if (latitude > -900 && longitude > -900) {
+                    if (latitude > -900 && longitude > -900 && [tweet locationFromPic]) {
                         [self resizeForMap];
                         [self displayMap:[tweet timestamp]
                                      lat:latitude
@@ -515,7 +515,7 @@
     static NSArray* jpgSorted = Nil;
     if (jpgSorted == Nil)
         jpgSorted = [[NSArray alloc] initWithObjects:
-                     @"tumblr.com/video_file/",
+                     @"/instagr.am/", @"instagram.com/",
                      @".mp4?",
                      @".jpg?",
                      @"pinterest.com/original",
@@ -528,7 +528,7 @@
                      @"pinimg.com/500",
                      @".tumblr.com/image/",
                      @".tumblr.com/previews/",
-                     @"media.tumblr.com/",
+                     @"media.tumblr.com/",@"tumblr.com/video_file/",
                      nil];
     return jpgSorted;
 }
@@ -587,57 +587,14 @@
                 return (*stop = YES);
             return NO;
         }];
-        if (istr1 < istr2) return NSOrderedDescending;
-        else if (istr1 > istr2) return NSOrderedAscending;
-        else return NSOrderedSame;
-        /*if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
-            return NSOrderedAscending;
-        if ([str1 rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
-            return NSOrderedAscending;
-        if ([str1 rangeOfString:@"pinterest.com/original"].location != NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinimg.com/original"].location != NSNotFound)
-            return NSOrderedAscending;
-        if ([str1 rangeOfString:@"pinimg.com/original"].location != NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
-            [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@"pinterest.com/550"].location != NSNotFound &&
-            [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinimg.com/550"].location != NSNotFound &&
-            [str2 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@"pinimg.com/550"].location != NSNotFound &&
-            [str1 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
-            [str2 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
-            [str2 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@"pinterest.com/500"].location != NSNotFound &&
-            [str1 rangeOfString:@"pinterest.com/550"].location == NSNotFound &&
-            [str1 rangeOfString:@"pinterest.com/original"].location == NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@"pinimg.com/500"].location != NSNotFound &&
-            [str2 rangeOfString:@"pinimg.com/550"].location == NSNotFound &&
-            [str2 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@"pinimg.com/500"].location != NSNotFound &&
-            [str1 rangeOfString:@"pinimg.com/550"].location == NSNotFound &&
-            [str1 rangeOfString:@"pinimg.com/original"].location == NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
-            return NSOrderedDescending;
-        if ([str1 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
-            return NSOrderedAscending;
-        if ([str2 rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
-            return NSOrderedDescending;*/
+        if ([str1 rangeOfString:@"tumblr"].location == NSNotFound ||
+            [str2 rangeOfString:@"tumblr"].location == NSNotFound) {
+            if (istr1 < istr2) return NSOrderedDescending;
+            else if (istr1 > istr2) return NSOrderedAscending;
+            else return NSOrderedSame;
+        }
+
+        // from here on , it's tumblr versus tumblr
         [str1 deleteCharactersInRange:NSMakeRange([str1 length]-4,4)];
         [str2 deleteCharactersInRange:NSMakeRange([str2 length]-4,4)];
         
@@ -666,11 +623,11 @@
     }];
     
     NSString* str;
+    NSString* replaceStr = Nil;
     if ([strResults count] > 0)
-        e = [strResults objectEnumerator];
+        replaceStr = [URLFetcher canReplaceURL:url array:strResults];
     else
-        e = [htmlResults objectEnumerator];
-    NSString* replaceStr = [URLFetcher canReplaceURL:url enumerator:e];
+        replaceStr = [URLFetcher canReplaceURL:url array:htmlResults];
     
     NSMutableString* allMatches = [[NSMutableString alloc] initWithCapacity:256];
     
@@ -864,6 +821,8 @@ static UIBarButtonItem *doSomethingButton;
     [self addGestures:self.detailDescriptionLabel];
     [self addGestures:self.bigLabel];
     
+    [self.textView setDelegate:self];
+    
     UISwipeGestureRecognizer* swipeGesture = [[UISwipeGestureRecognizer alloc]
                                               initWithTarget:self
                                               action:@selector(handleSwipeUp:)];
@@ -875,13 +834,6 @@ static UIBarButtonItem *doSomethingButton;
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionDown];
     [self.scrollView addGestureRecognizer:swipeGesture];
     
-    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc]
-                                              initWithTarget:self
-                                              action:@selector(handleURLTouch:)];
-    [longPress setCancelsTouchesInView:YES];
-    [longPress setDelaysTouchesBegan:YES];
-    [self.textView addGestureRecognizer:longPress];
-    
     if (_detailItem != Nil) {
         NSLog(@"started with a detail item defined");
     }
@@ -892,13 +844,38 @@ static UIBarButtonItem *doSomethingButton;
     self.navigationItem.rightBarButtonItem = doSomethingButton;
 }
 
+- (void)textViewDidChangeSelection:(UITextView *)textView
+{
+    @try {
+        UITextRange* selRange = [textView selectedTextRange];
+        NSString* text = [textView text];
+        NSInteger start = [textView offsetFromPosition:textView.beginningOfDocument toPosition:[selRange start]];
+        NSInteger end = [textView offsetFromPosition:textView.beginningOfDocument toPosition:[selRange end]];
+        if (start == 0 && end == 0) return;
+        if (start == [text length]) return;
+        while (start > 0 && [text characterAtIndex:start] != '\n')
+            start --;
+        start++;
+        while (end < [text length] && [text characterAtIndex:end] != '\n')
+            end++;
+        end--;
+        if (start == end) return;
+        NSString* urlStr = [text substringWithRange:NSMakeRange(start, end-start)];
+        NSLog(@"hit url = %@", urlStr);
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+}
+
 - (void)addGestures:(UIView*)theView
 {
-    UITapGestureRecognizer* tapGesture = [[UITapGestureRecognizer alloc]
-                                          initWithTarget:self
-                                          action:@selector(handleTap:)];
-    [tapGesture setDelaysTouchesEnded:YES];
-    [theView addGestureRecognizer:tapGesture];
+    if (theView != _textView) {
+        UITapGestureRecognizer* tapGesture = [[UITapGestureRecognizer alloc]
+                                              initWithTarget:self
+                                              action:@selector(handleTap:)];
+        [tapGesture setDelaysTouchesEnded:YES];
+        [theView addGestureRecognizer:tapGesture];
+    }
     UISwipeGestureRecognizer* swipeGesture = [[UISwipeGestureRecognizer alloc]
                                               initWithTarget:self
                                               action:@selector(handleSwipeLeft:)];
@@ -1110,8 +1087,10 @@ static UIBarButtonItem *doSomethingButton;
     @try {
         if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
             CGPoint location = [gestureRecognizer locationInView:[self textView]];
-            UITextPosition* position = [[self textView] closestPositionToPoint:location];
             UITextPosition* textBegining = [[self textView] beginningOfDocument];
+            UITextPosition* textEnd = [[self textView] endOfDocument];
+            UITextRange *trange = [_textView textRangeFromPosition:textBegining toPosition:textEnd];
+            UITextPosition* position = [[self textView] closestPositionToPoint:location withinRange:trange];
             int start = [[self textView] offsetFromPosition:textBegining toPosition:position];
             NSString* text = [[self textView] text];
             if ([text length] > start) {
@@ -1189,92 +1168,82 @@ static UIBarButtonItem *doSomethingButton;
         bool isYouTube = [[_detailItem url] rangeOfString:@"youtube.com/"].location != NSNotFound ||
         [[_detailItem url] rangeOfString:@"/youtu.be/"].location != NSNotFound;
         NSArray* urls = [[_detailItem origHTML] componentsSeparatedByString:@"\n"];
-        NSSet* urlset = [NSSet setWithArray:urls];
-        urlset = [urlset objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+        NSMutableOrderedSet* urlset = [NSMutableOrderedSet orderedSetWithArray:urls];
+        //urlset = [urlset objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+        NSMutableOrderedSet* finalset = [[NSMutableOrderedSet alloc] initWithCapacity:[urlset count]];
+        [urlset enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             NSString* theURL = obj;
             if ([TWLocDetailViewController imageExtension:theURL]) {
                 if ([theURL rangeOfString:@"twimg.com/profile_images"].location != NSNotFound)
-                    return NO;
+                    return;
                 else if ([theURL rangeOfString:@"/hprofile"].location != NSNotFound)
-                    return NO;
+                    return;
                 else if (isTumblr) {
                     if ([theURL rangeOfString:@"media.tumblr.com"].location != NSNotFound &&
                         [theURL rangeOfString:@"/tumblr_"].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 } else if (isGWIP) {
                     if ([theURL rangeOfString:@"guyswithiphones.com/201"].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 } else if (isInstagram) {
                     if ([theURL rangeOfString:@"distilleryimage"].location != NSNotFound &&
                         [theURL rangeOfString:@".instagram.com/"].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 } else if (isOwly) {
                     if ([theURL rangeOfString:@"//static.ow.ly/"].location != NSNotFound &&
                         [theURL rangeOfString:@"/normal/"].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 } else if (isMoby) {
                     if ([theURL rangeOfString:@"mobypicture.com/"].location != NSNotFound &&
                         [theURL rangeOfString:@"_view."].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 } else if (isYouTube) {
                     if ([theURL rangeOfString:@"/hqdefault."].location != NSNotFound)
-                        return YES;
-                    return NO;
+                        [finalset addObject:theURL];
+                    return;
                 }
-                return YES;
+                [finalset addObject:theURL];
             }
-            return NO;
+            return;
         }];
         if (isTumblr)
-            urlset = [self removeTumblrDups:urlset];
+            urlset = [self removeTumblrDups:finalset];
+        else
+            urlset = finalset;
         NSLog(@"THE SET OF PICS:\n%@",[urlset description]);
         
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             if ([urlset count] > 1) {
                 [_picCollection setHidden:NO];
-                [_picButton setHidden:NO];
-                _pictures = [urlset allObjects];
+                [_picButton setHidden:YES];
+                _pictures = [urlset array];
                 [_picCollection reloadData];
                 [_picCollection setNeedsDisplay];
                 [_picCollection setNeedsLayout];
                 [_picCollection setNeedsUpdateConstraints];
                 [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
                 [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
-                [_picButton setHidden:NO];
                 [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
-                __block CGRect origFrame = [_picButton frame];
-                [UIView animateWithDuration:0.4 animations:^{
-                    CGRect newFrame;
-                    newFrame.origin.x = origFrame.origin.x - origFrame.size.width*2;
-                    newFrame.origin.y = origFrame.origin.y;
-                    newFrame.size.width = origFrame.size.width * 3;
-                    newFrame.size.height = origFrame.size.height * 3;
-                    [_picButton setFrame:newFrame];
-                } completion:^(BOOL finished) {
-                    if (!finished)
-                        NSLog(@"reducing the collectionButton, tho not finished");
-                    [_picButton setFrame:origFrame];
-                    [UIView animateWithDuration:0.4 animations:^{
-                        [_picCollection setHidden:YES];
-                    }];
+                [_picButton setHidden:NO];
+                [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                    [_picCollection setHidden:YES];
                 }];
-                //[self checkForVideo:[NSSet setWithArray:urls]];
             }
         }];
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
 }
-- (NSSet*)removeTumblrDups:(NSSet*)urlset
+- (NSMutableOrderedSet*)removeTumblrDups:(NSMutableOrderedSet*)urlset
 {
-    NSMutableSet* retset = [[NSMutableSet alloc] initWithCapacity:1];
+    NSMutableOrderedSet* retset = [[NSMutableOrderedSet alloc] initWithCapacity:1];
     @try {
-        [urlset enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        [urlset enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             NSString* theURL = obj;
             NSRange filenamerange = [theURL rangeOfString:@"/tumblr_"];
             if (filenamerange.location == NSNotFound) {
@@ -1288,7 +1257,7 @@ static UIBarButtonItem *doSomethingButton;
                     NSString* hash = [filecomps objectAtIndex:1];
                     NSString* ext = [filecomps objectAtIndex:2];
                     __block bool match = ([ext length] < 5);
-                    [retset enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                    [retset enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                         NSString* matchURL = obj;
                         if ([matchURL rangeOfString:hash].location != NSNotFound)
                             match = *stop = YES;

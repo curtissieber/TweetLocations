@@ -1965,11 +1965,6 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         } else {
             [cell.imageView setHidden:YES];
             [cell.imageView setImage:Nil];
-            /*NSData* data = [self imageData:[tweet url]];
-             if (data != Nil)
-             [cell.imageView setImage:[UIImage imageWithData:data]];
-             else
-             [cell.imageView setImage:self.redX];*/
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
