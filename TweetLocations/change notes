@@ -1,10 +1,5 @@
-altered the sorting of links to get the big tumblr pics at top
-fixed an if statement that wasn't grabbing the best tumblr for replacement
-also fixed some "replacement" algorithms that were checking the url instead of the str of the pic
-added the replacement for "nothing found ? try the topmost link."
-trying to make the collectionview transparent-background
-also making the collectionview ordered, because it should keep the same order as the links
-and made the scrollview able to get bigger than 5x (10x now) for long collected images
+added the "open in twitter" actionsheet item
+I think the link clicking is good now
 
 bad:
 There's a pretty big issue with clicking the links in the text background. grrr

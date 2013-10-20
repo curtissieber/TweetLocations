@@ -368,6 +368,11 @@
 				CLASSPREFIX = TWLoc;
 				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = Curtsybear.com;
+				TargetAttributes = {
+					E9DE57F415E94406005D75F6 = {
+						DevelopmentTeam = 4RNNQQLT5G;
+					};
+				};
 			};
 			buildConfigurationList = E9DE57EF15E94406005D75F6 /* Build configuration list for PBXProject "TweetLocations" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -541,11 +546,14 @@
 		E9DE581F15E94407005D75F6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "TweetLocations/TweetLocations-Prefix.pch";
 				INFOPLIST_FILE = "TweetLocations/TweetLocations-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -553,11 +561,14 @@
 		E9DE582015E94407005D75F6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "TweetLocations/TweetLocations-Prefix.pch";
 				INFOPLIST_FILE = "TweetLocations/TweetLocations-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

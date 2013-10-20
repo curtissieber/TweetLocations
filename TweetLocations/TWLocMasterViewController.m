@@ -547,6 +547,14 @@ static NSMutableArray* urlQueue = Nil;
     }
     
 }
+- (void)openInTwitter:(Tweet*)tweet
+{
+    NSString* tweetID = [[tweet tweetID] description];
+    NSString* tweetuser = [tweet username];
+    NSString* url = [NSString stringWithFormat:@"http://twitter.com/%@/status/%@", tweetuser, tweetID];
+    NSLog(@"twitter open: %@", url);
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url]];
+}
 
 #pragma mark Twitter
 #define NUMTWEETSTOGET (2000)

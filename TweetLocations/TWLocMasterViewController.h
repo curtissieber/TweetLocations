@@ -90,6 +90,7 @@ typedef void(^MasterCallback)(void);
 - (void)deleteTweet:(Tweet*)tweet;
 - (void)refreshTweet:(Tweet*)tweet;
 - (void)favoriteTweet:(Tweet*)tweet;
+- (void)openInTwitter:(Tweet*)tweet;
 - (int)unreadTweets;
 @end
 

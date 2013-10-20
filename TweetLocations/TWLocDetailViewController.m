@@ -896,16 +896,17 @@ static UIBarButtonItem *doSomethingButton;
 #define DOSOMETHING_REFRESH @"Refesh Tweet Links"
 #define DOSOMETHING_FAVORITE @"Favorite Tweet"
 #define DOSOMETHING_DOCUMENTS @"View Saved Movies"
+#define DOSOMETHING_TWITTER @"View In Twitter"
 - (void)doSomething:(id)sender
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        UIActionSheet* action = [[UIActionSheet alloc] initWithTitle:@"What to do?" delegate:self cancelButtonTitle:DOSOMETHING_CANCEL destructiveButtonTitle:DOSOMETHING_DELETE otherButtonTitles:DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, nil];
+        UIActionSheet* action = [[UIActionSheet alloc] initWithTitle:@"What to do?" delegate:self cancelButtonTitle:DOSOMETHING_CANCEL destructiveButtonTitle:DOSOMETHING_DELETE otherButtonTitles:DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_TWITTER, nil];
         [action setTag:ALERT_DOSOMETHING];
         [action showFromBarButtonItem:doSomethingButton animated:YES];
         return;
     }
     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"What to do?"
-                                                    message:@"Delete, ReGrab, or Favorite?"
+                                                    message:@"Delete, ReGrab, Favorite, etc?"
                                                    delegate:self
                                           cancelButtonTitle: DOSOMETHING_CANCEL
                                           otherButtonTitles: DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_DELETE, nil];
@@ -928,6 +929,8 @@ static UIBarButtonItem *doSomethingButton;
                 [_master favoriteTweet:_detailItem];
             } else if ([chosen compare:DOSOMETHING_DOCUMENTS] == NSOrderedSame) {
                 [self doDocumentsView];
+            } else if ([chosen compare:DOSOMETHING_TWITTER] == NSOrderedSame) {
+                [_master openInTwitter:_detailItem];
             }
         }
     } @catch (NSException *eee) {
