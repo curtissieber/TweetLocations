@@ -363,6 +363,56 @@ static NSMutableArray* urlQueue = Nil;
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
 }
+- (void)firstNewTweet:(id)dummy
+{
+    @try {
+        NSLog(@"FIRST New TWEET");
+        NSIndexPath* selected = [NSIndexPath indexPathForRow:0 inSection:0];
+        NSIndexPath* nextindex = selected;
+        if (nextindex == Nil)
+            return;
+        Tweet *object;
+        @try {
+            object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+            
+            while ([[object hasBeenRead]boolValue] == YES &&
+                   (nextindex = [self nextIndex:nextindex forTable:self.tableView]) != Nil)
+                object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+            
+            if ([[object hasBeenRead]boolValue] == YES) {
+                nextindex = [self nextIndex:selected forTable:self.tableView];
+                object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
+                NSLog(@"nothing unread, going back to %@",[object timestamp]);
+            }
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        }
+        
+        [self.tableView selectRowAtIndexPath:nextindex
+                                    animated:YES
+                              scrollPosition:UITableViewScrollPositionMiddle];
+        
+        self.detailViewController.detailItem = object;
+        
+        NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+        @try {
+            [self.tableView setNeedsDisplay];
+            [context processPendingChanges];
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+}
 
 - (NSIndexPath*)prevIndex:(NSIndexPath*)index forTable:(UITableView*)table
 {
@@ -491,67 +541,66 @@ static NSMutableArray* urlQueue = Nil;
     if (self->twitterAccount == Nil)
         return;
     @try {
-        // Now make an authenticated request to our endpoint
-        NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
-        [params setObject:[[tweet tweetID] description] forKey:@"id"];
-        
-        //  The endpoint that we wish to call
-        NSURL *url =
-        [NSURL
-         URLWithString:@"https://api.twitter.com/1.1/favorites/create.json"];
-        
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        //  Build the request with our parameter
-        TWRequest *request =[[TWRequest alloc] initWithURL:url
-                                                parameters:params
-                                             requestMethod:TWRequestMethodPOST];
-#pragma GCC diagnostic warning "-Wdeprecated-declarations"
-        
-        // Attach the account object to this request
-        [request setAccount:self->twitterAccount];
-        
-        [request performRequestWithHandler:
-         ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-             // inspect the contents of error
-             NSLog(@"FAVORITE err=%@", error);
-             [_updateQueue addOperationWithBlock:^{
-                 [tweet setFavorite:[NSNumber numberWithBool:YES]];
-                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                     NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
-                     UITableViewCell* cell =[self.tableView cellForRowAtIndexPath:selected];
-                     [cell setNeedsDisplay];
-                     
+        [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+            // Now make an authenticated request to our endpoint
+            NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+            [params setObject:[[tweet tweetID] description] forKey:@"id"];
+            
+            //  The endpoint that we wish to call
+            NSURL *url =
+            [NSURL
+             URLWithString:@"https://api.twitter.com/1.1/favorites/create.json"];
+            
+            //  Build the request with our parameter
+            SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodPOST URL:url parameters:params];
+            
+            // Attach the account object to this request
+            [request setAccount:self->twitterAccount];
+            
+            [request performRequestWithHandler:
+             ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+                 // inspect the contents of error
+                 NSLog(@"FAVORITE err=%@", error);
+                 [_updateQueue addOperationWithBlock:^{
+                     [tweet setFavorite:[NSNumber numberWithBool:YES]];
                      [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                         @try {
-                             NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
-                             NSError* error2 = [[NSError alloc] init];
-                             // Save the context.  But I keep having the queue stop dead at this point BOO
-                             if (![context save:&error2]) {
-                                 // Replace this implementation with code to handle the error appropriately.
-                                 // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                                 NSLog(@"Unresolved error saving the context %@, %@", error2, [error2 userInfo]);
+                         NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
+                         UITableViewCell* cell =[self.tableView cellForRowAtIndexPath:selected];
+                         [cell setNeedsDisplay];
+                         
+                         UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"FAVORITEd" message:@"Tweet was favorited." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
+                         [alert setTag:ALERT_DUMMY];
+                         [alert show];
+                         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                             @try {
+                                 NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+                                 NSError* error2 = [[NSError alloc] init];
+                                 // Save the context.  But I keep having the queue stop dead at this point BOO
+                                 if (![context save:&error2]) {
+                                     // Replace this implementation with code to handle the error appropriately.
+                                     // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                                     NSLog(@"Unresolved error saving the context %@, %@", error2, [error2 userInfo]);
+                                 }
+                                 NSLog(@"Got a chance to save, YAY!");
+                             } @catch (NSException *eee) {
+                                 NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
                              }
-                             NSLog(@"Got a chance to save, YAY!");
-                         } @catch (NSException *eee) {
-                             NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
-                         }
+                         }];
                      }];
                  }];
              }];
-             UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"FAVORITEd" message:@"Tweet was favorited." delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
-             [alert setTag:ALERT_DUMMY];
-             [alert show];
-         }];
+        }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     
 }
+
 - (void)openInTwitter:(Tweet*)tweet
 {
     NSString* tweetID = [[tweet tweetID] description];
     NSString* tweetuser = [tweet username];
-    NSString* url = [NSString stringWithFormat:@"http://twitter.com/%@/status/%@", tweetuser, tweetID];
+    NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@", tweetuser, tweetID];
     NSLog(@"twitter open: %@", url);
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url]];
 }
@@ -784,6 +833,8 @@ static NSMutableArray* urlQueue = Nil;
                 [TWLocMasterViewController incrementTasks];
                 [_webQueue addOperation:googleOp];
                 [_webQueue setSuspended:NO];
+            } else if ([buttonNameHit isEqualToString:@"Special"]) {
+                [self specialRefreshTweets];
             }
         }
     } @catch (NSException *eee) {
@@ -814,6 +865,7 @@ static NSMutableArray* urlQueue = Nil;
         if (listID != Nil) {
             url = [NSURL URLWithString:@"https://api.twitter.com/1.1/lists/statuses.json"];
             NSLog(@"List URL = %@",[url absoluteString]);
+            [params setObject:[self->twitterAccount username] forKey:@"screen_name"];
             [params setObject:requestSize forKey:@"count"];
             [params setObject:[listID stringValue] forKey:@"list_id"];
         } else
@@ -824,12 +876,8 @@ static NSMutableArray* urlQueue = Nil;
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMin] forKey:@"max_id"];
         NSLog(@"getting tweets max=%lld min=%lld", _twitterIDMax, _twitterIDMin);
         
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         //  Build the request with our parameter
-        TWRequest *request =[[TWRequest alloc] initWithURL:url
-                                                parameters:params
-                                             requestMethod:TWRequestMethodGET];
-#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+        SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:url parameters:params];
         
         // Attach the account object to this request
         [request setAccount:self->twitterAccount];
@@ -1141,6 +1189,7 @@ static NSMutableArray* urlQueue = Nil;
                     }
                     NSString* status = [[self.detailViewController activityLabel] text];
                     [[self.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\nNote: currently storing %d images, of size %0.2fMB",status,[self numImages], [self sizeImages]/1024.0/1024.0]];
+                    [self performSelector:@selector(firstNewTweet:) withObject:Nil afterDelay:2.0];
                 }];
             }
         }
@@ -1152,6 +1201,16 @@ static NSMutableArray* urlQueue = Nil;
 - (NSDictionary*)getTwitterLists
 {
     NSMutableDictionary* returnDict = [[NSMutableDictionary alloc] initWithCapacity:1];
+    ACAccountStore* accountStore = [[ACAccountStore alloc] init];
+    ACAccountType* accountType = [accountStore
+                                  accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    NSArray* accountArray = [accountStore accountsWithAccountType:accountType];
+    NSEnumerator* e = [accountArray objectEnumerator];
+    ACAccount* account = Nil;
+    while ((account = [e nextObject]) != Nil) {
+        if ([[account username] compare:self->twitterAccountName] == NSOrderedSame)
+            self->twitterAccount = account;
+    }
     if (self->twitterAccount == Nil)
         return returnDict;
     
@@ -1159,6 +1218,7 @@ static NSMutableArray* urlQueue = Nil;
         
         // Now make an authenticated request to our endpoint
         NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+        [params setObject:[self->twitterAccount username] forKey:@"screen_name"];
         [params setObject:@"1" forKey:@"include_entities"];
         if (_twitterIDMax > 0)
             [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMax] forKey:@"since_id"];
@@ -1169,20 +1229,14 @@ static NSMutableArray* urlQueue = Nil;
         //  The endpoint that we wish to call
         NSURL *url =
         [NSURL
-         URLWithString:@"http://api.twitter.com/1.1/lists/list.json"];
+         URLWithString:@"https://api.twitter.com/1.1/lists/list.json"];
         
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         //  Build the request with our parameter
-        TWRequest *request =[[TWRequest alloc] initWithURL:url
-                                                parameters:params
-                                             requestMethod:TWRequestMethodGET];
-#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+        SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:url parameters:params];
         
         // Attach the account object to this request
         [request setAccount:self->twitterAccount];
         
-        NSLog(@"getting tweets max=%lld min=%lld", _twitterIDMax, _twitterIDMin);
-        [self saveTweetDebugToFile:[NSString stringWithFormat:@"****************\ngetting tweets max=%lld min=%lld\n", _twitterIDMax, _twitterIDMin]];
         [self saveTweetDebugToFile:[NSString stringWithFormat:@"URL= %@\n", [url absoluteString]]];
         
         [request performRequestWithHandler:
@@ -1217,6 +1271,86 @@ static NSMutableArray* urlQueue = Nil;
              [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                  [self queueTweetGet:Nil];
              }];
+         }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+    return returnDict;
+}
+- (NSDictionary*)specialGetTwitterLists
+{
+    NSMutableDictionary* returnDict = [[NSMutableDictionary alloc] initWithCapacity:1];
+    ACAccountStore* accountStore = [[ACAccountStore alloc] init];
+    ACAccountType* accountType = [accountStore
+                                  accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    NSArray* accountArray = [accountStore accountsWithAccountType:accountType];
+    NSEnumerator* e = [accountArray objectEnumerator];
+    ACAccount* account = Nil;
+    while ((account = [e nextObject]) != Nil) {
+        if ([[account username] compare:@"curtsybear"] == NSOrderedSame)
+            self->twitterAccount = account;
+    }
+    
+    @try {
+        
+        // Now make an authenticated request to our endpoint
+        NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+        [params setObject:[self->twitterAccount username] forKey:@"screen_name"];
+        [params setObject:@"1" forKey:@"include_entities"];
+        if (_twitterIDMax > 0)
+            [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMax] forKey:@"since_id"];
+        [params setObject:@"50" forKey:@"count"];
+        if (_twitterIDMin > 0 && _twitterIDMin != _twitterIDMax)
+            [params setObject:[[NSString alloc] initWithFormat:@"%lld",_twitterIDMin] forKey:@"max_id"];
+        
+        //  The endpoint that we wish to call
+        NSURL *url =
+        [NSURL
+         URLWithString:@"https://api.twitter.com/1.1/lists/list.json"];
+        
+        //  Build the request with our parameter
+        SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:url parameters:params];
+        
+        // Attach the account object to this request
+        [request setAccount:self->twitterAccount];
+        
+        NSLog(@"getting tweets max=%lld min=%lld", _twitterIDMax, _twitterIDMin);
+        [self saveTweetDebugToFile:[NSString stringWithFormat:@"****************\ngetting tweets max=%lld min=%lld\n", _twitterIDMax, _twitterIDMin]];
+        [self saveTweetDebugToFile:[NSString stringWithFormat:@"URL= %@\n", [url absoluteString]]];
+        
+        [request performRequestWithHandler:
+         ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+             if (!responseData) {
+                 // inspect the contents of error
+                 NSLog(@"GET LISTS err=%@", error);
+             }
+             else {
+                 NSError *jsonError;
+                 NSArray *listArray =
+                 [NSJSONSerialization JSONObjectWithData:responseData
+                                                 options:NSJSONReadingMutableLeaves
+                                                   error:&jsonError];
+                 if ([listArray respondsToSelector:@selector(enumerateObjectsUsingBlock:)])
+                     [listArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                         @try {
+                             NSDictionary* aList = obj;
+                             NSString* listName = [NSString stringWithFormat:@"%@ (%@)",[aList objectForKey:@"name"],[aList objectForKey:@"member_count"]];
+                             NSNumber* listID = [aList objectForKey:@"id"];
+                             if (listName != Nil && listID != Nil) {
+                                 [returnDict setObject:listID forKey:listName];
+                                 [self newList:listID name:listName];
+                                 NSLog(@"Adding list %@ ID=%@",listName,listID);
+                                 if ([listName rangeOfString:@"AnotherLIST"].location != NSNotFound)
+                                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                                         [self queueTweetGet:listID];
+                                     }];
+                             }
+                         } @catch (NSException *eee) {
+                             NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+                         }
+                     }];
+             }
+             self->lists = returnDict;
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1285,7 +1419,8 @@ static NSMutableArray* urlQueue = Nil;
             NSEnumerator* e = [results objectEnumerator];
             while ((tweet = [e nextObject]) != Nil) {
                 if ([[tweet hasBeenRead] boolValue] == NO) {
-                    [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                    if ([[tweet locationFromPic] boolValue] == NO)
+                        [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
                 }
             }
             [self.tableView setNeedsDisplay];
@@ -1330,7 +1465,7 @@ static NSMutableArray* urlQueue = Nil;
             [self.tableView reloadData];
             
             [self checkForMaxTweets];
-            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Twitter or Google?" message:@"grab twitter, or google?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Google", nil];
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Twitter or Google?" message:@"grab twitter, or google?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Special", nil];
             [alert setTag:ALERT_REFRESH];
             [alert show];
         }];
@@ -1358,6 +1493,31 @@ static NSMutableArray* urlQueue = Nil;
             [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
             [self checkForMaxTweets];
             [self getTwitterLists];
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+}
+- (void)specialRefreshTweets
+{
+    @try {
+        [_updateQueue addOperationWithBlock:^{
+            NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
+            [self.tableView setNeedsDisplay];
+            [context processPendingChanges];
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                // Replace this implementation with code to handle the error appropriately.
+                // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+            [self.tableView reloadData];
+            
+            [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
+            [self checkForMaxTweets];
+            [self specialGetTwitterLists];
         }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -2065,12 +2225,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 [html appendString:@"\n"];
                 [html appendString:[tweet tweet]];
                 NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
-                if ([tweet origHTML] == Nil ||
+                /*if ([tweet origHTML] == Nil ||
                     [replaceURL rangeOfString:@"photoset_iframe"].location != NSNotFound) {
                     [[master updateQueue] addOperationWithBlock:^{
                         [tweet setOrigHTML:html];
                     }];
-                }
+                }*/
+                [tweet setOrigHTML:html];
                 if (replace != Nil) {
                     [[master updateQueue] addOperationWithBlock:^{
                         [tweet setUrl:replace];
@@ -2382,19 +2543,6 @@ int googleAddedItems = 0;
             // if no feed, and no subscription identity, we should go grab the subscriptions
             GoogleReader* reader = [master googleReader];
             NSArray* subscriptionArray = [reader getStreams];
-            /*
-             categories =     (
-             {
-             id = "user/08244464737233952669/label/red";
-             label = red;
-             }
-             );
-             firstitemmsec = 1348590243562;
-             htmlUrl = "http://yummygingermen.tumblr.com/";
-             id = "feed/http://yummygingermen.tumblr.com/rss";
-             sortid = E9F15B75;
-             title = "Yummy Ginger Men";
-             */
             GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscriptions:subscriptionArray andStream:Nil];
             [TWLocMasterViewController incrementTasks];
             [[NSOperationQueue currentQueue] addOperation:itemGetter];
@@ -2431,46 +2579,6 @@ int googleAddedItems = 0;
         }];
     }
     return googleAddedItems;
-    /*
-     (
-     {
-     alternate =     (
-     {
-     href = "http://dewittdailydoesit.tumblr.com/post/43229452343";
-     type = "text/html";
-     }
-     );
-     annotations =     (
-     );
-     categories =     (
-     "user/08244464737233952669/label/tumblr",
-     "user/08244464737233952669/state/com.google/reading-list",
-     "user/08244464737233952669/state/com.google/fresh",
-     cumshots
-     );
-     comments =     (
-     );
-     crawlTimeMsec = 1361028986087;
-     id = "tag:google.com,2005:reader/item/370e36db6bbb2609";
-     likingUsers =     (
-     );
-     origin =     {
-     htmlUrl = "http://dewittdailydoesit.tumblr.com/";
-     streamId = "feed/http://dewittdailydoesit.tumblr.com/rss";
-     title = "I&#39;M DEWITT, MOTHERFUCKER.";
-     };
-     published = 1361028982;
-     summary =     {
-     content = "<img src=\"http://25.media.tumblr.com/tumblr_mde3g173561qe273do1_500.gif\"><br><br><p>This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.</p>";
-     direction = ltr;
-     };
-     timestampUsec = 1361028986087925;
-     title = "This dick about to blo-ow-ow-ow-ow-ow-ow-ow-ow-ow.";
-     updated = 1361028982;
-     }
-     )
-     
-     */
 }
 
 - (void)addItem:(NSDictionary*)item

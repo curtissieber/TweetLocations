@@ -38,6 +38,7 @@
 		E9A159D515EA704900630EE4 /* TwitLoc72.png in Resources */ = {isa = PBXBuildFile; fileRef = E9A159D415EA704900630EE4 /* TwitLoc72.png */; };
 		E9A159D715EA704C00630EE4 /* TwitLoc144.png in Resources */ = {isa = PBXBuildFile; fileRef = E9A159D615EA704C00630EE4 /* TwitLoc144.png */; };
 		E9A222601604E25D001DC556 /* AssetsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9A2225F1604E25D001DC556 /* AssetsLibrary.framework */; };
+		E9AB5E3E1889B15100AEBA2D /* Social.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9AB5E3D1889B15100AEBA2D /* Social.framework */; };
 		E9B4680A15EAAB460021F674 /* URLFetcher.m in Sources */ = {isa = PBXBuildFile; fileRef = E9B4680815EAAB460021F674 /* URLFetcher.m */; };
 		E9BE456C15EAED8B004987B1 /* LocPinLinkGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = E9BE456A15EAED8B004987B1 /* LocPinLinkGreen.png */; };
 		E9BE456D15EAED8B004987B1 /* LocPinLink.png in Resources */ = {isa = PBXBuildFile; fileRef = E9BE456B15EAED8B004987B1 /* LocPinLink.png */; };
@@ -64,7 +65,6 @@
 		E9DE581815E94407005D75F6 /* TWLocMasterViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE581715E94407005D75F6 /* TWLocMasterViewController.m */; };
 		E9DE581B15E94407005D75F6 /* TWLocDetailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E9DE581A15E94407005D75F6 /* TWLocDetailViewController.m */; };
 		E9DE582215E94580005D75F6 /* Accounts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE582115E94580005D75F6 /* Accounts.framework */; };
-		E9DE582415E94589005D75F6 /* Twitter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9DE582315E94589005D75F6 /* Twitter.framework */; };
 		E9DE582C15E98231005D75F6 /* sampleJSONtweets.json in Resources */ = {isa = PBXBuildFile; fileRef = E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */; };
 		E9EB0AFE165FD729003264BC /* iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFA165FD728003264BC /* iPhone.storyboard */; };
 		E9EB0AFF165FD729003264BC /* iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9EB0AFC165FD728003264BC /* iPad.storyboard */; };
@@ -117,6 +117,7 @@
 		E9A159D415EA704900630EE4 /* TwitLoc72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = TwitLoc72.png; path = ../TwitLoc72.png; sourceTree = "<group>"; };
 		E9A159D615EA704C00630EE4 /* TwitLoc144.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = TwitLoc144.png; path = ../TwitLoc144.png; sourceTree = "<group>"; };
 		E9A2225F1604E25D001DC556 /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
+		E9AB5E3D1889B15100AEBA2D /* Social.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Social.framework; path = System/Library/Frameworks/Social.framework; sourceTree = SDKROOT; };
 		E9B4680815EAAB460021F674 /* URLFetcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = URLFetcher.m; path = ../../PasteParse/PasteParse/URLFetcher.m; sourceTree = "<group>"; };
 		E9B4680915EAAB460021F674 /* URLFetcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = URLFetcher.h; path = ../../PasteParse/PasteParse/URLFetcher.h; sourceTree = "<group>"; };
 		E9BE456A15EAED8B004987B1 /* LocPinLinkGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LocPinLinkGreen.png; sourceTree = "<group>"; };
@@ -158,7 +159,6 @@
 		E9DE581915E94407005D75F6 /* TWLocDetailViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TWLocDetailViewController.h; sourceTree = "<group>"; };
 		E9DE581A15E94407005D75F6 /* TWLocDetailViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = TWLocDetailViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		E9DE582115E94580005D75F6 /* Accounts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accounts.framework; path = System/Library/Frameworks/Accounts.framework; sourceTree = SDKROOT; };
-		E9DE582315E94589005D75F6 /* Twitter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Twitter.framework; path = System/Library/Frameworks/Twitter.framework; sourceTree = SDKROOT; };
 		E9DE582B15E98231005D75F6 /* sampleJSONtweets.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = sampleJSONtweets.json; sourceTree = "<group>"; };
 		E9EB0AFB165FD728003264BC /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPhone.storyboard; sourceTree = "<group>"; };
 		E9EB0AFD165FD728003264BC /* en */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = en; path = en.lproj/iPad.storyboard; sourceTree = "<group>"; };
@@ -171,6 +171,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9AB5E3E1889B15100AEBA2D /* Social.framework in Frameworks */,
 				E94D54ED175129FD001D9CD2 /* MediaPlayer.framework in Frameworks */,
 				E98D760F16457E8100E12BE1 /* QuartzCore.framework in Frameworks */,
 				E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */,
@@ -178,7 +179,6 @@
 				E9C0F3C015EA9B1B00A55251 /* ImageIO.framework in Frameworks */,
 				E9C0F3BE15EA9B1300A55251 /* CoreLocation.framework in Frameworks */,
 				E9C0F3B015EA95FE00A55251 /* MapKit.framework in Frameworks */,
-				E9DE582415E94589005D75F6 /* Twitter.framework in Frameworks */,
 				E9DE582215E94580005D75F6 /* Accounts.framework in Frameworks */,
 				E9DE57FA15E94407005D75F6 /* UIKit.framework in Frameworks */,
 				E9DE57FC15E94407005D75F6 /* Foundation.framework in Frameworks */,
@@ -247,6 +247,7 @@
 		E9DE57F815E94407005D75F6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E9AB5E3D1889B15100AEBA2D /* Social.framework */,
 				E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */,
 				E98D760E16457E8100E12BE1 /* QuartzCore.framework */,
 				E947096216051074001B67C2 /* SystemConfiguration.framework */,
@@ -254,7 +255,6 @@
 				E9C0F3BF15EA9B1B00A55251 /* ImageIO.framework */,
 				E9C0F3BD15EA9B1300A55251 /* CoreLocation.framework */,
 				E9C0F3AF15EA95FE00A55251 /* MapKit.framework */,
-				E9DE582315E94589005D75F6 /* Twitter.framework */,
 				E9DE582115E94580005D75F6 /* Accounts.framework */,
 				E9DE57F915E94407005D75F6 /* UIKit.framework */,
 				E9DE57FB15E94407005D75F6 /* Foundation.framework */,

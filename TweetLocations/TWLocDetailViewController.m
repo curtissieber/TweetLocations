@@ -157,7 +157,8 @@
                                           iview:self.imageView
                                           sview:self.scrollView
                                          button:self.sizeButton];
-                    
+
+                    [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
                     double latitude = [[tweet latitude] doubleValue];
                     double longitude = [[tweet longitude] doubleValue];
                     if (latitude > -900 && longitude > -900 && [tweet locationFromPic]) {
@@ -168,6 +169,10 @@
                     }
                     
                     [_activityView stopAnimating];
+                    if ([tweet origHTML] == Nil)
+                        [self handleURL:[tweet origURL]];
+                    else
+                        [self checkForVideo:[NSSet setWithArray:[[tweet origHTML] componentsSeparatedByString:@"\n"]]];
                 } else if ([[tweet url] length] > 4) {
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
@@ -222,13 +227,13 @@
     CGRect bigFrame = [_bigLabel frame];
     
     // detail sits at the bottom
-    detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height;
+    detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height - totalFrame.origin.y;
     // map sits above the detail
     mapFrame.origin.y = detailFrame.origin.y - mapFrame.size.height;
     // big label sits above the map
     bigFrame.origin.y = mapFrame.origin.y - bigFrame.size.height;
     //scroll sits above the map and resizes for such
-    scrollFrame.size.height = mapFrame.origin.y;
+    scrollFrame.size.height = mapFrame.origin.y + totalFrame.origin.y;
     scrollFrame.origin.y = 0;
     //text is the same as scrollframe
     textFrame.size.height = mapFrame.origin.y;
@@ -284,17 +289,19 @@
     [self resizeWithoutMap];
     [self.mapView setHidden:YES];
     
-    if ([TWLocDetailViewController imageExtension:url]) {
+    /*if ([TWLocDetailViewController imageExtension:url]) {
         [self openURL:[NSURL URLWithString:url]];
         return;
-    }
+    }*/
     
     URLFetcher* fetcher = [[URLFetcher alloc] init];
     [fetcher fetch:url urlCallback:^(NSMutableString *html) {
         if (html != Nil) {
             [html appendString:@"\n"];
             [html appendString:[_detailItem tweet]];
-            html = [NSMutableString stringWithString:[[self getURLs:html] componentsJoinedByString:@"\n\n"]];
+            NSArray* arr = [self getURLs:html];
+            html = [NSMutableString stringWithString:[arr componentsJoinedByString:@"\n\n"]];
+            [_detailItem setOrigHTML:[arr componentsJoinedByString:@"\n"]];
             [self.textView setText:html];
             [self.scrollView setHidden:YES];
             [self findJPG:html theUrlStr:url];
@@ -302,6 +309,10 @@
             [self.textView setText:@"CONNECTION FAILED"];
         }
         [_activityView stopAnimating];
+        if ([TWLocDetailViewController imageExtension:url]) {
+            [self openURL:[NSURL URLWithString:url]];
+            return;
+        }
     }];
 }
 
@@ -337,6 +348,8 @@
                     [_activityView stopAnimating];
                     return;
                 }
+                [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
+
                 CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)picdata, NULL);
                 NSDictionary* metadataNew = (__bridge NSDictionary *) CGImageSourceCopyPropertiesAtIndex(source,0,NULL);
                 //NSLog(@"%@",metadataNew);
@@ -390,6 +403,8 @@
                             [_activityView stopAnimating];
                             return;
                         }
+                        [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
+
                         thisImageData = data;
                         [self.scrollView setHidden:NO];
                         if (_master != Nil) {
@@ -438,14 +453,29 @@
         return YES;
     if ([urlStr compare:@".gif" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
         return YES;
-    if ([urlStr rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
-        return YES;
     if ([urlStr rangeOfString:@".jpg?"].location != NSNotFound)
         return YES;
-    if ([urlStr rangeOfString:@".mp4?"].location != NSNotFound)
+    if ([TWLocDetailViewController isVideoFileURL:urlStr])
         return YES;
     //NSLog(@"No");
     return NO;
+}
+
++ (BOOL)isVideoFileURL:(NSString*)url
+{
+    if ([url rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
+        return YES;
+    if ([url rangeOfString:@".mp4?"].location != NSNotFound)
+        return YES;
+    NSRange range = [url rangeOfString:@".mp4"];
+    if (range.location == NSNotFound)
+        return NO;
+    for (int i=range.location+range.length; i < [url length]; i++) {
+        char c = [url characterAtIndex:i];
+        if (isalnum(c))
+            return NO;
+    }
+    return YES;
 }
 
 - (NSMutableArray*)getURLs:(NSString*)html
@@ -455,13 +485,6 @@
 
 + (NSMutableArray*)staticGetURLs:(NSString*)html
 {
-    //NSLog(@"regex search started");
-    /*NSError __autoreleasing *err = [[NSError alloc] init];
-     NSRegularExpression* regex = [[NSRegularExpression alloc]
-     initWithPattern:@"\"http:[^\"]*\""
-     options:NSRegularExpressionCaseInsensitive
-     error:&err];
-     NSArray* matches = [regex matchesInString:html options:0 range:NSMakeRange(0, [html length])];*/
     NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     NSDataDetector* detector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:Nil];
     [detector enumerateMatchesInString:html options:0 range:NSMakeRange(0, [html length]) usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
@@ -516,7 +539,7 @@
     if (jpgSorted == Nil)
         jpgSorted = [[NSArray alloc] initWithObjects:
                      @"/instagr.am/", @"instagram.com/",
-                     @".mp4?",
+                     @".mp4",
                      @".jpg?",
                      @"pinterest.com/original",
                      @"pinterest.com/736",
@@ -549,28 +572,7 @@
             return NO;
         }] != NSNotFound)
             [strResults addObject:current];
-        /*else if ([current rangeOfString:@".tumblr.com/image/"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@".tumblr.com/previews/"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"media.tumblr.com/"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinterest.com/736"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinterest.com/550"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinterest.com/500"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinterest.com/original"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinimg.com/500"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinimg.com/550"].location != NSNotFound)
-            [strResults addObject:current];
-        else if ([current rangeOfString:@"pinimg.com/original"].location != NSNotFound)
-            [strResults addObject:current];*/
     }
-    //NSLog(@"only %d links are images",[strResults count]);
     
     [strResults sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         NSMutableString* str1 = [[NSMutableString alloc] initWithString:obj1];
@@ -690,8 +692,8 @@ static MKCoordinateRegion region;
         [self.mapView setRegion:region animated:YES];
         NSLog(@"REGION set to %0.3f %0.3f", region.span.latitudeDelta,region.span.longitudeDelta);
         double delay = 2.0;
-        if (region.span.latitudeDelta < 0.1)
-            delay = 1.0;
+        //if (region.span.latitudeDelta < 0.1)
+        //    delay = 1.0;
         if (region.span.latitudeDelta > 0.003)
             [self performSelector:@selector(setMapRegion:) withObject:Nil afterDelay:delay];
     } @catch (NSException *eee) {
@@ -1294,12 +1296,17 @@ static NSString* videoURL = Nil;
         __block bool hasVideo = NO;
         [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
             NSString* theURL = obj;
-            if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
+            /*if ([theURL rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound) {
                 hasVideo = *stop = YES;
                 videoURL = theURL;
                 NSLog(@"VIDEO URL = %@",theURL);
             }
-            if ([theURL rangeOfString:@".mp4?"].location != NSNotFound) {
+            if ([theURL rangeOfString:@".mp4"].location != NSNotFound) {
+                hasVideo = *stop = YES;
+                videoURL = theURL;
+                NSLog(@"VIDEO URL = %@",theURL);
+            }*/
+            if ([TWLocDetailViewController isVideoFileURL:theURL]){
                 hasVideo = *stop = YES;
                 videoURL = theURL;
                 NSLog(@"VIDEO URL = %@",theURL);
@@ -1330,53 +1337,7 @@ NSTimer* videoTimer = Nil;
         [webView grabMovie:videoURL];
     }];
 
-    /*NSURL *url=[[NSURL alloc] initWithString:videoURL];
-    NSLog(@"VIDEO URL = %@",videoURL);
-
-    MPMoviePlayerController* moviePlayer=[[MPMoviePlayerController alloc] initWithContentURL:url];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerDidExitFullscreenNotification object:moviePlayer];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(moviePlayBackDidFinish:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayer];
-    moviePlayer.shouldAutoplay = YES;
-    moviePlayer.initialPlaybackTime = 0;
-    moviePlayer.scalingMode = MPMovieScalingModeAspectFit;
-    moviePlayer.movieSourceType = MPMovieSourceTypeStreaming;
-    moviePlayer.fullscreen = YES;
-    [moviePlayer.view setFrame:[self view].frame];
-    [self.view addSubview:moviePlayer.view];
-    [moviePlayer play];
-    
-     */
-    /*videoTimer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:1.0] interval:0.5 target:self selector:@selector(videoTimerDidFire:) userInfo:moviePlayer repeats:YES];*/
 }
-/*- (void)videoTimerDidFire:(NSTimer*)timer
-{
-    NSLog(@"video timer");
-    MPMoviePlayerController *mplayer = timer.userInfo;
-    if ([mplayer playbackState] == MPMusicPlaybackStateStopped) {
-        NSLog(@"STOPPING VIDEO");
-        [mplayer stop];
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:MPMoviePlayerPlaybackDidFinishNotification object:mplayer];
-        [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                        name:MPMoviePlayerDidExitFullscreenNotification object:mplayer];
-        
-        [mplayer.view removeFromSuperview];
-    }
-}
-- (IBAction)moviePlayBackDidFinish:(NSNotification*)notification
-{
-    NSLog(@"Video Notification:%@", notification.name);
-
-    MPMoviePlayerController *player = [notification object];
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerPlaybackDidFinishNotification object:player];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:MPMoviePlayerDidExitFullscreenNotification object:player];
-    
-    [player.view removeFromSuperview];
-}*/
 
 - (void)saveVideo:(NSString*)additionalName
 {

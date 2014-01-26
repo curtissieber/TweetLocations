@@ -1,6 +1,7 @@
-added the "open in twitter" actionsheet item
-I think the link clicking is good now
-
-bad:
-There's a pretty big issue with clicking the links in the text background. grrr
-
+added "special list" to grab the main AnotherList entity.
+    may not be getting them all, something about the maxID or something
+    seems to be working okay
+changed the video thing to "anything that contains .mp4 anywhere in it"
+also doing things to make the video download show up better, which requires origHTML rework and all
+NOW had to go https and fix a lot of authentication issues that were just implemented by twitter.
+    using the SLRequest Social framework also

@@ -38,5 +38,6 @@ int main(int argc, char *argv[])
         __iOS7B5CleanConsoleOutput();
         return UIApplicationMain(argc, argv, @"TWLocApplication",
                                  NSStringFromClass([TWLocAppDelegate class]));
+        NSLog(@"%@",[NSThread callStackSymbols]);
     }
 }
