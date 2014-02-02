@@ -24,12 +24,15 @@
 #define TWIMAGE TMCache
 
 typedef void(^MasterCallback)(void);
+typedef void(^MasterListsCallback)(NSDictionary* dict);
 
 @interface TWLocMasterViewController : UITableViewController
         <NSFetchedResultsControllerDelegate,
          UIAlertViewDelegate>
 {
+    @public
     NSString* twitterAccountName;
+    @private
     ACAccount* twitterAccount;
     //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
     
@@ -84,6 +87,13 @@ typedef void(^MasterCallback)(void);
 - (long long)sizeImages;
 - (int)numImages;
 
+#define SPECIAL_TWITTER_ACCOUNT_NAME @"curtsybear"
+- (NSDictionary*)getTwitterLists:(BOOL)queueGets callback:(MasterListsCallback)callback;
+- (NSDictionary*)specialGetTwitterLists:(BOOL)queueGets callback:(MasterListsCallback)callback;
+- (void)addUser:(NSString*)twitterName toListSlug:(NSString*)listName inAccount:(NSString*)accountName;
+- (void)removeUserFromAllLists:(NSString*)user;
+
+
 - (void)nextTweet;
 - (void)nextNewTweet;
 - (void)prevTweet;
@@ -92,6 +102,7 @@ typedef void(^MasterCallback)(void);
 - (void)favoriteTweet:(Tweet*)tweet;
 - (void)openInTwitter:(Tweet*)tweet;
 - (int)unreadTweets;
+- (Tweet*)tweetAtIndex:(int)index;
 @end
 
 @interface TweetOperation : NSOperation {

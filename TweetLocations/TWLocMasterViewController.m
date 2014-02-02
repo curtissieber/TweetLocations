@@ -8,6 +8,8 @@
 
 #import "TWLocMasterViewController.h"
 #import "TWLocDetailViewController.h"
+#import "TWLocBigDetailViewController.h"
+#import "TWLocCollectionViewController.h"
 #import "Image.h"
 #import "Tweet.h"
 #import "URLFetcher.h"
@@ -510,7 +512,7 @@ static NSMutableArray* urlQueue = Nil;
                 [tweet setUrl:[tweet origURL]];
             }];
         } else {
-            NSArray* urls = [TWLocDetailViewController staticGetURLs:[tweet tweet]];
+            NSArray* urls = [TWLocBigDetailViewController staticGetURLs:[tweet tweet]];
             if ([urls count] > 0) {
                 [_updateQueue addOperationWithBlock:^{
                     [tweet setUrl:[urls objectAtIndex:0]];
@@ -735,7 +737,7 @@ static NSMutableArray* urlQueue = Nil;
                     self->twitterAccount = account;
             }
             
-            [self getTwitterLists];
+            [self getTwitterLists:YES callback:Nil];
         }
         
         if (self->twitterAccount != Nil)
@@ -800,7 +802,7 @@ static NSMutableArray* urlQueue = Nil;
                         self->twitterAccount = account;
                 }
                 
-                [self getTwitterLists];
+                [self getTwitterLists:YES callback:Nil];
             }
         }
         if ([alertView tag] == ALERT_SETALLREAD) {
@@ -1198,7 +1200,7 @@ static NSMutableArray* urlQueue = Nil;
     }
 }
 
-- (NSDictionary*)getTwitterLists
+- (NSDictionary*)getTwitterLists:(BOOL)queueGets callback:(MasterListsCallback)callback
 {
     NSMutableDictionary* returnDict = [[NSMutableDictionary alloc] initWithCapacity:1];
     ACAccountStore* accountStore = [[ACAccountStore alloc] init];
@@ -1259,8 +1261,10 @@ static NSMutableArray* urlQueue = Nil;
                              NSNumber* listID = [aList objectForKey:@"id"];
                              if (listName != Nil && listID != Nil) {
                                  [returnDict setObject:listID forKey:listName];
-                                 [self newList:listID name:listName];
-                                 NSLog(@"Adding list %@ ID=%@",listName,listID);
+                                 if (queueGets) {
+                                     [self newList:listID name:listName];
+                                     NSLog(@"Adding list %@ ID=%@ account=%@",listName,listID,[self->twitterAccount username]);
+                                 }
                              }
                          } @catch (NSException *eee) {
                              NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1268,16 +1272,18 @@ static NSMutableArray* urlQueue = Nil;
                      }];
              }
              self->lists = returnDict;
-             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+             if (queueGets) [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                  [self queueTweetGet:Nil];
              }];
+             if (callback != Nil)
+                 callback(returnDict);
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return returnDict;
 }
-- (NSDictionary*)specialGetTwitterLists
+- (NSDictionary*)specialGetTwitterLists:(BOOL)queueGets callback:(MasterListsCallback)callback
 {
     NSMutableDictionary* returnDict = [[NSMutableDictionary alloc] initWithCapacity:1];
     ACAccountStore* accountStore = [[ACAccountStore alloc] init];
@@ -1287,7 +1293,7 @@ static NSMutableArray* urlQueue = Nil;
     NSEnumerator* e = [accountArray objectEnumerator];
     ACAccount* account = Nil;
     while ((account = [e nextObject]) != Nil) {
-        if ([[account username] compare:@"curtsybear"] == NSOrderedSame)
+        if ([[account username] compare:SPECIAL_TWITTER_ACCOUNT_NAME] == NSOrderedSame)
             self->twitterAccount = account;
     }
     
@@ -1340,10 +1346,14 @@ static NSMutableArray* urlQueue = Nil;
                                  [returnDict setObject:listID forKey:listName];
                                  [self newList:listID name:listName];
                                  NSLog(@"Adding list %@ ID=%@",listName,listID);
-                                 if ([listName rangeOfString:@"AnotherLIST"].location != NSNotFound)
-                                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                                 if (queueGets) if ([listName rangeOfString:@"list" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                                     /*[[NSOperationQueue mainQueue] addOperationWithBlock:^{
                                          [self queueTweetGet:listID];
-                                     }];
+                                     }];*/
+                                     [self->queueGetArray addObject:listID];
+                                     NSLog(@"Adding list %@ ID=%@ account=%@",listName,listID,[self->twitterAccount username]);
+                                 }
+
                              }
                          } @catch (NSException *eee) {
                              NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1351,11 +1361,160 @@ static NSMutableArray* urlQueue = Nil;
                      }];
              }
              self->lists = returnDict;
+             if (queueGets && [self->queueGetArray count] > 0)
+                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                     NSNumber* listID =[self->queueGetArray objectAtIndex:0];
+                     [self->queueGetArray removeObjectAtIndex:0];
+                     [self queueTweetGet:listID];
+                 }];
+             if (callback != Nil)
+                 callback(returnDict);
          }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return returnDict;
+}
+
+- (void)addUser:(NSString*)twitterName toListSlug:(NSString*)listName inAccount:(NSString*)accountName
+{
+    ACAccountStore* accountStore = [[ACAccountStore alloc] init];
+    ACAccountType* accountType = [accountStore
+                                  accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    NSArray* accountArray = [accountStore accountsWithAccountType:accountType];
+    NSEnumerator* e = [accountArray objectEnumerator];
+    ACAccount* account = Nil;
+    while ((account = [e nextObject]) != Nil) {
+        if ([[account username] compare:accountName] == NSOrderedSame)
+            self->twitterAccount = account;
+    }
+    @try {
+        
+        // Now make an authenticated request to our endpoint
+        NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+        [params setObject:[self->twitterAccount username] forKey:@"owner_screen_name"];
+        [params setObject:twitterName forKey:@"screen_name"];
+        [params setObject:listName forKey:@"slug"];
+        
+        //  The endpoint that we wish to call
+        NSURL *url =
+        [NSURL
+         URLWithString:@"https://api.twitter.com/1.1/lists/members/create.json"];
+        
+        //  Build the request with our parameter
+        SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodPOST URL:url parameters:params];
+        
+        // Attach the account object to this request
+        [request setAccount:self->twitterAccount];
+        
+        NSLog(@"adding user %@ to list %@ for user %@", twitterName, listName, [self->twitterAccount username]);
+        NSLog(@"%@",[NSString stringWithFormat:@"URL= %@\n", [url absoluteString]]);
+        
+        [request performRequestWithHandler:
+         ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+             if (!responseData) {
+                 // inspect the contents of error
+                 NSLog(@"ADD TO LIST err=%@", error);
+             }
+             else {
+                 if ([urlResponse statusCode] == 200) {
+                     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SUCCESS" message:[NSString stringWithFormat:@"Added user %@ to list %@ for user %@", twitterName, listName, [self->twitterAccount username]] delegate:self cancelButtonTitle:@"YAY" otherButtonTitles: nil];
+                     [alert setTag:ALERT_DUMMY];
+                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                         [alert show];
+                     }];
+                 } else {
+                     NSLog(@"ADD TO LIST returned %@\n::\n%@",urlResponse,[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]);
+                     NSString* message = [NSString stringWithFormat:@"ERROR %d adding %@ to list %@ for account %@\n%@", [urlResponse statusCode], twitterName, listName, [self->twitterAccount username], [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]];
+                     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SUCCESS" message:message delegate:self cancelButtonTitle:@"YAY" otherButtonTitles: nil];
+                     [alert setTag:ALERT_DUMMY];
+                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                         [alert show];
+                     }];
+                 }
+             }
+         }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+}
+
+- (void)removeUserFromAllLists:(NSString*)user
+{
+    NSLog(@"removeUserFromAllLists:%@",user);
+    [self getTwitterLists:NO callback:^(NSDictionary *dict) {
+        [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            NSString* str = key;
+            int start = [str rangeOfString:@"("].location;
+            str = [str stringByReplacingCharactersInRange:NSMakeRange(start - 1, [str length]+1-start) withString:@""];
+            [self removeUser:user fromListSlug:str inAccount:self->twitterAccountName];
+            [NSThread sleepForTimeInterval:0.5];
+        }];
+        [self specialGetTwitterLists:NO callback:^(NSDictionary *dict) {
+            [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+                NSString* str = key;
+                int start = [str rangeOfString:@"("].location;
+                str = [str stringByReplacingCharactersInRange:NSMakeRange(start - 1, [str length]+1-start) withString:@""];
+                [self removeUser:user fromListSlug:str inAccount:SPECIAL_TWITTER_ACCOUNT_NAME];
+                [NSThread sleepForTimeInterval:0.5];
+            }];
+        }];
+    }];
+}
+- (void)removeUser:(NSString*)user fromListSlug:(NSString*)list inAccount:(NSString*)accountName
+{
+    NSLog(@"UNSUPPORTED YET removeUser:%@ fromList:%@ inAccount:%@",user,list,accountName);
+    ACAccountStore* accountStore = [[ACAccountStore alloc] init];
+    ACAccountType* accountType = [accountStore
+                                  accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    NSArray* accountArray = [accountStore accountsWithAccountType:accountType];
+    NSEnumerator* e = [accountArray objectEnumerator];
+    ACAccount* account = Nil;
+    while ((account = [e nextObject]) != Nil) {
+        if ([[account username] compare:accountName] == NSOrderedSame)
+            self->twitterAccount = account;
+    }
+    @try {
+        
+        // Now make an authenticated request to our endpoint
+        NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+        [params setObject:[self->twitterAccount username] forKey:@"owner_screen_name"];
+        [params setObject:user forKey:@"screen_name"];
+        [params setObject:list forKey:@"slug"];
+        
+        //  The endpoint that we wish to call
+        NSURL *url =
+        [NSURL
+         URLWithString:@"https://api.twitter.com/1.1/lists/members/destroy.json"];
+        
+        //  Build the request with our parameter
+        SLRequest *request =[SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodPOST URL:url parameters:params];
+        
+        // Attach the account object to this request
+        [request setAccount:self->twitterAccount];
+        
+        NSLog(@"Removing user %@ from list %@ for user %@", user, list, [self->twitterAccount username]);
+        NSLog(@"%@",[NSString stringWithFormat:@"URL= %@\n", [url absoluteString]]);
+        
+        [request performRequestWithHandler:
+         ^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+             if (!responseData) {
+                 // inspect the contents of error
+                 NSLog(@"REMOVE FROM LIST err=%@", error);
+             }
+             else {
+                 if ([urlResponse statusCode] == 200) {
+                     UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"SUCCESS" message:[NSString stringWithFormat:@"Removed user %@ from list %@ for user %@", user, list, [self->twitterAccount username]] delegate:self cancelButtonTitle:@"YAY" otherButtonTitles: nil];
+                     [alert setTag:ALERT_DUMMY];
+                     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                         [alert show];
+                     }];
+                 } //else NSLog(@"REMOVE FROM LIST returned %@\n::\n%@",urlResponse,[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]);
+             }
+         }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
 }
 
 - (void)newList:(NSNumber*)theListID name:(NSString*)theListName
@@ -1492,7 +1651,7 @@ static NSMutableArray* urlQueue = Nil;
             
             [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
             [self checkForMaxTweets];
-            [self getTwitterLists];
+            [self getTwitterLists:YES callback:Nil];
         }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1517,7 +1676,7 @@ static NSMutableArray* urlQueue = Nil;
             
             [[self.detailViewController activityLabel] setText:@"Getting Tweets:"];
             [self checkForMaxTweets];
-            [self specialGetTwitterLists];
+            [self specialGetTwitterLists:YES callback:Nil];
         }];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1692,7 +1851,7 @@ static NSMutableArray* urlQueue = Nil;
                                 target:self
                                 action:@selector(setAllTweetsRead:)];
     self.navigationItem.leftBarButtonItem = allRead;
-    self.detailViewController = (TWLocDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
+    self.detailViewController = (TWLocBigDetailViewController *)[[self.splitViewController.viewControllers lastObject] topViewController];
     [self.detailViewController setMaster:self];
     [[self.detailViewController activityLabel] setHidden:YES];
     [[self.detailViewController labelOverEverything] setHidden:YES];
@@ -1789,6 +1948,11 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         backgroundTaskNumber = UIBackgroundTaskInvalid;
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             [self saveContext];
+            if ([[[self detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
+            {
+                TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[self detailViewController];
+                [[colView collectionView] reloadData];
+            }
         }];
     }
 }
@@ -1936,6 +2100,25 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
     return unreadReturn;
+}
+
+- (Tweet*)tweetAtIndex:(int)index
+{
+    Tweet* retTweet = Nil;
+    @try {
+        NSFetchedResultsController* controller = [self fetchedResultsController];
+        if (controller != Nil) {
+            NSArray* tweets = [controller fetchedObjects];
+            if (tweets != Nil) {
+                if (index < [tweets count]) {
+                    retTweet = [tweets objectAtIndex:index];
+                }
+            }
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+    return  retTweet;
 }
 
 #pragma mark - Fetched results controller
@@ -2195,13 +2378,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         if (replaceURL == Nil)
             replaceURL = [tweet url];
         if ((replaceURL == Nil) ||
-            ([replaceURL length] < 4) ||
-            ([master imageData:replaceURL] != Nil)) {
+            ([replaceURL length] < 4) /*||
+            ([master imageData:replaceURL] != Nil)*/) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:replaceURL]) {
+        if ([TWLocBigDetailViewController imageExtension:replaceURL]) {
             [self tryImage];
         } else {
             NSURL* url = [NSURL URLWithString:[tweet url]];
@@ -2224,7 +2407,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             if (html != Nil) {
                 [html appendString:@"\n"];
                 [html appendString:[tweet tweet]];
-                NSString* replace = [TWLocDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
+                NSString* replace = [TWLocBigDetailViewController staticFindJPG:html theUrlStr:[tweet url]];
                 /*if ([tweet origHTML] == Nil ||
                     [replaceURL rangeOfString:@"photoset_iframe"].location != NSNotFound) {
                     [[master updateQueue] addOperationWithBlock:^{
@@ -2238,7 +2421,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                     }];
                     NSLog(@"URL_REPLACE %@",replace);
                     replaceURL = replace;
-                    if ([TWLocDetailViewController imageExtension:replaceURL])
+                    if ([TWLocBigDetailViewController imageExtension:replaceURL])
                         [self tryImage];
                     else {
                         TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
@@ -2347,6 +2530,17 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             }];
         }
         [master imageData:imageData forURL:replaceURL];
+        if ([[[master detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
+        {
+            TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[master detailViewController];
+            TWLocPicCollectionCell* cell = (TWLocPicCollectionCell*)[[colView collectionView] cellForItemAtIndexPath:index];
+            UIImage* image = [UIImage imageWithData:imageData];
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                [[cell theImage] setImage:image];
+            }];
+            //NSArray* array = [NSArray arrayWithObject:[master.fetchedResultsController indexPathForObject:tweet]];
+            //[[colView collectionView] reloadItemsAtIndexPaths:array];
+        }
         
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -2361,6 +2555,12 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         if ([[tweet hasBeenRead] boolValue] == YES) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
+            if ([[[master detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
+            {
+                //TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[master detailViewController];
+                //NSArray* array = [NSArray arrayWithObject:[master.fetchedResultsController indexPathForObject:tweet]];
+                //[[colView collectionView] reloadItemsAtIndexPaths:array];
+            }
             return;
         }
         if (replaceURL == Nil)
@@ -2370,6 +2570,12 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             ([master imageData:replaceURL] != Nil) ) {
             [TWLocMasterViewController decrementTasks];
             executing = NO; finished = YES;
+            if ([[[master detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
+            {
+                //TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[master detailViewController];
+                //NSArray* array = [NSArray arrayWithObject:[master.fetchedResultsController indexPathForObject:tweet]];
+                //[[colView collectionView] reloadItemsAtIndexPaths:array];
+            }
             return;
         }
         if ([TWLocDetailViewController imageExtension:replaceURL]) {
@@ -2445,6 +2651,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 {
     executing = YES;
     [master storeTweets:timeline andList:listID];
+    if ([[[master detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
+    {
+        TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[master detailViewController];
+        if ([timeline count] > 0) {
+            [[colView collectionView] reloadData];
+        }
+    }
     [TWLocMasterViewController decrementTasks];
     executing = NO; finished = YES;
 }

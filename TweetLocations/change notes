@@ -5,3 +5,7 @@ changed the video thing to "anything that contains .mp4 anywhere in it"
 also doing things to make the video download show up better, which requires origHTML rework and all
 NOW had to go https and fix a lot of authentication issues that were just implemented by twitter.
     using the SLRequest Social framework also
+updated the "special list" to be anything with LIST in it, so it grabs all of them
+Added the ability to add twitterers to either of the accounts lists
+Also made it so a twitterer could be removed from all lists totally
+Moved the "open in twitter" into the webView so there's no app switching to be done

@@ -10,6 +10,6 @@
 
 @interface TWLocPicCollectionCell : UICollectionViewCell
 
-@property IBOutlet UIImageView* image;
+@property IBOutlet UIImageView* theImage;
 
 @end

@@ -12,8 +12,10 @@
 
 @property (retain, nonatomic) NSString* theURL;
 @property (strong, nonatomic) IBOutlet UIWebView* webView;
+@property (strong, nonatomic) IBOutlet UIButton* doneButton;
 
 - (IBAction)doneButton:(id)sender;
-- (void)grabMovie:(NSString*)movieURL;
+- (void)loadURL:(NSString*)url;
+- (void)shiftBelowButton;
 
 @end

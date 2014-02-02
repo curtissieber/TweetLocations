@@ -14,15 +14,27 @@
 
 @implementation WebViewController
 
-- (void)grabMovie:(NSString*)movieURL
+- (void)loadURL:(NSString*)url
 {
     [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-        NSURLRequest* urlRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:movieURL]];
+        NSURLRequest* urlRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:url]];
         [_webView loadRequest:urlRequest];
         [_webView reload];
         NSLog(@"loadrequest for %@", urlRequest);
     }];
 }
+
+- (void)shiftBelowButton
+{
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+        CGRect wframe = [_webView frame];
+        CGRect bframe = [_doneButton frame];
+        wframe.size.height -= bframe.origin.y;
+        wframe.origin.y += bframe.origin.y;
+        [_webView setFrame:wframe];
+    }];
+}
+
 - (IBAction)doneButton:(id)sender
 {
     [self dismissViewControllerAnimated:YES completion:Nil];

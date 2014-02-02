@@ -36,11 +36,13 @@ typedef void(^PhotoCallback)(float latitude, float longitude, NSString* timestam
 + (void)setupImage:(UIImage*)image
              iview:(UIImageView*)iview
              sview:(UIScrollView*)sview
-            button:(UIButton*)button;
+            button:(UIButton*)button
+           animate:(BOOL)doAnimate;
 + (void)setupGIF:(UIImage*)image
              iview:(UIImageView*)iview
              sview:(UIScrollView*)sview
             button:(UIButton*)button
-           rawData:(NSData*)data;
+           rawData:(NSData*)data
+         animate:(BOOL)doAnimate;
 
 @end

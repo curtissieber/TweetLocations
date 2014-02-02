@@ -53,15 +53,11 @@
         NSLog(@"Background saving context");
         [self saveContext];
     }
-    /*if (_masterViewController != Nil) {
+    if (_masterViewController != Nil) {
         [_masterViewController dropReadURLs:^{
             NSLog(@"dropped all read URL images");
-            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                NSLog(@"Background saving context");
-                [self saveContext]; 
-            }];
         }];
-    }*/
+    }
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
 }
 

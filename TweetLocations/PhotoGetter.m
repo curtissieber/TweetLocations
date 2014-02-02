@@ -135,9 +135,9 @@
         UIImage *image = [[UIImage alloc] initWithData:photoData];
         
         if (self->isGIF)
-            [PhotoGetter setupGIF:image iview:imageView sview:scrollView button:sizeButton rawData:photoData];
+            [PhotoGetter setupGIF:image iview:imageView sview:scrollView button:sizeButton rawData:photoData animate:YES];
         else
-            [PhotoGetter setupImage:image iview:imageView sview:scrollView button:sizeButton];
+            [PhotoGetter setupImage:image iview:imageView sview:scrollView button:sizeButton animate:YES];
                 
         if (self->callback) {
             callback(lat, lon, timestamp, photoData);
@@ -151,6 +151,7 @@
              iview:(UIImageView*)iview
              sview:(UIScrollView*)sview
             button:(UIButton*)button
+           animate:(BOOL)doAnimate
 {
     if (sview == Nil || button == Nil) {
         [iview setImage:image];
@@ -170,7 +171,7 @@
     [iview setContentMode:UIViewContentModeScaleAspectFit];
     
     //[iview setImage:image];
-    [UIView transitionWithView:sview
+    if (doAnimate) [UIView transitionWithView:sview
                       duration:0.4
                        options:UIViewAnimationOptionTransitionCrossDissolve
                     animations:^{
@@ -180,6 +181,12 @@
                         [iview stopAnimating];
                     }
                     completion:Nil];
+    else {
+        iview.image = image;
+        [iview setAnimationImages: Nil];
+        [iview setAnimationDuration:0];
+        [iview stopAnimating];
+    }
     
     //[iview sizeToFit];
     [sview setContentScaleFactor:1];
@@ -226,6 +233,7 @@
              sview:(UIScrollView*)sview
             button:(UIButton*)button
            rawData:(NSData*)data
+         animate:(BOOL)doAnimate
 {
     if (sview == Nil || button == Nil) {
 #ifdef SIMPLE_GIFS
@@ -262,7 +270,7 @@
     [iview setContentMode:UIViewContentModeScaleAspectFit];
 
 #ifdef SIMPLE_GIFS
-    [UIView transitionWithView:sview
+    if (doAnimate) [UIView transitionWithView:sview
                       duration:0.4
                        options:UIViewAnimationOptionTransitionCrossDissolve
                     animations:^{
@@ -276,6 +284,16 @@
                         }
                     }
                     completion:Nil];
+    else {
+        float frameTime = 0;
+        NSArray* frames = [PhotoGetter gifFrames:data runTime:&frameTime];
+        if (frames != Nil && [frames count] > 0) {
+            [iview setImage: [frames objectAtIndex:0]];
+            [iview setAnimationImages: frames];
+            [iview setAnimationDuration:frameTime];
+            [iview startAnimating];
+        }
+    }
 #else
     // GIF-special section
     AnimatedGif* animate = [[AnimatedGif alloc] init];
@@ -283,7 +301,7 @@
     UIImageView *tempImageView = [animate getAnimation];
     
     //[iview setImage:image];
-    [UIView transitionWithView:sview
+    if (doAnimate) [UIView transitionWithView:sview
                       duration:0.4
                        options:UIViewAnimationOptionTransitionCrossDissolve
                     animations:^{
@@ -294,6 +312,14 @@
                         [iview startAnimating];
                     }
                     completion:Nil];
+    else
+    {
+        [iview setImage: [tempImageView image]];
+        //[iview sizeToFit];
+        [iview setAnimationImages: [tempImageView animationImages]];
+        [iview setAnimationDuration:[tempImageView animationDuration]];
+        [iview startAnimating];
+    }
 #endif
     //[iview sizeToFit];
     [sview setContentScaleFactor:1];
