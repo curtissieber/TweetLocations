@@ -21,6 +21,7 @@
                 NSData* thisImageData;
 }
 @property (retain, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
+@property (retain, nonatomic) IBOutlet UILabel *usernameLabel;
 @property (retain, nonatomic) IBOutlet MKMapView *mapView;
 @property (retain, nonatomic) IBOutlet UIScrollView *scrollView;
 @property (retain, nonatomic) IBOutlet UIImageView *imageView;

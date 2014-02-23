@@ -254,7 +254,10 @@ NSString * const TMMemoryCachePrefix = @"com.tumblr.TMMemoryCache";
 
 - (void)setObject:(id)object forKey:(NSString *)key block:(TMMemoryCacheObjectBlock)block
 {
-    [self setObject:object forKey:key withCost:0 block:block];
+    if ([object respondsToSelector:@selector(length)])
+        [self setObject:object forKey:key withCost:[object length] block:block];
+    else
+        [self setObject:object forKey:key withCost:50*1024 block:block];
 }
 
 - (void)setObject:(id)object forKey:(NSString *)key withCost:(NSUInteger)cost block:(TMMemoryCacheObjectBlock)block

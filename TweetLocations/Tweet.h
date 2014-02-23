@@ -2,8 +2,8 @@
 //  Tweet.h
 //  TweetLocations
 //
-//  Created by Curtis Sieber on 3/2/13.
-//  Copyright (c) 2013 Curtsybear.com. All rights reserved.
+//  Created by Curtis Sieber on 2/16/14.
+//  Copyright (c) 2014 Curtsybear.com. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -14,6 +14,9 @@
 @interface Tweet : NSManagedObject
 
 @property (nonatomic, retain) NSNumber * favorite;
+@property (nonatomic, retain) NSNumber * fromGoogleReader;
+@property (nonatomic, retain) NSString * googleID;
+@property (nonatomic, retain) NSString * googleStream;
 @property (nonatomic, retain) NSNumber * hasBeenRead;
 @property (nonatomic, retain) NSNumber * latitude;
 @property (nonatomic, retain) NSNumber * listID;
@@ -27,9 +30,7 @@
 @property (nonatomic, retain) NSNumber * tweetID;
 @property (nonatomic, retain) NSString * url;
 @property (nonatomic, retain) NSString * username;
-@property (nonatomic, retain) NSNumber * fromGoogleReader;
-@property (nonatomic, retain) NSString * googleID;
-@property (nonatomic, retain) NSString * googleStream;
+@property (nonatomic, retain) NSString * acountListPrefix;
 @property (nonatomic, retain) Group *group;
 
 @end

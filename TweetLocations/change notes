@@ -1,11 +1,6 @@
-added "special list" to grab the main AnotherList entity.
-    may not be getting them all, something about the maxID or something
-    seems to be working okay
-changed the video thing to "anything that contains .mp4 anywhere in it"
-also doing things to make the video download show up better, which requires origHTML rework and all
-NOW had to go https and fix a lot of authentication issues that were just implemented by twitter.
-    using the SLRequest Social framework also
-updated the "special list" to be anything with LIST in it, so it grabs all of them
-Added the ability to add twitterers to either of the accounts lists
-Also made it so a twitterer could be removed from all lists totally
-Moved the "open in twitter" into the webView so there's no app switching to be done
+Making the "gets" into three parts.  Timeline, lists, and otherLists (other account)
+I think the lists are stymied by the other gets, as far as maxid goes.
+- fixed that, I think.  all lists are remembering themselves well
+- dropped some link checking in web view to see if that helps memory
+- made some limits for disk and memory image caching
+

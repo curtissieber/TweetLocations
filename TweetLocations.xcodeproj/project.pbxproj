@@ -15,11 +15,11 @@
 		E92C1A1017B807B1009CE9E3 /* WebViewController.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E92C1A0F17B807B1009CE9E3 /* WebViewController.storyboard */; };
 		E92C1A1317B807DB009CE9E3 /* WebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E92C1A1217B807DB009CE9E3 /* WebViewController.m */; };
 		E947096316051074001B67C2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E947096216051074001B67C2 /* SystemConfiguration.framework */; };
+		E948E73318B115F500DA8AE2 /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E948E73218B115F500DA8AE2 /* Tweet.m */; };
 		E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E417510C8D001D9CD2 /* TMCache.m */; };
 		E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E617510C8D001D9CD2 /* TMDiskCache.m */; };
 		E94D54EB17510C8D001D9CD2 /* TMMemoryCache.m in Sources */ = {isa = PBXBuildFile; fileRef = E94D54E817510C8D001D9CD2 /* TMMemoryCache.m */; };
 		E94D54ED175129FD001D9CD2 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */; };
-		E950AD4616E2932D0044656E /* Tweet.m in Sources */ = {isa = PBXBuildFile; fileRef = E950AD4516E2932D0044656E /* Tweet.m */; };
 		E951013D16445EDB00A4505E /* GoogleReader.m in Sources */ = {isa = PBXBuildFile; fileRef = E951013C16445EDB00A4505E /* GoogleReader.m */; };
 		E9533BFB16CFE96400437954 /* change notes in Resources */ = {isa = PBXBuildFile; fileRef = E9533BFA16CFE96400437954 /* change notes */; };
 		E984347016AB0F42007B996A /* ImageData.m in Sources */ = {isa = PBXBuildFile; fileRef = E984346F16AB0F42007B996A /* ImageData.m */; };
@@ -88,6 +88,9 @@
 		E92C1A1217B807DB009CE9E3 /* WebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebViewController.m; sourceTree = "<group>"; };
 		E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 2.xcdatamodel"; sourceTree = "<group>"; };
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		E948E73018B1159100DA8AE2 /* TweetLocations 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = file; path = "TweetLocations 7.xcdatamodel"; sourceTree = "<group>"; };
+		E948E73118B115F500DA8AE2 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
+		E948E73218B115F500DA8AE2 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E94D54E317510C8D001D9CD2 /* TMCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMCache.h; sourceTree = "<group>"; };
 		E94D54E417510C8D001D9CD2 /* TMCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TMCache.m; sourceTree = "<group>"; };
 		E94D54E517510C8D001D9CD2 /* TMDiskCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMDiskCache.h; sourceTree = "<group>"; };
@@ -96,8 +99,6 @@
 		E94D54E817510C8D001D9CD2 /* TMMemoryCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TMMemoryCache.m; sourceTree = "<group>"; };
 		E94D54EC175129FD001D9CD2 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
 		E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 6.xcdatamodel"; sourceTree = "<group>"; };
-		E950AD4416E2932D0044656E /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
-		E950AD4516E2932D0044656E /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E951013B16445EDB00A4505E /* GoogleReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GoogleReader.h; sourceTree = "<group>"; };
 		E951013C16445EDB00A4505E /* GoogleReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GoogleReader.m; sourceTree = "<group>"; };
 		E9533BFA16CFE96400437954 /* change notes */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "change notes"; sourceTree = "<group>"; };
@@ -313,9 +314,9 @@
 				E92C1A0F17B807B1009CE9E3 /* WebViewController.storyboard */,
 				E92C1A1117B807DB009CE9E3 /* WebViewController.h */,
 				E92C1A1217B807DB009CE9E3 /* WebViewController.m */,
-				E950AD4416E2932D0044656E /* Tweet.h */,
-				E950AD4516E2932D0044656E /* Tweet.m */,
 				E9DE581315E94407005D75F6 /* TweetLocations.xcdatamodeld */,
+				E948E73118B115F500DA8AE2 /* Tweet.h */,
+				E948E73218B115F500DA8AE2 /* Tweet.m */,
 				E9D579D8168CDC3300ACBBC9 /* Image.h */,
 				E9D579D9168CDC3300ACBBC9 /* Image.m */,
 				E9D579DB168CDC3E00ACBBC9 /* Group.h */,
@@ -453,6 +454,7 @@
 				E9B4680A15EAAB460021F674 /* URLFetcher.m in Sources */,
 				E91D95CB15EAB60C00717A95 /* TWLocApplication.m in Sources */,
 				E951013D16445EDB00A4505E /* GoogleReader.m in Sources */,
+				E948E73318B115F500DA8AE2 /* Tweet.m in Sources */,
 				E90E0675167E2ABE004BEC18 /* TWLocImages.m in Sources */,
 				E90E0679167E2C4E004BEC18 /* Images.xcdatamodeld in Sources */,
 				E9CCE893189586930060898D /* TWLocCollectionViewController.m in Sources */,
@@ -466,7 +468,6 @@
 				E984347016AB0F42007B996A /* ImageData.m in Sources */,
 				E984347416AB0F4D007B996A /* ImageItem.m in Sources */,
 				E9CCDC7316BEDC2E002A42D4 /* TWFastImages.m in Sources */,
-				E950AD4616E2932D0044656E /* Tweet.m in Sources */,
 				E92C1A1317B807DB009CE9E3 /* WebViewController.m in Sources */,
 				E94D54E917510C8D001D9CD2 /* TMCache.m in Sources */,
 				E94D54EA17510C8D001D9CD2 /* TMDiskCache.m in Sources */,
@@ -636,12 +637,13 @@
 			children = (
 				E9F54C18167528A8002814EE /* TweetLocations 5.xcdatamodel */,
 				E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */,
+				E948E73018B1159100DA8AE2 /* TweetLocations 7.xcdatamodel */,
 				E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */,
 				E9909DF1161F2658007CDA4D /* TweetLocations 3.xcdatamodel */,
 				E9072F2116573C3F000B1B07 /* TweetLocations 4.xcdatamodel */,
 				E9DE581415E94407005D75F6 /* TweetLocations.xcdatamodel */,
 			);
-			currentVersion = E950AD3D16E27EE20044656E /* TweetLocations 6.xcdatamodel */;
+			currentVersion = E948E73018B1159100DA8AE2 /* TweetLocations 7.xcdatamodel */;
 			path = TweetLocations.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

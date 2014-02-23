@@ -220,7 +220,7 @@
     [button setTitle:sizetxt forState:UIControlStateNormal];
     [button setTitle:@"SAVING PICTURE" forState:UIControlStateSelected];
     [button setTitle:@"SAVING PICTURE" forState:UIControlStateHighlighted];
-    if (height > 1023 || width > 1023)
+    if (height > 900 || width > 900)
         [button.titleLabel setBackgroundColor:[UIColor cyanColor]];
     else
         [button.titleLabel setBackgroundColor:[UIColor whiteColor]];
@@ -353,7 +353,7 @@
     [button setTitle:sizetxt forState:UIControlStateNormal];
     [button setTitle:@"SAVING PICTURE" forState:UIControlStateSelected];
     [button setTitle:@"SAVING PICTURE" forState:UIControlStateHighlighted];
-    if (height > 1023 || width > 1023)
+    if (height > 300 || width > 300)
         [button.titleLabel setBackgroundColor:[UIColor cyanColor]];
     else
         [button.titleLabel setBackgroundColor:[UIColor whiteColor]];

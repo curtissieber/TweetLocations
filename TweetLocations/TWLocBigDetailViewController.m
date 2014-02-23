@@ -78,10 +78,10 @@
             NSString* titleString = [NSString stringWithFormat:@"(%d unred) %@",unread,[tweet timestamp]];
             self.title = titleString;
             
-            NSMutableString* detail = [[NSMutableString alloc] initWithFormat:@"[%@]:%@\n",
-                                       [tweet username], [tweet tweet] ];
+            NSMutableString* detail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@] %@\n",
+                                       [tweet tweet] ,[tweet username], [tweet acountListPrefix]];
             if ([[tweet url] length] > 4)
-                [detail appendFormat:@" [%@]", [tweet url]];
+                [detail appendFormat:@" [%@]", [[tweet url] componentsSeparatedByString:@"\n"]];
             double latitude = [[tweet latitude] doubleValue];
             double longitude = [[tweet longitude] doubleValue];
             if (latitude > -900 && longitude > -900)
@@ -92,23 +92,27 @@
             if ([[tweet hasBeenRead] boolValue] == YES) {
                 [self.detailDescriptionLabel setTextColor:[UIColor redColor]];
                 [self.bigLabel setTextColor:[UIColor redColor]];
+                [self.usernameLabel setTextColor:[UIColor redColor]];
             } else {
                 [self.detailDescriptionLabel setTextColor:[UIColor whiteColor]];
                 [self.bigLabel setTextColor:[UIColor whiteColor]];
+                [self.usernameLabel setTextColor:[UIColor blackColor]];
             }
             [[[self master] updateQueue] addOperationWithBlock:^{
                 [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
                 [[self master] keepTrackofReadURLs:[[self detailItem] url]];
             }];
             
-            NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"[%@]: %@",
-                                          [tweet username], [tweet tweet]];
+            NSMutableString* bigDetail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@] %@",
+                                          [tweet tweet], [tweet username], [tweet acountListPrefix]];
             CATransition* textTrans = [CATransition animation];
             textTrans.duration = 0.2;
             textTrans.type = kCATransitionFade;
             textTrans.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
             [self.bigLabel.layer addAnimation:textTrans forKey:@"changeTextTransition"];
             self.bigLabel.text = bigDetail;
+            [_usernameLabel setText:[tweet username]];
+            [_usernameLabel sizeToFit];
             
             if (latitude > -900 && longitude > -900 && [[self detailItem] locationFromPic]) {
                 [self resizeForMap];
@@ -135,18 +139,19 @@
     @try {
         __block Tweet* tweet = [self detailItem];
         
-        __block NSData* imageData = [[self master] imageData:[tweet url]];
+        NSString* thisURL = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];
+        lastURLopened = thisURL;
+        __block NSData* imageData = [[self master] imageData:thisURL];
         [[self sizeButton] setEnabled:YES];
         [[self sizeButton] setHidden:NO];
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             @try {
                 if (imageData != Nil) {
-                    //NSLog(@"using cached data for %@",[tweet url]);
                     thisImageData = imageData;
                     UIImage *image = [[UIImage alloc] initWithData:imageData];
                     
                     [self.scrollView setHidden:NO];
-                    if ([PhotoGetter isGIFtype:[tweet url]])
+                    if ([PhotoGetter isGIFtype:thisURL])
                         [PhotoGetter setupGIF:image
                                         iview:self.imageView
                                         sview:self.scrollView
@@ -159,6 +164,7 @@
                                          button:self.sizeButton animate:YES];
 
                     [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
+                    [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
                     double latitude = [[tweet latitude] doubleValue];
                     double longitude = [[tweet longitude] doubleValue];
                     if (latitude > -900 && longitude > -900 && [tweet locationFromPic]) {
@@ -173,11 +179,11 @@
                         [self handleURL:[tweet origURL]];
                     else
                         [self checkForVideo:[NSSet setWithArray:[[tweet origHTML] componentsSeparatedByString:@"\n"]]];
-                } else if ([[tweet url] length] > 4) {
+                } else if ([thisURL length] > 4) {
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateSelected];
-                    [self handleURL:[tweet url]];
+                    [self handleURL:thisURL];
                 } else {
                     [UIView animateWithDuration:0.2 animations:^{
                         self.scrollView.hidden = YES;
@@ -208,7 +214,7 @@
             [UIView animateWithDuration:0.2 animations:^{
                 [self activityLabel].hidden = NO;
                 NSDictionary* dict = [NSKeyedUnarchiver unarchiveObjectWithData:[[self detailItem] sourceDict]];
-                NSString* detail = [NSString stringWithFormat:@"[%@]: %@\n****\n%@\n****\n%@", [[self detailItem] username], [[self detailItem] tweet], dict, [[self detailItem] origHTML]];
+                NSString* detail = [NSString stringWithFormat:@"[%@] %@: %@\n****\n%@\n****\n%@", [[self detailItem] username], [[self detailItem] acountListPrefix], [[self detailItem] tweet], dict, [[self detailItem] origHTML]];
                 [[self activityLabel] setText:detail];
             }];
         }
@@ -224,7 +230,7 @@
     CGRect mapFrame = [_mapView frame];
     CGRect textFrame = [_textView frame];
     CGRect scrollFrame = [_scrollView frame];
-    CGRect bigFrame = [_bigLabel frame];
+    __block CGRect bigFrame = [_bigLabel frame];
     
     // detail sits at the bottom
     detailFrame.origin.y = totalFrame.size.height - detailFrame.size.height - totalFrame.origin.y;
@@ -233,11 +239,14 @@
     // big label sits above the map
     bigFrame.origin.y = mapFrame.origin.y - bigFrame.size.height;
     //scroll sits above the map and resizes for such
-    scrollFrame.size.height = mapFrame.origin.y + totalFrame.origin.y;
+    scrollFrame.size.height = mapFrame.origin.y;
     scrollFrame.origin.y = 0;
     //text is the same as scrollframe
     textFrame.size.height = mapFrame.origin.y;
     textFrame.origin.y = 0;
+    CGRect newFrame = [_usernameLabel frame];
+    newFrame.origin.x = newFrame.origin.y = 0;
+    [_usernameLabel setCenter:[_scrollView center]];
     
     [UIView animateWithDuration:0.4 animations:^{
         [_bigLabel setFrame:bigFrame];
@@ -245,6 +254,15 @@
         [_textView setFrame:textFrame];
         [_mapView setFrame:mapFrame];
         [_detailDescriptionLabel setFrame:detailFrame];
+    } completion:^(BOOL finished) {
+        // big label ends at the very bottom
+        if (finished) {
+            bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
+            [UIView animateWithDuration:0.5 animations:^{
+                [_bigLabel setFrame:bigFrame];
+                [_usernameLabel setFrame:newFrame];
+            }];
+        }
     }];
 }
 - (void)resizeWithoutMap
@@ -268,6 +286,9 @@
     //text is the same as scrollframe
     textFrame.size.height = detailFrame.origin.y;
     textFrame.origin.y = 0;
+    CGRect newFrame = [_usernameLabel frame];
+    newFrame.origin.x = newFrame.origin.y = 0;
+    [_usernameLabel setCenter:[_scrollView center]];
     
     [UIView animateWithDuration:0.4 animations:^{
         [_bigLabel setFrame:bigFrame];
@@ -277,10 +298,13 @@
         [_detailDescriptionLabel setFrame:detailFrame];
     } completion:^(BOOL finished) {
         // big label ends at the very bottom
-        bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
-        [UIView animateWithDuration:0.5 animations:^{
-            [_bigLabel setFrame:bigFrame];
-        }];
+        if (finished) {
+            bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
+            [UIView animateWithDuration:0.5 animations:^{
+                [_bigLabel setFrame:bigFrame];
+                [_usernameLabel setFrame:newFrame];
+            }];
+        }
     }];
 }
 
@@ -317,12 +341,14 @@
 }
 
 #pragma mark image
+static NSString* lastURLopened = Nil;
 
 // will get hit when the user chooses a URL from the text view
 // should load the image
 -(BOOL)openURL:(NSURL *)url
 {
-    NSLog(@"detail URL:%@",[url absoluteString]);
+    lastURLopened = [url absoluteString];
+    NSLog(@"detail URL:%@",lastURLopened);
     [self resizeWithoutMap];
     [self.mapView setHidden:YES];
     
@@ -349,6 +375,7 @@
                     return;
                 }
                 [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
+                [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
 
                 CGImageSourceRef  source = CGImageSourceCreateWithData((__bridge CFDataRef)picdata, NULL);
                 NSDictionary* metadataNew = (__bridge NSDictionary *) CGImageSourceCopyPropertiesAtIndex(source,0,NULL);
@@ -404,6 +431,7 @@
                             return;
                         }
                         [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
+                        [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
 
                         thisImageData = data;
                         [self.scrollView setHidden:NO];
@@ -700,6 +728,7 @@ static UIBarButtonItem *doSomethingButton;
     [theView addGestureRecognizer:swipeGesture];
 }
 
+#define ALERT_GETPRUNABLE (0x666)
 #define ALERT_DOSOMETHING (0x12345)
 #define ALERT_SAVEVIDEO (0x777)
 #define ALERT_ADDTOLIST (0xadd17)
@@ -707,6 +736,7 @@ static UIBarButtonItem *doSomethingButton;
 #define ALERT_TAG_NULL (0x1)
 #define DOSOMETHING_CANCEL @"CANCEL"
 #define DOSOMETHING_DELETE @"DELETE Tweet"
+#define DOSOMETHING_PRUNE @"add to pruner"
 #define DOSOMETHING_REFRESH @"Refesh Tweet Links"
 #define DOSOMETHING_FAVORITE @"Favorite Tweet"
 #define DOSOMETHING_DOCUMENTS @"View Saved Movies"
@@ -717,7 +747,7 @@ static UIBarButtonItem *doSomethingButton;
 - (void)doSomething:(id)sender
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        UIActionSheet* action = [[UIActionSheet alloc] initWithTitle:@"What to do?" delegate:self cancelButtonTitle:DOSOMETHING_CANCEL destructiveButtonTitle:DOSOMETHING_DELETE otherButtonTitles:DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_ADDLIST, DOSOMETHING_ADDSPECIALLIST, DOSOMETHING_REMOVEFROMLIST, DOSOMETHING_TWITTER, nil];
+        UIActionSheet* action = [[UIActionSheet alloc] initWithTitle:@"What to do?" delegate:self cancelButtonTitle:DOSOMETHING_CANCEL destructiveButtonTitle:DOSOMETHING_DELETE otherButtonTitles:DOSOMETHING_PRUNE, DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_ADDLIST, DOSOMETHING_ADDSPECIALLIST, DOSOMETHING_REMOVEFROMLIST, DOSOMETHING_TWITTER, nil];
         [action setTag:ALERT_DOSOMETHING];
         [action showFromBarButtonItem:doSomethingButton animated:YES];
         return;
@@ -726,7 +756,7 @@ static UIBarButtonItem *doSomethingButton;
                                                     message:@"Delete, ReGrab, Favorite, etc?"
                                                    delegate:self
                                           cancelButtonTitle: DOSOMETHING_CANCEL
-                                          otherButtonTitles: DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_ADDLIST, DOSOMETHING_ADDSPECIALLIST, DOSOMETHING_REMOVEFROMLIST, DOSOMETHING_TWITTER, nil];
+                                          otherButtonTitles: DOSOMETHING_PRUNE, DOSOMETHING_REFRESH, DOSOMETHING_FAVORITE, DOSOMETHING_DOCUMENTS, DOSOMETHING_ADDLIST, DOSOMETHING_ADDSPECIALLIST, DOSOMETHING_REMOVEFROMLIST, DOSOMETHING_TWITTER, nil];
     [alert setTag:ALERT_DOSOMETHING];
     [alert show];
 }
@@ -740,6 +770,21 @@ static UIBarButtonItem *doSomethingButton;
                 return;
             if ([chosen compare:DOSOMETHING_DELETE] == NSOrderedSame) {
                 [[self master] deleteTweet:[self detailItem]];
+            } else if ([chosen compare:DOSOMETHING_PRUNE] == NSOrderedSame) {
+                [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                    UIAlertView* alert = [[UIAlertView alloc] init];
+                    [alert setTitle:@"Add to Prune Rules"];
+                    [alert setTag:ALERT_GETPRUNABLE];
+                    [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
+                    UITextField * alertTextField = [alert textFieldAtIndex:0];
+                    [alertTextField setText:lastURLopened];
+                    [alert setMessage:@"This string will cause the picture to prune every time"];
+                    [alert addButtonWithTitle:@"Prune This URL"];
+                    [alert addButtonWithTitle:@"KILL ALL PRUNE INFO"];
+                    [alert setCancelButtonIndex:[alert addButtonWithTitle:DOSOMETHING_CANCEL]];
+                    [alert setDelegate:self];
+                    [alert show];
+                }];
             } else if ([chosen compare:DOSOMETHING_REFRESH] == NSOrderedSame) {
                 [[self master] refreshTweet:[self detailItem]];
             } else if ([chosen compare:DOSOMETHING_FAVORITE] == NSOrderedSame) {
@@ -798,6 +843,16 @@ static UIBarButtonItem *doSomethingButton;
             
             NSLog(@"removing user %@ from all lists in all accounts",twitterName);
             [[self master] removeUserFromAllLists:twitterName];
+        } else if ([alertView tag] == ALERT_GETPRUNABLE) {
+            NSString* chosen = [alertView buttonTitleAtIndex:buttonIndex];
+            if ([chosen isEqualToString:@"Prune This URL"]) {
+                NSString* prunable = [[alertView textFieldAtIndex:0] text];
+                
+                NSLog(@"adding prune action for %@",prunable);
+                [self addToPrune:prunable];
+            } else if ([chosen isEqualToString:@"KILL ALL PRUNE INFO"]) {
+                [self killAllPruning];
+            }
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -1030,6 +1085,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
     NSLog(@"MEMORY warning detail view");
+    [[self master] clearImageMemoryCache];
 }
 
 #pragma mark - Split view
@@ -1110,7 +1166,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
         if (isTumblr)
             urlset = [self removeTumblrDups:finalset];
         else
-            urlset = finalset;
+            urlset = [self pruneIdiots:finalset];
         NSLog(@"THE SET OF PICS:\n%@",[urlset description]);
         
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
@@ -1134,6 +1190,96 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
     } @catch (NSException *ee) {
         NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
     }
+}
+static NSMutableArray* pruneMe = Nil;
+- (void)addToPrune:(NSString*)str
+{
+    if (str == Nil || [str length] < 5)
+        return;
+    @try {
+        if (pruneMe == Nil) {
+            pruneMe = [[NSMutableArray alloc] initWithCapacity:10];
+            NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+            NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"URLprune.txt"];
+            //read the whole file as a single string
+            NSData *content = [NSData dataWithContentsOfFile:fileName];
+            NSString* jsonString = [[NSString alloc] initWithBytes:[content bytes] length:[content length] encoding:NSUTF8StringEncoding];
+            NSArray* fileStrings = [jsonString componentsSeparatedByString:@"\n"];
+            [fileStrings enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                if ([(NSString*)obj length] > 4)
+                    [pruneMe addObject:obj];
+            }];
+        }
+        __block BOOL found = NO;
+        [pruneMe enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            if ([str rangeOfString:obj].location != NSNotFound)
+                *stop = found = YES;
+        }];
+        if (!found)
+            [pruneMe addObject:str];
+        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"URLprune.txt"];
+        
+        //create file if it doesn't exist
+        if(![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+            [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
+        
+        NSError *error;
+        NSString* pruneString = [pruneMe componentsJoinedByString:@"\n"];
+        [pruneString writeToFile:fileName atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        NSLog(@"WROTE prunes=%@\n%@",error,pruneString);
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
+    }
+}
+- (void)killAllPruning
+{
+    @try {
+        pruneMe = [[NSMutableArray alloc] initWithCapacity:10];
+        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"URLprune.txt"];
+        //delete file if it exists
+        if([[NSFileManager defaultManager] fileExistsAtPath:fileName])
+            [[NSFileManager defaultManager] removeItemAtPath:fileName error:Nil];
+        NSLog(@"Killed pruning file %@",fileName);
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
+    }
+}
+- (NSMutableOrderedSet*)pruneIdiots:(NSMutableOrderedSet*)urlset
+{
+    NSMutableOrderedSet* retset = [[NSMutableOrderedSet alloc] initWithCapacity:1];
+    @try {
+        if (pruneMe == Nil) {
+            pruneMe = [[NSMutableArray alloc] initWithCapacity:10];
+            NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+            NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"URLprune.txt"];
+            //read the whole file as a single string
+            NSData *content = [NSData dataWithContentsOfFile:fileName];
+            NSString* jsonString = [[NSString alloc] initWithBytes:[content bytes] length:[content length] encoding:NSUTF8StringEncoding];
+            NSArray* fileStrings = [jsonString componentsSeparatedByString:@"\n"];
+            [fileStrings enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                if ([(NSString*)obj length] > 4)
+                    [pruneMe addObject:obj];
+            }];
+            NSLog(@"Read prunings:\n%@",pruneMe);
+        }
+        [urlset enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* theURL = obj;
+            __block bool bad = NO;
+            if (pruneMe != Nil) [pruneMe enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                if ([(NSString*)obj length] > 4 && [theURL rangeOfString:obj].location != NSNotFound) {
+                    *stop = bad = YES;
+                    NSLog(@"pruned %@",theURL);
+                }
+            }];
+            if (!bad)
+                [retset addObject:theURL];
+        }];
+    } @catch (NSException *ee) {
+        NSLog(@"Exception [%@] %@\n%@\n",[ee name],[ee reason],[NSThread callStackSymbols] );
+    }
+    return retset;
 }
 - (NSMutableOrderedSet*)removeTumblrDups:(NSMutableOrderedSet*)urlset
 {
@@ -1210,119 +1356,133 @@ static NSString* videoURL = Nil;
 NSTimer* videoTimer = Nil;
 - (IBAction)previewVideoButtonHit:(id)sender
 {
-    NSLog(@"PREVIEW VIDEO URL = %@",videoURL);
-    UIStoryboard *webviewSB = [UIStoryboard storyboardWithName:@"WebViewController"
-                                                         bundle:Nil];
-    WebViewController *webView = [webviewSB instantiateInitialViewController];
-    [self presentViewController:webView animated:YES completion:^{
-        [webView loadURL:videoURL];
-    }];
-
+    @try {
+        NSLog(@"PREVIEW VIDEO URL = %@",videoURL);
+        UIStoryboard *webviewSB = [UIStoryboard storyboardWithName:@"WebViewController"
+                                                            bundle:Nil];
+        WebViewController *webView = [webviewSB instantiateInitialViewController];
+        [self presentViewController:webView animated:YES completion:^{
+            [webView loadURL:videoURL];
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
 }
 
 - (void)saveVideo:(NSString*)additionalName
 {
-    NSLog(@"Needing to save %@ to file", videoURL);
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString* lastNamePart;
-    NSMutableString* realFileName = [[NSMutableString alloc] initWithString:videoURL.lastPathComponent];
-    NSInteger questionMarkLocation = [realFileName rangeOfString:@"?"].location;
-    if (questionMarkLocation != NSNotFound) {
-        [realFileName deleteCharactersInRange:NSMakeRange(questionMarkLocation, [realFileName length]-questionMarkLocation)];
-    }
-    lastNamePart = [NSString stringWithFormat:@"%@ %@%@", additionalName,
-                    realFileName, @".mp4"];
-    NSString* filename = [documentsDirectory
-                          stringByAppendingPathComponent:
-                          lastNamePart];
-    NSLog(@"the filename will be %@",filename);
-    
-    [[self activityView] startAnimating];
-    MovieGetter* getter = [[MovieGetter alloc] init];
-    [getter fetch:[NSURL URLWithString:videoURL]
-         intoFile:filename
-      urlCallback:^(long long dataSize, BOOL complete, BOOL success) {
-          if (complete) {
-              float datasize = dataSize / 1024.0 / 1024.0;
-              NSString* status = [NSString stringWithFormat:
-                                  @"download complete into %@, %.2f MB of data, %@",
-                                  filename, datasize, success ? @"SUCCESS" : @"FAIL"];
-              NSLog(@"%@",status);
-              if (success) {
-                  UIAlertView *alert =
-                  [[UIAlertView alloc] initWithTitle:@"Movie saved"
-                                             message:status
-                                            delegate:self
-                                   cancelButtonTitle:@"YAY"
-                                   otherButtonTitles: nil];
-                  [alert setCancelButtonIndex:0];
-                  [alert setTag:ALERT_TAG_NULL];
-                  [alert show];
-              } else {
-                  UIAlertView *alert =
-                  [[UIAlertView alloc] initWithTitle:@"Movie cannot be saved"
-                                             message:status
-                                            delegate:self
-                                   cancelButtonTitle:@"BOO"
-                                   otherButtonTitles: nil];
-                  [alert setCancelButtonIndex:0];
-                  [alert setTag:ALERT_TAG_NULL];
-                  [alert show];
+    @try {
+        NSLog(@"Needing to save %@ to file", videoURL);
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSString* lastNamePart;
+        NSMutableString* realFileName = [[NSMutableString alloc] initWithString:videoURL.lastPathComponent];
+        NSInteger questionMarkLocation = [realFileName rangeOfString:@"?"].location;
+        if (questionMarkLocation != NSNotFound) {
+            [realFileName deleteCharactersInRange:NSMakeRange(questionMarkLocation, [realFileName length]-questionMarkLocation)];
+        }
+        lastNamePart = [NSString stringWithFormat:@"%@ %@%@", additionalName,
+                        realFileName, @".mp4"];
+        NSString* filename = [documentsDirectory
+                              stringByAppendingPathComponent:
+                              lastNamePart];
+        NSLog(@"the filename will be %@",filename);
+        
+        [[self activityView] startAnimating];
+        MovieGetter* getter = [[MovieGetter alloc] init];
+        [getter fetch:[NSURL URLWithString:videoURL]
+             intoFile:filename
+          urlCallback:^(long long dataSize, BOOL complete, BOOL success) {
+              if (complete) {
+                  float datasize = dataSize / 1024.0 / 1024.0;
+                  NSString* status = [NSString stringWithFormat:
+                                      @"download complete into %@, %.2f MB of data, %@",
+                                      filename, datasize, success ? @"SUCCESS" : @"FAIL"];
+                  NSLog(@"%@",status);
+                  if (success) {
+                      UIAlertView *alert =
+                      [[UIAlertView alloc] initWithTitle:@"Movie saved"
+                                                 message:status
+                                                delegate:self
+                                       cancelButtonTitle:@"YAY"
+                                       otherButtonTitles: nil];
+                      [alert setCancelButtonIndex:0];
+                      [alert setTag:ALERT_TAG_NULL];
+                      [alert show];
+                  } else {
+                      UIAlertView *alert =
+                      [[UIAlertView alloc] initWithTitle:@"Movie cannot be saved"
+                                                 message:status
+                                                delegate:self
+                                       cancelButtonTitle:@"BOO"
+                                       otherButtonTitles: nil];
+                      [alert setCancelButtonIndex:0];
+                      [alert setTag:ALERT_TAG_NULL];
+                      [alert show];
+                  }
+                  
+                  [[[self master] queueLabel] setText:filename];
+                  [[self activityView] stopAnimating];
+              } else { // not complete
+                  float datasize = dataSize / 1024.0 / 1024.0;
+                  [[[self master] queueLabel] setText:[NSString stringWithFormat:@"%.2f MB",datasize]];
               }
-              
-              [[[self master] queueLabel] setText:filename];
-              [[self activityView] stopAnimating];
-          } else { // not complete
-              float datasize = dataSize / 1024.0 / 1024.0;
-              [[[self master] queueLabel] setText:[NSString stringWithFormat:@"%.2f MB",datasize]];
-          }
-      }];
+          }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
 }
 - (void)doDocumentsView
 {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSFileManager* fManager = [NSFileManager defaultManager];
-    NSArray* files = [fManager contentsOfDirectoryAtPath:documentsDirectory error:Nil];
-    NSMutableArray* filesizes = [[NSMutableArray alloc] initWithCapacity:[files count]];
-    
-    NSEnumerator *e = [files objectEnumerator];
-    NSString* file;
-    long long totalsize = 0;
-    while ((file = [e nextObject]) != Nil) {
-        NSDictionary* filevalues = [fManager attributesOfItemAtPath:[documentsDirectory stringByAppendingPathComponent:file] error:Nil];
-        NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
-        [filesizes addObject:fsize];
-        totalsize += [filevalues fileSize];
+    @try {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSFileManager* fManager = [NSFileManager defaultManager];
+        NSArray* files = [fManager contentsOfDirectoryAtPath:documentsDirectory error:Nil];
+        NSMutableArray* filesizes = [[NSMutableArray alloc] initWithCapacity:[files count]];
+        
+        NSEnumerator *e = [files objectEnumerator];
+        NSString* file;
+        long long totalsize = 0;
+        while ((file = [e nextObject]) != Nil) {
+            NSDictionary* filevalues = [fManager attributesOfItemAtPath:[documentsDirectory stringByAppendingPathComponent:file] error:Nil];
+            NSNumber* fsize = [NSNumber numberWithLongLong:[filevalues fileSize]];
+            [filesizes addObject:fsize];
+            totalsize += [filevalues fileSize];
+        }
+        
+        UIStoryboard *stsettings = [UIStoryboard storyboardWithName:@"DocumentViewController"
+                                                             bundle:Nil];
+        DocumentViewController *dview = [stsettings instantiateInitialViewController];
+        [dview setTheData:files];
+        [dview setFilesizes:filesizes];
+        [dview setTitle:@"Documents"];
+        [dview setDetailView:self];
+        [dview setModalTransitionStyle:UIModalTransitionStyleCoverVertical];
+        [dview setModalPresentationStyle:UIModalPresentationFullScreen];
+        [self presentViewController:dview animated:YES completion:Nil];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
     }
-    
-    UIStoryboard *stsettings = [UIStoryboard storyboardWithName:@"DocumentViewController"
-                                                         bundle:Nil];
-    DocumentViewController *dview = [stsettings instantiateInitialViewController];
-    [dview setTheData:files];
-    [dview setFilesizes:filesizes];
-    [dview setTitle:@"Documents"];
-    [dview setDetailView:self];
-    [dview setModalTransitionStyle:UIModalTransitionStyleCoverVertical];
-    [dview setModalPresentationStyle:UIModalPresentationFullScreen];
-    [self presentViewController:dview animated:YES completion:Nil];
 }
 
 - (void)openInTwitter:(Tweet*)tweet
 {
-    NSString* tweetID = [[tweet tweetID] description];
-    NSString* tweetuser = [tweet username];
-    NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@", tweetuser, tweetID];
-    NSLog(@"twitter open: %@", url);
-    UIStoryboard *webviewSB = [UIStoryboard storyboardWithName:@"WebViewController"
-                                                        bundle:Nil];
-    WebViewController *webView = [webviewSB instantiateInitialViewController];
-    [self presentViewController:webView animated:YES completion:^{
-        [webView shiftBelowButton];
-        [webView loadURL:url];
-    }];
-    
+    @try {
+        NSString* tweetID = [[tweet tweetID] description];
+        NSString* tweetuser = [tweet username];
+        NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@", tweetuser, tweetID];
+        NSLog(@"twitter open: %@", url);
+        UIStoryboard *webviewSB = [UIStoryboard storyboardWithName:@"WebViewController"
+                                                            bundle:Nil];
+        WebViewController *webView = [webviewSB instantiateInitialViewController];
+        [self presentViewController:webView animated:YES completion:^{
+            [webView shiftBelowButton];
+            [webView loadURL:url];
+        }];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
 }
 
 
@@ -1361,6 +1521,7 @@ NSTimer* videoTimer = Nil;
                         callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
                             [[[self master] webQueue] addOperationWithBlock:^{
                                 [[self master] imageData:imageData forURL:urlstr];
+                                [[self master] keepTrackofReadURLs:urlstr];
                             }];
                         }];
             } else {
@@ -1378,6 +1539,7 @@ NSTimer* videoTimer = Nil;
                                       iview:iview
                                       sview:Nil
                                      button:Nil animate:NO];
+                [[self master] keepTrackofReadURLs:urlstr];
             }
             
         }];

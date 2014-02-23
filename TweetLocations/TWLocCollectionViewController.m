@@ -25,7 +25,7 @@
         int idx = [indexPath row];
         [[cell theImage] setImage:[[self master] redX]];
         Tweet* tweet = [[self master] tweetAtIndex:idx];
-        NSString* urlstr = [tweet url];
+        NSString* urlstr = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];
         if (urlstr == Nil)
             return cell;
         [[[self master] webQueue] addOperationWithBlock:^{
@@ -151,7 +151,7 @@ static NSString* videoURL = Nil;
             
             TWLocPicCollectionCell* cell = (TWLocPicCollectionCell*)[collectionView cellForItemAtIndexPath:indexPath];
             //UIImage* image = [[cell theImage] image];
-            NSString* url = [tweet url];
+            NSString* url = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];;
             NSData* imageData = [[self master] imageData:url];
             UIImage *image = [[UIImage alloc] initWithData:imageData];
             if (imageData != Nil && image != Nil) [self doMainBlock:^{

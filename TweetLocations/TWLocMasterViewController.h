@@ -34,7 +34,6 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
     NSString* twitterAccountName;
     @private
     ACAccount* twitterAccount;
-    //long long twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
     
     NSDictionary* lists;
     NSMutableDictionary* maxIDEachList;
@@ -76,7 +75,11 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
 - (BOOL)openURL:(NSURL *)url;
 - (void)killMax;
 
+- (void)stowMinMaxIDs;
+
 - (TWIMAGE*)getImageServer;
+- (void)clearImageMemoryCache;
+
 - (NSData*)imageData:(NSString*)url;
 - (void)imageData:(NSData*)data forURL:(NSString*)url;
 - (void)backgroundImageData:(NSData*)data forURL:(NSString*)url;
