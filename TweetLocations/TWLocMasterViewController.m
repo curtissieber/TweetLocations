@@ -522,7 +522,7 @@ static NSMutableArray* urlQueue = Nil;
                 [tweet setUrl:[tweet origURL]];
             }];
         } else {
-            NSArray* urls = [TWLocBigDetailViewController staticGetURLs:[tweet tweet]];
+            NSArray* urls = [URLProcessor getURLs:[tweet tweet]];
             if ([urls count] > 0) {
                 [_updateQueue addOperationWithBlock:^{
                     [tweet setUrl:[urls objectAtIndex:0]];
@@ -1726,7 +1726,7 @@ static NSMutableDictionary* minMaxDict = Nil;
 
 - (void)setAllTweetsRead:(id)sender
 {
-    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"All Done?" message:@"Set all tweets to READ, or delete images?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"TWEETS READ", @"PARTIAL SET2READ", @"DELETE IMAGES", nil];
+    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"All Done?" message:@"Set all tweets to READ, or delete images?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"PARTIAL SET2READ", @"DELETE IMAGES", @"TWEETS READ", nil];
     [alert setTag:ALERT_SETALLREAD];
     [alert show];
     return; // don't delete, don't set things to "read" state
@@ -1751,10 +1751,13 @@ static NSMutableDictionary* minMaxDict = Nil;
             while ((tweet = [e nextObject]) != Nil) {
                 if ([[tweet hasBeenRead] boolValue] == NO) {
                     if ([[tweet locationFromPic] boolValue] == NO) {
-                        if (username == Nil)
+                        if (username == Nil) {
                             [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
-                        else if ([username isEqualToString:[tweet username]])
+                            [self keepTrackofReadURLs:[tweet url]];
+                        } else if ([username isEqualToString:[tweet username]]) {
                             [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                            [self keepTrackofReadURLs:[tweet url]];
+                        }
                     }
                 }
             }
@@ -2588,7 +2591,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         for (NSString* thisURL = [urlEnum nextObject]; thisURL != Nil && [thisURL length] > 4 ; thisURL = [urlEnum nextObject]) {
             if (replaceURL == Nil &&
                 [tweet origHTML] != Nil &&
-                [TWLocDetailViewController imageExtension:thisURL] == NO) {
+                [URLProcessor imageExtensionURL:thisURL] == NO) {
                 // this must be the first grab, but we've already tried to grab before
                 // and it's not an image, so let's just forget it
                 continue;
@@ -2602,7 +2605,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                                                executing = NO; finished = YES;
                                                return;
                                            }
-            if ([TWLocBigDetailViewController imageExtension:replaceURL]) {
+            if ([URLProcessor imageExtensionURL:replaceURL]) {
                 [self tryImage];
             } else {
                 NSURL* url = [NSURL URLWithString:thisURL];
@@ -2623,18 +2626,22 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 if (html != Nil) {
                     [html appendString:@"\n"];
                     [html appendString:[tweet tweet]];
-                    NSString* replace = [TWLocBigDetailViewController staticFindJPG:html theUrlStr:thisURL];
+                    NSMutableArray* urlStrs = [URLProcessor getURLs:html];
+                    NSString* replace = [URLProcessor sortURLs:urlStrs fromUrl:thisURL];
+                    [html setString:[urlStrs componentsJoinedByString:@"\n\n"]];
                     if ([tweet origHTML] == Nil)
                         [tweet setOrigHTML:html];
                     else
                         [tweet setOrigHTML:[NSString stringWithFormat:@"%@%@", [tweet origHTML], html]];
+                    if (replace == Nil)
+                        replace = [URLProcessor bestURL:urlStrs forURL:thisURL];
                     if (replace != Nil) {
                         [[master updateQueue] addOperationWithBlock:^{
                             [tweet setUrl:replace];
                         }];
                         NSLog(@"URL_REPLACE %@",replace);
                         replaceURL = replace;
-                        if ([TWLocBigDetailViewController imageExtension:replaceURL])
+                        if ([URLProcessor imageExtensionURL:replaceURL])
                             [self tryImage];
                         else {
                             TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet
@@ -2749,8 +2756,6 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                 [[cell theImage] setImage:image];
             }];
-            //NSArray* array = [NSArray arrayWithObject:[master.fetchedResultsController indexPathForObject:tweet]];
-            //[[colView collectionView] reloadItemsAtIndexPaths:array];
         }
         
     } @catch (NSException *eee) {
@@ -2777,11 +2782,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             executing = NO; finished = YES;
             return;
         }
-        if ([TWLocDetailViewController imageExtension:replaceURL]) {
+        if ([URLProcessor imageExtensionURL:replaceURL]) {
             [self tryImage];
-            //[[NSOperationQueue mainQueue] addOperationWithBlock:^{
-            //    [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
-            //}];
         }
         
         [[master updateQueue] addOperationWithBlock:^{

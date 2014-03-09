@@ -11,7 +11,7 @@
 
 @implementation TWLocDetailViewController
 
-+ (BOOL)imageExtension:(NSString*)urlStr
+/*+ (BOOL)imageExtension:(NSString*)urlStr
 {
     NSRange checkRange = NSMakeRange([urlStr length]-5, 5);
     if ([urlStr compare:@".jpeg" options:NSCaseInsensitiveSearch range:checkRange] == NSOrderedSame)
@@ -31,9 +31,9 @@
         return YES;
     //NSLog(@"No");
     return NO;
-}
+}*/
 
-+ (BOOL)isVideoFileURL:(NSString*)url
+/*+ (BOOL)isVideoFileURL:(NSString*)url
 {
     if ([url rangeOfString:@"tumblr.com/video_file/"].location != NSNotFound)
         return YES;
@@ -48,9 +48,9 @@
             return NO;
     }
     return YES;
-}
+}*/
 
-+ (NSMutableArray*)staticGetURLs:(NSString*)html
+/*+ (NSMutableArray*)staticGetURLs:(NSString*)html
 {
     NSMutableArray* strResults = [[NSMutableArray alloc] initWithCapacity:10];
     NSDataDetector* detector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:Nil];
@@ -76,9 +76,9 @@
         }
     }];
     return strResults;
-}
+}*/
 
-+ (NSArray*)sorts {
+/*+ (NSArray*)sorts {
     static NSArray* jpgSorted = Nil;
     if (jpgSorted == Nil)
         jpgSorted = [[NSArray alloc] initWithObjects:
@@ -203,7 +203,7 @@
         return replaceStr;
     }
     return Nil;
-}
+}*/
 
 - (BOOL)openURL:(NSURL *)url {
     NSLog(@"NEED TO OVERRIDE openURL!!! in %@",[self class]);

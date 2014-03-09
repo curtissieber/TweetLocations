@@ -1,6 +1,4 @@
-Making the "gets" into three parts.  Timeline, lists, and otherLists (other account)
-I think the lists are stymied by the other gets, as far as maxid goes.
-- fixed that, I think.  all lists are remembering themselves well
-- dropped some link checking in web view to see if that helps memory
-- made some limits for disk and memory image caching
-
+working to make the "keeptrackof readURLs" work better, seeing hundreds leftover after
+    probably caused by partial set2read
+    seems better, still working
+made a compiled set of URLProcessor routines

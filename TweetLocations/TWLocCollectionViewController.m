@@ -9,6 +9,7 @@
 #import "TWLocCollectionViewController.h"
 #import "TWLocPicCollectionCell.h"
 #import "PhotoGetter.h"
+#import "URLFetcher.h"
 #import "WebViewController.h"
 
 @interface TWLocCollectionViewController ()
@@ -113,7 +114,7 @@ static NSString* videoURL = Nil;
         __block bool hasVideo = NO;
         [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
             NSString* theURL = obj;
-            if ([TWLocDetailViewController isVideoFileURL:theURL]){
+            if ([URLProcessor isVideoFileURL:theURL]){
                 hasVideo = *stop = YES;
                 videoURL = theURL;
                 NSLog(@"VIDEO URL = %@",theURL);

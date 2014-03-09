@@ -22,10 +22,10 @@ typedef void(^mainBlockToDo)(void);
 @property (strong, nonatomic) IBOutlet UITextView* activityLabel;
 
 - (BOOL)openURL:(NSURL *)url;
-+ (NSMutableArray*)staticGetURLs:(NSString*)html;
-+ (BOOL)isVideoFileURL:(NSString*)url;
-+ (BOOL)imageExtension:(NSString*)urlStr;
-+ (NSString*)staticFindJPG:(NSString*)html theUrlStr:(NSString*)url;
+//+ (NSMutableArray*)staticGetURLs:(NSString*)html;
+//+ (BOOL)isVideoFileURL:(NSString*)url;
+//+ (BOOL)imageExtension:(NSString*)urlStr;
+//+ (NSString*)staticFindJPG:(NSString*)html theUrlStr:(NSString*)url;
 - (void)doMainBlock:(mainBlockToDo)block;
 
 @end

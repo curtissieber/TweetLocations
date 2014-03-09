@@ -147,6 +147,8 @@
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             @try {
                 if (imageData != Nil) {
+                    if ([[tweet tweet] rangeOfString:@"@"].location != NSNotFound)
+                        [_usernameLabel setText:[NSString stringWithFormat:@"%@🐣🐣🐣",[_usernameLabel text]]];
                     thisImageData = imageData;
                     UIImage *image = [[UIImage alloc] initWithData:imageData];
                     
@@ -162,6 +164,7 @@
                                           iview:self.imageView
                                           sview:self.scrollView
                                          button:self.sizeButton animate:YES];
+                    [[self master] keepTrackofReadURLs:thisURL];
 
                     [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
                     [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
@@ -175,10 +178,10 @@
                     }
                     
                     [[self activityView] stopAnimating];
-                    if ([tweet origHTML] == Nil)
+                    /*if ([tweet origHTML] == Nil)
                         [self handleURL:[tweet origURL]];
-                    else
-                        [self checkForVideo:[NSSet setWithArray:[[tweet origHTML] componentsSeparatedByString:@"\n"]]];
+                    else*/
+                        [self checkForVideo:[URLProcessor getURLs:[tweet origHTML]]];
                 } else if ([thisURL length] > 4) {
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateNormal];
                     [[self sizeButton] setTitle:@"no pic" forState:UIControlStateHighlighted];
@@ -333,7 +336,7 @@
             [self.textView setText:@"CONNECTION FAILED"];
         }
         [[self activityView] stopAnimating];
-        if ([TWLocBigDetailViewController imageExtension:url]) {
+        if ([URLProcessor imageExtensionURL:url]) {
             [self openURL:[NSURL URLWithString:url]];
             return;
         }
@@ -354,7 +357,7 @@ static NSString* lastURLopened = Nil;
     
     Tweet* originalTweet = [self detailItem];
     NSString* urlStr = [url description];
-    if (![TWLocBigDetailViewController imageExtension:urlStr]) {
+    if (![URLProcessor imageExtensionURL:urlStr]) {
         [self handleURL:urlStr]; // just grab the URL flat-up
     }
     
@@ -370,6 +373,7 @@ static NSString* lastURLopened = Nil;
                     [PhotoGetter setupGIF:image iview:self.imageView sview:self.scrollView button:self.sizeButton rawData:picdata animate:YES];
                 else
                     [PhotoGetter setupImage:image iview:self.imageView sview:self.scrollView button:self.sizeButton animate:YES];
+                [[self master] keepTrackofReadURLs:urlStr];
                 if (originalTweet != [self detailItem]) { // oops we moved !!
                     [[self activityView] stopAnimating];
                     return;
@@ -454,10 +458,12 @@ static NSString* lastURLopened = Nil;
                                 [[self detailItem] setLongitude:[NSNumber numberWithDouble:longitude]];
                                 [[self detailItem] setUrl:urlStr];
                             }];
+                            [[self master] keepTrackofReadURLs:urlStr];
                         } else {
                             [[[self master] updateQueue] addOperationWithBlock:^{
                                 [[self detailItem] setUrl:urlStr];
                             }];
+                            [[self master] keepTrackofReadURLs:urlStr];
                         }
                         
                         [[self activityView] stopAnimating];
@@ -469,14 +475,15 @@ static NSString* lastURLopened = Nil;
 
 - (NSMutableArray*)getURLs:(NSString*)html
 {
-    return [TWLocBigDetailViewController staticGetURLs:html];
+    return [URLProcessor getURLs:html];
 }
 
 - (void)findJPG:(NSMutableString*)html theUrlStr:(NSString*)url
 {
-    NSString* replace = [TWLocBigDetailViewController staticFindJPG:html theUrlStr:url];
+    NSMutableArray* urlStrs = [URLProcessor getURLs:html];
+    NSString* replace = [URLProcessor sortURLs:urlStrs fromUrl:url];
     [self.textView setText:html];
-    [self checkForVideo:[NSSet setWithArray:[html componentsSeparatedByString:@"\n"]]];
+    [self checkForVideo:urlStrs];
     if ([[self detailItem] origHTML] == Nil ||
         [url rangeOfString:@".tumblr.com/image/"].location != NSNotFound) {
         [[[self master] updateQueue] addOperationWithBlock:^{
@@ -486,7 +493,7 @@ static NSString* lastURLopened = Nil;
         [self setupPicturesCollection];
     }
     if (replace != Nil) {
-        if ([TWLocBigDetailViewController imageExtension:replace])
+        if ([URLProcessor imageExtensionURL:replace])
             [self openURL:[NSURL URLWithString:replace]];
         else
             [self handleURL:replace];
@@ -940,12 +947,8 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
             if ([self master] != Nil) {
                 __block NSArray* pics = _pictures;
                 if (pics && [pics count] > 1)
-                    [[[self master] webQueue] addOperationWithBlock:^{
-                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [[self master] keepTrackofReadURLs:obj];
-                            //[[self master] deleteImageData:obj];
-                            //  NSLog(@"deleting from pic collection %@",obj);
-                        }];
+                    [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [[self master] keepTrackofReadURLs:obj];
                     }];
                 [[self master] nextNewTweet];
             } else
@@ -962,12 +965,8 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
             if ([self master] != Nil) {
                 __block NSArray* pics = _pictures;
                 if (pics && [pics count] > 1)
-                    [[[self master] webQueue] addOperationWithBlock:^{
-                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [[self master] keepTrackofReadURLs:obj];
-                            //[[self master] deleteImageData:obj];
-                            // NSLog(@"deleting from pic collection %@",obj);
-                        }];
+                    [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [[self master] keepTrackofReadURLs:obj];
                     }];
                 [[self master] nextTweet];
             } else
@@ -984,12 +983,8 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
             if ([self master] != Nil) {
                 __block NSArray* pics = _pictures;
                 if (pics && [pics count] > 1)
-                    [[[self master] webQueue] addOperationWithBlock:^{
-                        [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                            [[self master] keepTrackofReadURLs:obj];
-                            //[[self master] deleteImageData:obj];
-                            // NSLog(@"deleting from pic collection %@",obj);
-                        }];
+                    [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        [[self master] keepTrackofReadURLs:obj];
                     }];
                 [[self master] prevTweet];
             } else
@@ -1125,7 +1120,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
         NSMutableOrderedSet* finalset = [[NSMutableOrderedSet alloc] initWithCapacity:[urlset count]];
         [urlset enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             NSString* theURL = obj;
-            if ([TWLocBigDetailViewController imageExtension:theURL]) {
+            if ([URLProcessor imageExtensionURL:theURL]) {
                 if ([theURL rangeOfString:@"twimg.com/profile_images"].location != NSNotFound)
                     return;
                 else if ([theURL rangeOfString:@"/hprofile"].location != NSNotFound)
@@ -1321,7 +1316,7 @@ static NSMutableArray* pruneMe = Nil;
 
 static NSString* videoURL = Nil;
 
-- (void)checkForVideo:(NSSet*)urls
+- (void)checkForVideo:(NSArray*)urls
 {
     @try {
         videoURL = Nil;
@@ -1331,13 +1326,14 @@ static NSString* videoURL = Nil;
             return;
         }
         __block bool hasVideo = NO;
-        [urls enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        [urls enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             NSString* theURL = obj;
-            if ([TWLocDetailViewController isVideoFileURL:theURL]){
+            if ([URLProcessor isVideoFileURL:theURL]){
                 hasVideo = *stop = YES;
                 videoURL = theURL;
                 NSLog(@"VIDEO URL = %@",theURL);
             }
+
         }];
         [_videoButton setHidden:(!hasVideo)];
         [_previewVideoButton setHidden:(!hasVideo)];
