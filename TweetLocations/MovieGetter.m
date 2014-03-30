@@ -33,7 +33,7 @@
         if (theCallback)
             theCallback(totalSize, YES, NO);
     }];
-    NSLog(@"began background task %d",self->bgtask);
+    NSLog(@"began background task %lu",(unsigned long)self->bgtask);
     NSURLConnection *theConnection=[[NSURLConnection alloc] initWithRequest:theRequest delegate:self];
     if (theConnection) {
         // Create the NSMutableData to hold the received data.
@@ -84,7 +84,7 @@
                 if (theCallback)
                     theCallback(totalSize, YES, NO);
             }];
-            NSLog(@"began task %d and will end task %d that is %f seconds old",self->bgtask,oldTask,CACurrentMediaTime() - self->bgTaskTime);
+            NSLog(@"began task %lu and will end task %lu that is %f seconds old",(unsigned long)self->bgtask,(unsigned long)oldTask,CACurrentMediaTime() - self->bgTaskTime);
             self->bgTaskTime = CACurrentMediaTime();
             [[UIApplication sharedApplication] endBackgroundTask:oldTask];
         }
@@ -116,7 +116,7 @@
     NSLog(@"Succeeded! Saved to file %@", saveToThisFile);
     
     [[UIApplication sharedApplication] endBackgroundTask:bgtask];
-    NSLog(@"ended background task %d",self->bgtask);
+    NSLog(@"ended background task %lu",(unsigned long)self->bgtask);
     if (theCallback)
         theCallback(totalSize, YES, YES);
 }

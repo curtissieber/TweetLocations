@@ -165,7 +165,7 @@ static AnimatedGif * instance;
 	
     // Copy the read bytes into a local buffer on the stack
     // For easy byte access in the following lines.
-    int length = [GIF_buffer length];
+    int length = (int)[GIF_buffer length];
 	unsigned char aBuffer[length];
 	[GIF_buffer getBytes:aBuffer length:length];
 	
@@ -449,7 +449,7 @@ static AnimatedGif * instance;
         
 		if (u != 0x00)
         {
-			[self GIFGetBytes:u];
+			[self GIFGetBytes:(int)u];
 			[GIF_string appendData: GIF_buffer];
         }
         else

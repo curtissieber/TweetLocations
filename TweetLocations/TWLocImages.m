@@ -216,12 +216,12 @@
         
         NSArray* results = [aFetchedResultsController fetchedObjects];
         if (url == Nil)
-            totalImages = [results count];
+            totalImages = (int)[results count];
         
         if (results != Nil && [results count] > 0) {
             //NSLog(@"FETCH for %@ is %d images",url,[results count]);
             if (url == Nil) {
-                NSLog(@"ALL IMAGES FETCH is %d images",[results count]);
+                NSLog(@"ALL IMAGES FETCH is %lu images",(unsigned long)[results count]);
                 return results;
             }
             return [results objectAtIndex:0];
@@ -239,7 +239,7 @@
         if (_managedObjectContext != nil) {
             if (theThread != Nil)
                 if ([theThread hash] != [[NSThread currentThread] hash]) {
-                    NSNumber* hash = [NSNumber numberWithUnsignedInt:[[NSThread currentThread] hash]];
+                    NSNumber* hash = [NSNumber numberWithUnsignedLong:[[NSThread currentThread] hash]];
                     NSManagedObjectContext* context = [_mocDict objectForKey:hash];
                     if (context == Nil) {
                         context = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSConfinementConcurrencyType];
@@ -258,7 +258,7 @@
             [_managedObjectContext setPersistentStoreCoordinator:coordinator];
             theThread = [NSThread currentThread];
             _mocDict = [[NSMutableDictionary alloc] initWithCapacity:0];
-            NSLog(@"setup initial image managedContext for thread %ud %@",[theThread hash],theThread);
+            NSLog(@"setup initial image managedContext for thread %lud %@",(unsigned long)[theThread hash],theThread);
         }
         return _managedObjectContext;
     } @catch (NSException *eee) {
@@ -393,7 +393,7 @@
             __block int deletecount = 0;
             [images enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                 [[master managedObjectContext] deleteObject:obj];
-                deletecount = idx;
+                deletecount = (int)idx;
                 //NSLog(@"deleted image %d", idx);
                 if (idx == 50) *stop = YES;
             }];

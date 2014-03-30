@@ -215,11 +215,11 @@
         }
         
         NSArray* results = [aFetchedResultsController fetchedObjects];
-        totalImages = [results count];
+        totalImages = (int)[results count];
         
         if (results != Nil && [results count] > 0) {
             //NSLog(@"FETCH for %@ is %d images",url,[results count]);
-            NSLog(@"ALL IMAGES FETCH is %d images",[results count]);
+            NSLog(@"ALL IMAGES FETCH is %lu images",(unsigned long)[results count]);
             NSEnumerator* e = [results objectEnumerator];
             ImageItem* item;
             while ((item = [e nextObject]) != Nil)
@@ -275,7 +275,7 @@
                     if ([item url] != Nil)
                         [[master urlDictionary] removeObjectForKey:[item url]];
                     [[master managedObjectContext] deleteObject:obj];
-                    NSLog(@"deleting image %d", index+i);
+                    NSLog(@"deleting image %lu", index+i);
                 }
             }
             [[master managedObjectContext] processPendingChanges];
@@ -289,7 +289,7 @@
             [master saveContext];
             [[NSOperationQueue currentQueue] addOperationWithBlock:^{
                 if ([images count] > index+i) {
-                    NSLog(@"still have %d images, queueing another delete", [images count]);
+                    NSLog(@"still have %lu images, queueing another delete", (unsigned long)[images count]);
                     TWFDeleteImagesOperation* dip = [[TWFDeleteImagesOperation alloc] initWithMaster:master andIndex:index+i];
                     [[master theOtherQueue] addOperation:dip];
                     [[master theOtherQueue] setSuspended:NO];

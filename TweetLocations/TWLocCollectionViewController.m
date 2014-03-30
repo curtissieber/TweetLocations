@@ -23,7 +23,7 @@
 {
     @try {
         TWLocPicCollectionCell* cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"PictureCell" forIndexPath:indexPath];
-        int idx = [indexPath row];
+        int idx = (int)[indexPath row];
         [[cell theImage] setImage:[[self master] redX]];
         Tweet* tweet = [[self master] tweetAtIndex:idx];
         NSString* urlstr = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];
@@ -46,7 +46,7 @@
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             PhotoGetter* getter = [[PhotoGetter alloc] init];
             if (picdata == Nil) {
-                NSLog(@"no data for image %@ at %d",urlstr,[[[self master] fetchedResultsController] indexPathForObject:tweet].row);
+                NSLog(@"no data for image %@ at %ld",urlstr,(long)[[[self master] fetchedResultsController] indexPathForObject:tweet].row);
                 [getter getPhoto:[NSURL URLWithString:urlstr]
                             into:iview
                           scroll:Nil
@@ -138,7 +138,7 @@ static NSString* videoURL = Nil;
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     @try {
-        int idx = [indexPath row];
+        int idx = (int)[indexPath row];
         NSLog(@"selected picture %d",idx);
         //[[self sizeButton] setEnabled:YES];
         //[[self sizeButton] setHidden:NO];

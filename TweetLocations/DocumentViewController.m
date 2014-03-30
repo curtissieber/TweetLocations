@@ -49,7 +49,7 @@ static NSString* theFileNameToShare = Nil;
 #define OPENINBUTTON @"Open In..."
 - (void)tableView:(UITableView *)theTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    int row = [indexPath row];
+    int row = (int)[indexPath row];
     NSString* filename = [theData objectAtIndex:row];
     NSLog(@"DID SELECT %@", filename);
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);

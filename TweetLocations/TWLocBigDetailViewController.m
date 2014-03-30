@@ -114,7 +114,7 @@
             [_usernameLabel setText:[tweet username]];
             [_usernameLabel sizeToFit];
             
-            if (latitude > -900 && longitude > -900 && [[self detailItem] locationFromPic]) {
+            if (latitude > -900 && longitude > -900 && [[[self detailItem] locationFromPic]boolValue]) {
                 [self resizeForMap];
                 [self displayMap:[tweet tweet] lat:latitude lon:longitude];
             } else {
@@ -170,7 +170,7 @@
                     [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
                     double latitude = [[tweet latitude] doubleValue];
                     double longitude = [[tweet longitude] doubleValue];
-                    if (latitude > -900 && longitude > -900 && [tweet locationFromPic]) {
+                    if (latitude > -900 && longitude > -900 && [[tweet locationFromPic] boolValue]) {
                         [self resizeForMap];
                         [self displayMap:[tweet timestamp]
                                      lat:latitude
@@ -247,8 +247,9 @@
     //text is the same as scrollframe
     textFrame.size.height = mapFrame.origin.y;
     textFrame.origin.y = 0;
-    CGRect newFrame = [_usernameLabel frame];
-    newFrame.origin.x = newFrame.origin.y = 0;
+    CGRect usernameFrame = [_usernameLabel frame];
+    usernameFrame.origin.x = 0;
+    usernameFrame.origin.y = mapFrame.origin.y - usernameFrame.size.height;
     [_usernameLabel setCenter:[_scrollView center]];
     
     [UIView animateWithDuration:0.4 animations:^{
@@ -263,7 +264,7 @@
             bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
             [UIView animateWithDuration:0.5 animations:^{
                 [_bigLabel setFrame:bigFrame];
-                [_usernameLabel setFrame:newFrame];
+                [_usernameLabel setFrame:usernameFrame];
             }];
         }
     }];
@@ -289,8 +290,9 @@
     //text is the same as scrollframe
     textFrame.size.height = detailFrame.origin.y;
     textFrame.origin.y = 0;
-    CGRect newFrame = [_usernameLabel frame];
-    newFrame.origin.x = newFrame.origin.y = 0;
+    __block CGRect usernameFrame = [_usernameLabel frame];
+    usernameFrame.origin.x = 0;
+    usernameFrame.origin.y = detailFrame.origin.y - usernameFrame.size.height;
     [_usernameLabel setCenter:[_scrollView center]];
     
     [UIView animateWithDuration:0.4 animations:^{
@@ -303,9 +305,10 @@
         // big label ends at the very bottom
         if (finished) {
             bigFrame.origin.y = totalFrame.size.height - bigFrame.size.height;
+            usernameFrame.origin.y = bigFrame.origin.y - usernameFrame.size.height;
             [UIView animateWithDuration:0.5 animations:^{
                 [_bigLabel setFrame:bigFrame];
-                [_usernameLabel setFrame:newFrame];
+                [_usernameLabel setFrame:usernameFrame];
             }];
         }
     }];
@@ -839,7 +842,7 @@ static UIBarButtonItem *doSomethingButton;
         } else if ([alertView tag] == ALERT_ADDTOLIST) {
             NSString* accountName = [alertView title];
             NSString* listName = [alertView buttonTitleAtIndex:buttonIndex];
-            int start = [listName rangeOfString:@"("].location;
+            int start = (int)[listName rangeOfString:@"("].location;
             listName = [listName stringByReplacingCharactersInRange:NSMakeRange(start - 1, [listName length]+1-start) withString:@""];
             NSString* twitterName = [[alertView textFieldAtIndex:0] text];
             
@@ -926,6 +929,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
 {
     //NSLog(@"endScrollDrag velocity=(%f,%f)",velocity.x,velocity.y);
     if (velocity.x > 5) {
+        //[self.master nextTweet]; // want next new, not next going forwards
         [self.master nextTweet];
     }
     if (velocity.x < -5) {
@@ -1037,14 +1041,14 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
             UITextPosition* textEnd = [[self textView] endOfDocument];
             UITextRange *trange = [_textView textRangeFromPosition:textBegining toPosition:textEnd];
             UITextPosition* position = [[self textView] closestPositionToPoint:location withinRange:trange];
-            int start = [[self textView] offsetFromPosition:textBegining toPosition:position];
+            int start = (int)[[self textView] offsetFromPosition:textBegining toPosition:position];
             NSString* text = [[self textView] text];
             if ([text length] > start) {
                 while (start > -1 && [text characterAtIndex:start] != '\n') start--;
                 start = start+1;
                 int end = start +1;
                 while (end < [text length] && [text characterAtIndex:end] != '\n') end++;
-                NSLog(@"Text length = %d getting url at %d-%d",[text length],start,end);
+                NSLog(@"Text length = %lu getting url at %d-%d",(unsigned long)[text length],start,end);
                 NSString* urlStr = [text substringWithRange:NSMakeRange(start, end-start)] ;
                 NSLog(@"PRESSED URL: %@",urlStr);
                 [self openURL:[NSURL URLWithString:urlStr]];
@@ -1175,7 +1179,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
                 [_picCollection setNeedsUpdateConstraints];
                 [_picCollection selectItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UICollectionViewScrollPositionCenteredHorizontally];
                 [_picCollection scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
-                [_picButton setTitle:[NSString stringWithFormat:@"%d Pics",[_pictures count]] forState:UIControlStateNormal];
+                [_picButton setTitle:[NSString stringWithFormat:@"%lu Pics",(unsigned long)[_pictures count]] forState:UIControlStateNormal];
                 [_picButton setHidden:NO];
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                     [_picCollection setHidden:YES];
@@ -1487,7 +1491,7 @@ NSTimer* videoTimer = Nil;
 {
     @try {
         TWLocPicCollectionCell* cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"picture" forIndexPath:indexPath];
-        int idx = [indexPath row];
+        int idx = (int)[indexPath row];
         //[[cell image] setImage:[_pictures objectAtIndex:idx]];
         [[cell theImage] setImage:[[self master] redX]];
         NSString* urlstr = [_pictures objectAtIndex:idx];
@@ -1555,7 +1559,7 @@ NSTimer* videoTimer = Nil;
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     @try {
-        int idx = [indexPath row];
+        int idx = (int)[indexPath row];
         NSLog(@"selected picture %d",idx);
         [[self sizeButton] setEnabled:YES];
         [[self sizeButton] setHidden:NO];

@@ -1,4 +1,7 @@
-working to make the "keeptrackof readURLs" work better, seeing hundreds leftover after
-    probably caused by partial set2read
-    seems better, still working
-made a compiled set of URLProcessor routines
+mostly getting rid of new warnings about int/ulong and such.
+made the final queue-images-delete be front-thread - they were stalling sometimes
+added geek statistics from the refresh menu, and fixed it
+fixed map coming up for non-photo locations
+made the swipe on the url screen to go to nextNew not only next
+moved the big username to the bottom (after animation)
+

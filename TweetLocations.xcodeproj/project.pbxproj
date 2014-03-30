@@ -88,7 +88,7 @@
 		E92C1A1217B807DB009CE9E3 /* WebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebViewController.m; sourceTree = "<group>"; };
 		E930DBDA1617415C005B6261 /* TweetLocations 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 2.xcdatamodel"; sourceTree = "<group>"; };
 		E947096216051074001B67C2 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
-		E948E73018B1159100DA8AE2 /* TweetLocations 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = file; path = "TweetLocations 7.xcdatamodel"; sourceTree = "<group>"; };
+		E948E73018B1159100DA8AE2 /* TweetLocations 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TweetLocations 7.xcdatamodel"; sourceTree = "<group>"; };
 		E948E73118B115F500DA8AE2 /* Tweet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tweet.h; sourceTree = "<group>"; };
 		E948E73218B115F500DA8AE2 /* Tweet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tweet.m; sourceTree = "<group>"; };
 		E94D54E317510C8D001D9CD2 /* TMCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TMCache.h; sourceTree = "<group>"; };
@@ -380,7 +380,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = TWLoc;
-				LastUpgradeCheck = 0450;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = Curtsybear.com;
 				TargetAttributes = {
 					E9DE57F415E94406005D75F6 = {
@@ -536,6 +536,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				ONLY_ACTIVE_ARCH = YES;
 				PROVISIONING_PROFILE = "35FE1A47-E225-4799-AEAD-15F0A904FF38";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "35FE1A47-E225-4799-AEAD-15F0A904FF38";
 				SDKROOT = iphoneos;
