@@ -1,7 +1,15 @@
-mostly getting rid of new warnings about int/ulong and such.
-made the final queue-images-delete be front-thread - they were stalling sometimes
-added geek statistics from the refresh menu, and fixed it
-fixed map coming up for non-photo locations
-made the swipe on the url screen to go to nextNew not only next
-moved the big username to the bottom (after animation)
+adding the scoring concept
+made the mapview setup call the non-mapview setup first, was having some things where two mapviews from the collectionview would cause the pic size to permanently be smaller forever.  Sigh.  It's a hack.
+    -- still can be wrong
+Added the possibility for the partialSet2Read to do by user or by size.  Right now it can kill the user, or it will drop everything below 899 size of pic (if it has a pic).  It dropping by pic value, it will not drop things if it finds a video file.
+Fixed the bad scoreForUser that was getting reported when dropping from all lists
+keeping the userscore in the tweet
+and sorting by: (picSize, ID) now
+not sorting by hasBeenRead, that was annoying
+also, not grabbing a list automatically, perhaps there are things to do first?
+fixed a lockup condition where the queue being deleted in the foreground was flonky
+    moved it to a buncha background queue deletes, ugh
+grabbing the first tweet upon startup
+was messing with the scroll scale, still not allowing it to be quite big enuf
+made the prevTweet obey the actual previsouly viewed tweet
 

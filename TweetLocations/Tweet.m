@@ -2,7 +2,7 @@
 //  Tweet.m
 //  TweetLocations
 //
-//  Created by Curtis Sieber on 2/16/14.
+//  Created by Curtis Sieber on 5/4/14.
 //  Copyright (c) 2014 Curtsybear.com. All rights reserved.
 //
 
@@ -12,11 +12,13 @@
 
 @implementation Tweet
 
+@dynamic acountListPrefix;
 @dynamic favorite;
 @dynamic fromGoogleReader;
 @dynamic googleID;
 @dynamic googleStream;
 @dynamic hasBeenRead;
+@dynamic hasPicSize;
 @dynamic latitude;
 @dynamic listID;
 @dynamic locationFromPic;
@@ -29,7 +31,7 @@
 @dynamic tweetID;
 @dynamic url;
 @dynamic username;
-@dynamic acountListPrefix;
+@dynamic userScore;
 @dynamic group;
 
 @end

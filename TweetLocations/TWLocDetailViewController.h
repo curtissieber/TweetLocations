@@ -27,5 +27,6 @@ typedef void(^mainBlockToDo)(void);
 //+ (BOOL)imageExtension:(NSString*)urlStr;
 //+ (NSString*)staticFindJPG:(NSString*)html theUrlStr:(NSString*)url;
 - (void)doMainBlock:(mainBlockToDo)block;
+- (void)updateTitle;
 
 @end

@@ -7,21 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "GoogleReader.h"
 
+@class TWLocMasterViewController;
 @class TWLocDetailViewController;
 
 #import <CoreData/CoreData.h>
 #import <Accounts/Accounts.h>
 #import "Tweet.h"
-#import "TWLocImages.h"
-#import "TWFastImages.h"
 #import "TMCache.h"
-
-// TWLocImages is the old, good one
-// TWFastImages is the new one I'm trying out
-// TMCache looks promising also
-#define TWIMAGE TMCache
 
 typedef void(^MasterCallback)(void);
 typedef void(^MasterListsCallback)(NSDictionary* dict);
@@ -39,7 +32,8 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
     NSMutableDictionary* maxIDEachList;
     NSMutableArray* queueGetArray;
     
-    TWIMAGE* imageServer;
+    TMCache* imageServer;
+    NSLock* imageLock;
 }
 
 @property (nonatomic, retain) NSString* tweetGroup;
@@ -48,10 +42,9 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
 @property (strong, nonatomic) IBOutlet UILabel* statusLabel;
 @property (strong, nonatomic) IBOutlet UILabel* queueLabel;
 @property (nonatomic) BOOL tweetLibrary;
-@property (nonatomic) BOOL googleReaderLibrary;
+@property (atomic) BOOL getBestPicNext;
 
 @property (strong, nonatomic) TWLocDetailViewController *detailViewController;
-@property (retain, nonatomic) GoogleReader* googleReader;
 
 @property (strong, nonatomic) NSFetchedResultsController *imageFetchController;
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
@@ -61,12 +54,12 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
 @property (retain, nonatomic) UIImage* pinLinkImage;
 @property (retain, nonatomic) UIImage* pinLinkPinImage;
 
-@property (strong, nonatomic)     NSOperationQueue* theQueue;
-@property (strong, nonatomic)     NSOperationQueue* theOtherQueue;
-@property (strong, nonatomic)     NSOperationQueue* webQueue;
+@property (strong, nonatomic)     NSOperationQueue* singleOpQueue;
+@property (strong, nonatomic)     NSOperationQueue* multipleOpQueue;
 @property (strong, nonatomic)     NSOperationQueue* updateQueue;
 @property (nonatomic, retain)     NSMutableSet* idSet;
-@property (nonatomic, retain)     NSMutableDictionary* tweetText;
+
+@property (nonatomic, retain) NSMutableArray* prevTweets;
 
 + (void)incrementTasks;
 + (void)decrementTasks;
@@ -77,7 +70,7 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
 
 - (void)stowMinMaxIDs;
 
-- (TWIMAGE*)getImageServer;
+- (TMCache*)getImageServer;
 - (void)clearImageMemoryCache;
 
 - (NSData*)imageData:(NSString*)url;
@@ -106,6 +99,12 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
 - (void)openInTwitter:(Tweet*)tweet;
 - (int)unreadTweets;
 - (Tweet*)tweetAtIndex:(int)index;
+
+- (NSMutableDictionary*)scoringDictionary;
+- (void)addScore:(NSInteger)addScore toName:(NSString*)username;
+- (void)saveScores;
+- (NSInteger)scoreForUser:(NSString*)username;
+
 @end
 
 @interface TweetOperation : NSOperation {
@@ -143,17 +142,5 @@ typedef void(^MasterListsCallback)(NSDictionary* dict);
     NSArray* timeline;
 }
 - (id)initWithMaster:(TWLocMasterViewController*)theMaster timeline:(NSArray*)theTimeline andList:(NSNumber*)theListID;
-
-@end
-@interface GoogleOperation : NSOperation {
-    TWLocMasterViewController* master;
-    NSArray* subscriptions;
-    NSString* subscriptionName;
-    NSString* streamName;
-    BOOL executing, finished;
-    NSArray* rssFeed;
-    NSMutableArray* tweetsToProcess;
-}
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscriptions:(NSArray*)theSubscriptions andStream:(NSString*)theStreamName;
 
 @end

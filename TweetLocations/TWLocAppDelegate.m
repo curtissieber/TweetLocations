@@ -63,6 +63,7 @@
         [self saveContext];
     }
     if (_masterViewController != Nil) {
+        [_masterViewController saveScores];
         [_masterViewController stowMinMaxIDs];
         [_masterViewController dropReadURLs:^{
             NSLog(@"dropped all read URL images");
@@ -100,6 +101,13 @@
 {
     // Saves changes in the application's managed object context before the application terminates.
     [self saveContext];
+    if (_masterViewController != Nil) {
+        [_masterViewController saveScores];
+        [_masterViewController stowMinMaxIDs];
+        [_masterViewController dropReadURLs:^{
+            NSLog(@"dropped all read URL images");
+        }];
+    }
 }
 
 - (void)saveContext

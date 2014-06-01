@@ -11,6 +11,26 @@
 
 @implementation TWLocDetailViewController
 
+- (void)updateTitle
+{
+    static int counter = 0;
+    if (counter != 0)
+        return;
+    counter = 1;
+    Tweet *tweet = self.detailItem;
+    [[[self master] updateQueue] addOperationWithBlock:^{
+        int unread = 0;
+        int tasks = 0;
+        unread = [[self master] unreadTweets];
+        tasks = [TWLocMasterViewController numTasks];
+        NSMutableString* titleString = [NSMutableString stringWithFormat:@"(%d unred) %@",unread,[tweet timestamp]];
+        if (tasks > 0)
+            [titleString appendString:[NSString stringWithFormat:@" %d",tasks]];
+        self.title = titleString;
+        counter = 0;
+    }];
+}
+
 /*+ (BOOL)imageExtension:(NSString*)urlStr
 {
     NSRange checkRange = NSMakeRange([urlStr length]-5, 5);

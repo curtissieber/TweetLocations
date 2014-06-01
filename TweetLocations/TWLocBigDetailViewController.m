@@ -40,8 +40,6 @@
             // Update the view.
             [self configureView];
             [[self detailItem] setHasBeenRead:[NSNumber numberWithBool:YES]];
-            if ([[[self detailItem] fromGoogleReader] boolValue] == YES)
-                [[[self master] googleReader] setRead:[[self detailItem] googleID] stream:[[self detailItem] googleStream]];
             [[self master] keepTrackofReadURLs:[[self detailItem] url]];
             NSManagedObjectContext *context = [[self master].fetchedResultsController managedObjectContext];
             [context processPendingChanges];
@@ -72,11 +70,7 @@
             [[self activityView] startAnimating];
             
             Tweet *tweet = self.detailItem;
-            int unread = 0;
-            if ([self master] != Nil)
-                unread = [[self master] unreadTweets];
-            NSString* titleString = [NSString stringWithFormat:@"(%d unred) %@",unread,[tweet timestamp]];
-            self.title = titleString;
+            [self updateTitle];
             
             NSMutableString* detail = [[NSMutableString alloc] initWithFormat:@"%@\n[%@] %@\n",
                                        [tweet tweet] ,[tweet username], [tweet acountListPrefix]];
@@ -125,7 +119,7 @@
             [self.imageView setImage:Nil];
             [self.textView setText:Nil];
         }
-        [[[self master] webQueue] addOperationWithBlock:^{
+        [[[self master] multipleOpQueue] addOperationWithBlock:^{
             [self imageConfig:[NSOperationQueue currentQueue]];
         }];
     } @catch (NSException *eee) {
@@ -228,6 +222,8 @@
 
 - (void)resizeForMap
 {
+    [self resizeWithoutMap];
+    
     CGRect totalFrame = [[self view] frame];
     CGRect detailFrame = [_detailDescriptionLabel frame];
     CGRect mapFrame = [_mapView frame];
@@ -365,7 +361,7 @@ static NSString* lastURLopened = Nil;
     }
     
     [[self activityView] startAnimating];
-    [[[self master] webQueue] addOperationWithBlock:^{
+    [[[self master] multipleOpQueue] addOperationWithBlock:^{
         NSData* picdata = [[self master] imageData:urlStr];
         if (picdata != Nil) {
             thisImageData = picdata;
@@ -440,10 +436,31 @@ static NSString* lastURLopened = Nil;
                         [self.view setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
                         [self.scrollView setBackgroundColor: [self.sizeButton.titleLabel backgroundColor]];
 
+                        NSInteger score = -1;
+                        CGSize size = [[self.imageView image] size];
+                        if (size.height > 900) score +=5;
+                        if (size.width > 900) score += 5;
+                        if (latitude > -900 && longitude > -900) score += 100;
+                        [[self master] addScore:score toName:[originalTweet username]];
+                        int picSize = MAX(size.height, size.width);
+                        if ([PhotoGetter isGIFtype:url])
+                            picSize *= 2;
+                        if (latitude > -900 && longitude > -900) picSize += 5000;
+                        __block bool hasVideo = NO;
+                        [[URLProcessor getURLs:[originalTweet origHTML]] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                            NSString* theURL = obj;
+                            if ([URLProcessor isVideoFileURL:theURL]){
+                                hasVideo = *stop = YES;
+                            }
+                        }];
+                        if (hasVideo) picSize += 500;
+                        [originalTweet setHasPicSize:[NSNumber numberWithInteger:picSize]];
+                        [originalTweet setUserScore:[NSNumber numberWithInteger:[[self master] scoreForUser:[originalTweet username]]]];
+                        
                         thisImageData = data;
                         [self.scrollView setHidden:NO];
                         if ([self master] != Nil) {
-                            [[[self master] webQueue] addOperationWithBlock:^{
+                            [[[self master] multipleOpQueue] addOperationWithBlock:^{
                                 [[self master] imageData:data forURL:urlStr];
                                 [[[self master].fetchedResultsController managedObjectContext] processPendingChanges];
                             }];
@@ -561,6 +578,9 @@ static MKCoordinateRegion region;
         if (imageData == Nil)
             imageData = [self.master imageData:[[self detailItem] url]];
         if (imageData != Nil) {
+            NSInteger score = 100;
+            [[self master] addScore:score toName:[[self detailItem] username]];
+            
             ALAssetsLibrary* library = [[ALAssetsLibrary alloc] init];
             [library writeImageDataToSavedPhotosAlbum:imageData metadata:Nil
                                       completionBlock:
@@ -842,17 +862,21 @@ static UIBarButtonItem *doSomethingButton;
         } else if ([alertView tag] == ALERT_ADDTOLIST) {
             NSString* accountName = [alertView title];
             NSString* listName = [alertView buttonTitleAtIndex:buttonIndex];
-            int start = (int)[listName rangeOfString:@"("].location;
-            listName = [listName stringByReplacingCharactersInRange:NSMakeRange(start - 1, [listName length]+1-start) withString:@""];
-            NSString* twitterName = [[alertView textFieldAtIndex:0] text];
-            
-            NSLog(@"adding user %@ to list %@ in account %@",twitterName,listName,accountName);
-            [[self master] addUser:twitterName toListSlug:listName inAccount:accountName];
+            if (! [listName isEqualToString:DOSOMETHING_CANCEL]) {
+                int start = (int)[listName rangeOfString:@"("].location;
+                listName = [listName stringByReplacingCharactersInRange:NSMakeRange(start - 1, [listName length]+1-start) withString:@""];
+                NSString* twitterName = [[alertView textFieldAtIndex:0] text];
+                
+                NSLog(@"adding user %@ to list %@ in account %@",twitterName,listName,accountName);
+                [[self master] addUser:twitterName toListSlug:listName inAccount:accountName];
+            }
         } else if ([alertView tag] == ALERT_REMOVEFROMLISTS) {
-            NSString* twitterName = [[alertView textFieldAtIndex:0] text];
-            
-            NSLog(@"removing user %@ from all lists in all accounts",twitterName);
-            [[self master] removeUserFromAllLists:twitterName];
+            NSString* listName = [alertView buttonTitleAtIndex:buttonIndex];
+            if (! [listName isEqualToString:DOSOMETHING_CANCEL]) {
+                NSString* twitterName = [[alertView textFieldAtIndex:0] text];
+                NSLog(@"removing user %@ from all lists in all accounts",twitterName);
+                [[self master] removeUserFromAllLists:twitterName];
+            }
         } else if ([alertView tag] == ALERT_GETPRUNABLE) {
             NSString* chosen = [alertView buttonTitleAtIndex:buttonIndex];
             if ([chosen isEqualToString:@"Prune This URL"]) {
@@ -876,12 +900,14 @@ static UIBarButtonItem *doSomethingButton;
         Tweet* tweet = [self detailItem];
         UIAlertView* alert = [[UIAlertView alloc] init];
         [alert setTitle:@"Remove user from all lists"];
+        NSInteger score = [[self master] scoreForUser:[tweet username]];
+        [alert setMessage:[NSString stringWithFormat:@"NOTE: current score for %@ is %ld",[tweet username],(long)score]];
         [alert setTag:ALERT_REMOVEFROMLISTS];
         [alert setAlertViewStyle:UIAlertViewStylePlainTextInput];
         UITextField * alertTextField = [alert textFieldAtIndex:0];
         [alertTextField setText:[tweet username]]; // default to current twitterer
         [alert addButtonWithTitle:@"Remove From All lists"];
-        [alert setCancelButtonIndex:[alert addButtonWithTitle:@"CANCEL"]];
+        [alert setCancelButtonIndex:[alert addButtonWithTitle:DOSOMETHING_CANCEL]];
         [alert setDelegate:self];
         [alert show];
     }];
@@ -918,7 +944,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
         [lists enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
             [alert addButtonWithTitle:key];
         }];
-        [alert setCancelButtonIndex:[alert addButtonWithTitle:@"CANCEL"]];
+        [alert setCancelButtonIndex:[alert addButtonWithTitle:DOSOMETHING_CANCEL]];
         [alert setDelegate:self];
         [alert show];
     }];
@@ -972,7 +998,7 @@ typedef enum {NEWFOLKSLIST = 1, SPECIALLIST = 2} ListType;
                     [pics enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                         [[self master] keepTrackofReadURLs:obj];
                     }];
-                [[self master] nextTweet];
+                [[self master] nextNewTweet];
             } else
                 NSLog(@"NIL MASTER IN tap");
         }
@@ -1372,6 +1398,8 @@ NSTimer* videoTimer = Nil;
 - (void)saveVideo:(NSString*)additionalName
 {
     @try {
+        [[self master] addScore:100 toName:[[self detailItem] username]];
+
         NSLog(@"Needing to save %@ to file", videoURL);
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
         NSString *documentsDirectory = [paths objectAtIndex:0];
@@ -1497,7 +1525,7 @@ NSTimer* videoTimer = Nil;
         NSString* urlstr = [_pictures objectAtIndex:idx];
         if (urlstr == Nil)
             return cell;
-        [[[self master] webQueue] addOperationWithBlock:^{
+        [[[self master] multipleOpQueue] addOperationWithBlock:^{
             [self collectionCellPicture:urlstr imageView:[cell theImage]];
         }];
         return cell;
@@ -1519,7 +1547,7 @@ NSTimer* videoTimer = Nil;
                           scroll:Nil
                        sizelabel:Nil
                         callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
-                            [[[self master] webQueue] addOperationWithBlock:^{
+                            [[[self master] multipleOpQueue] addOperationWithBlock:^{
                                 [[self master] imageData:imageData forURL:urlstr];
                                 [[self master] keepTrackofReadURLs:urlstr];
                             }];

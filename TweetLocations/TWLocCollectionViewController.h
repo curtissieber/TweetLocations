@@ -8,11 +8,15 @@
 
 #import "TWLocDetailViewController.h"
 #import "TWLocPicCollectionCell.h"
+#import "TWLocBigDetailViewController.h"
+#import "TWLocMasterViewController.h"
 
 @interface TWLocCollectionViewController : TWLocDetailViewController <UICollectionViewDataSource,
         UICollectionViewDelegate>
 
+@property (strong, nonatomic) TWLocMasterViewController* master;
 @property (strong, nonatomic) IBOutlet UICollectionView* collectionView;
 @property (strong, nonatomic) IBOutlet UIImageView* imageView;
+@property (strong, nonatomic) TWLocBigDetailViewController* bigDetail;
 
 @end

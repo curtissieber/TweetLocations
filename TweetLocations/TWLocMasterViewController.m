@@ -13,7 +13,7 @@
 #import "Image.h"
 #import "Tweet.h"
 #import "URLFetcher.h"
-#import "GoogleReader.h"
+#import "PhotoGetter.h"
 
 #import <Accounts/Accounts.h>
 #import <Twitter/Twitter.h>
@@ -28,12 +28,12 @@
 @implementation TWLocMasterViewController
 //@synthesize twitterIDMax, twitterIDMin, nextIDMax, maxTweetsToGet;
 
-#define ALERT_DUMMY (1)
-#define ALERT_NOTWITTER (666)
-#define ALERT_SELECTACCOUNT (1776)
-#define ALERT_SETALLREAD (1999)
-#define ALERT_GOOGLE (0xdead)
-#define ALERT_REFRESH (2001)
+#define ALERT_DUMMY (0x1)
+#define ALERT_NOTWITTER (0x666)
+#define ALERT_SELECTACCOUNT (0x1776)
+#define ALERT_SETALLREAD (0x1999)
+#define ALERT_PATRIALSETREAD (0xbeef)
+#define ALERT_REFRESH (0x2001)
 
 static int queuedTasks = 0;
 static UILabel* staticQueueLabel = Nil;
@@ -86,32 +86,59 @@ static bool NetworkAccessAllowed = NO;
     [self->maxIDEachList setObject:[NSNumber numberWithLongLong:-1] forKey:[NSNumber numberWithLongLong:0]];
 }
 
+- (BOOL)lockImageServer
+{
+    if (self->imageServer == Nil || self->imageLock == Nil) return NO;
+    int numTries = 20;
+    BOOL gotLock = [self->imageLock tryLock];
+    while (gotLock == NO && numTries > 0) {
+        numTries--;
+        NSLog(@"Waiting on image lock (%d)--",numTries);
+        [NSThread sleepForTimeInterval:0.25];
+        gotLock = [self->imageLock tryLock];
+    }
+    if (!gotLock)
+        NSLog(@"DEAD DEAD DEAD cannot lock image server!!");
+    return gotLock;
+}
+- (BOOL)unlockImageServer
+{
+    if (self->imageServer == Nil || self->imageLock == Nil) return NO;
+    BOOL wasntLocked = [self->imageLock tryLock];
+    [self->imageLock unlock];
+    if (wasntLocked) NSLog(@"OOPS OOPS OOPS released an unlocked image server");
+    return wasntLocked;
+}
+
 static int numImages = 0;
-- (TWIMAGE*)getImageServer
+- (TMCache*)getImageServer
 {
     if (self->imageServer == Nil) {
-#if (TWIMAGE != TMCache)
-        self->imageServer = [[TWIMAGE alloc] init];
-        [self->imageServer setMasterViewController:self];
-#else
-        self->imageServer = [[TMCache alloc] initWithName:@"ImageFile"];
-        if (self->imageServer != Nil) {
-            [[self->imageServer diskCache] setByteLimit:500*1024*1024];
-            NSLog(@"HDDISK Image Byte Count is %lu",(unsigned long)[[self->imageServer diskCache] byteLimit]);
-            [[self->imageServer memoryCache] setCostLimit:20*1024*1024];
-            NSLog(@"MEMORY Image Cost Count is %lu",(unsigned long)[[self->imageServer memoryCache] costLimit]);
-            NSLog(@"Created the cache, now counting it");
-            numImages = 0;
-            [[self->imageServer diskCache] enumerateObjectsWithBlock:^(TMDiskCache *cache, NSString *key, id<NSCoding> object, NSURL *fileURL) {
-                if (fileURL != Nil) {
-                    numImages++;
-                    if (numImages < 5)
-                        NSLog(@"FILEURL %@",fileURL);
-                }
-            }];
-            NSLog(@"enumerated the disk cache for %d items", numImages);
+        @try {
+            self->imageLock = [NSLock new];
+            self->imageServer = [[TMCache alloc] initWithName:@"ImageFile"];
+            if (! [self lockImageServer]) return Nil;
+            if (self->imageServer != Nil) {
+                [[self->imageServer diskCache] setByteLimit:500*1024*1024];
+                NSLog(@"HDDISK Image Byte Count is %lu",(unsigned long)[[self->imageServer diskCache] byteLimit]);
+                [[self->imageServer memoryCache] setCostLimit:20*1024*1024];
+                NSLog(@"MEMORY Image Cost Count is %lu",(unsigned long)[[self->imageServer memoryCache] costLimit]);
+                NSLog(@"Created the cache, now counting it");
+                numImages = 0;
+                [[self->imageServer diskCache] enumerateObjectsWithBlock:^(TMDiskCache *cache, NSString *key, id<NSCoding> object, NSURL *fileURL) {
+                    if (fileURL != Nil) {
+                        numImages++;
+                        if (numImages < 5)
+                            NSLog(@"FILEURL %@",fileURL);
+                    }
+                }];
+                NSLog(@"enumerated the disk cache for %d items", numImages);
+            }
+            [self unlockImageServer];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+            [self unlockImageServer];
         }
-#endif
     }
     return self->imageServer;
 }
@@ -119,31 +146,32 @@ static int numImages = 0;
 - (NSData*)imageData:(NSString*)url
 {
     @try {
-#if (TWIMAGE != TMCache)
-        return [[self getImageServer] imageData:url];
-#else
-        return [[self getImageServer] objectForKey:url];
-#endif
+        if (! [self lockImageServer]) return Nil;
+        NSData* retData = [[self getImageServer] objectForKey:url];
+        [self unlockImageServer];
+        return retData;
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
     }
     return Nil;
 }
 - (void)deleteImageData:(NSString*)url
 {
     @try {
-#if (TWIMAGE != TMCache)
-        [[self getImageServer] deleteImageData:url];
-#else
         if (url != Nil) {
+            if (! [self lockImageServer]) return;
             [[self getImageServer] objectForKey:url block:^(TMCache *cache, NSString *key, id object) {
                 if (object != Nil && key != Nil && [key length] > 0) {
-                    [[self getImageServer] removeObjectForKey:url];
+                    [[self getImageServer] removeObjectForKey:key block:^(TMCache *cache, NSString *key, id object) {
+                        NSLog(@"removed %@", key);
+                    }];
                     numImages--;
                 }
             }];
         } else {
             NSString* wasString = [NSString stringWithFormat:@"%d images (%0.2f MB) deleted from the local storage",[self numImages],[self sizeImages]/1024.0/1024.0];
+            if (! [self lockImageServer]) return;
             [[self getImageServer] removeAllObjects:^(TMCache *cache) {
                 NSLog(@"removed everything setting images to 0");
                 numImages = 0;
@@ -154,46 +182,50 @@ static int numImages = 0;
                 }];
             }];
         }
-#endif
+        [self unlockImageServer];
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
     }
 }
 - (void)imageData:(NSData*)data forURL:(NSString*)url
 {
     @try {
-#if (TWIMAGE != TMCache)
-        [[self getImageServer] imageData:data forURL:url];
-#else
+        if (! [self lockImageServer]) return;
         [[self getImageServer] setObject:data forKey:url];
+        [self unlockImageServer];
         numImages++;
-#endif
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
     }
 }
 - (void)backgroundImageData:(NSData *)data forURL:(NSString *)url
 {
     @try {
-#if (TWIMAGE != TMCache)
-        [[self getImageServer] imageData:data forURL:url];
-#else
+        if (! [self lockImageServer]) return;
         [[self getImageServer] setObject:data forKey:url block:^(TMCache *cache, NSString *key, id object) {
             NSLog(@"Stored %lu image %@",(unsigned long)[data length],url);
             numImages++;
+            [self unlockImageServer];
         }];
-#endif
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
     }
 }
 - (long long)sizeImages
 {
-#if (TWIMAGE != TMCache)
-    return [[self getImageServer] sizeImages];
-#else
-    return [[self getImageServer] diskByteCount];
-#endif
+    @try {
+        if (! [self lockImageServer]) return 0;
+        long long imageByteSize = [[self getImageServer] diskByteCount];
+        [self unlockImageServer];
+        return imageByteSize;
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
+    }
+    return 0;
 }
 - (int)numImages
 {
@@ -201,7 +233,14 @@ static int numImages = 0;
 }
 - (void)clearImageMemoryCache
 {
-    [[[self getImageServer] memoryCache] removeAllObjects];
+    @try {
+        if (! [self lockImageServer]) return;
+        [[[self getImageServer] memoryCache] removeAllObjects];
+        [self unlockImageServer];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        [self unlockImageServer];
+    }
 }
 
 - (void)checkToSeeIfAllDeleted
@@ -218,12 +257,13 @@ static int numImages = 0;
 }
 
 #pragma mark URL_WORKER
+#define MAX_IMG_QUEUE_FOR_DELETE (100)
 static NSMutableArray* urlQueue = Nil;
 - (void)keepTrackofReadURLs:(NSString*)url
 {
     @try {
         if (!urlQueue)
-            urlQueue = [[NSMutableArray alloc] initWithCapacity:100];
+            urlQueue = [[NSMutableArray alloc] initWithCapacity:MAX_IMG_QUEUE_FOR_DELETE];
         if (urlQueue ) {
             __block bool found = NO;
             [urlQueue enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
@@ -239,13 +279,13 @@ static NSMutableArray* urlQueue = Nil;
             }
             NSLog(@"remembering to remove %@",url);
             [urlQueue addObject:url];
-            if ([urlQueue count] < 100)
+            if ([urlQueue count] < MAX_IMG_QUEUE_FOR_DELETE)
                 return;
             int urlCount = (int)[urlQueue count];
             
             __block NSString* deleteURL = [urlQueue objectAtIndex:0];
             [urlQueue removeObjectAtIndex:0];
-            [_webQueue addOperationWithBlock:^{
+            [_multipleOpQueue addOperationWithBlock:^{
                 NSLog(@"Deleting image %d %@",urlCount,deleteURL);
                 [self deleteImageData:deleteURL];
             }];
@@ -292,7 +332,10 @@ static NSMutableArray* urlQueue = Nil;
     @try {
         NSLog(@"NEXT TWEET");
         NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
+        if (selected) [_prevTweets insertObject:selected atIndex:0];
+        if ([_prevTweets count] > 50) [_prevTweets removeObjectAtIndex:[_prevTweets count]-1];
         NSIndexPath* nextindex = [self nextIndex:selected forTable:self.tableView];
+        //nextindex = [NSIndexPath indexPathForRow:0 inSection:0]; // new, always try at top first
         if (nextindex == Nil)
             return;
         Tweet *object = [[self fetchedResultsController] objectAtIndexPath:nextindex];
@@ -328,7 +371,13 @@ static NSMutableArray* urlQueue = Nil;
     @try {
         NSLog(@"NEXT New TWEET");
         NSIndexPath* selected = [self.tableView indexPathForSelectedRow];
+        if (selected) [_prevTweets insertObject:selected atIndex:0];
+        if ([_prevTweets count] > 50) [_prevTweets removeObjectAtIndex:[_prevTweets count]-1];
         NSIndexPath* nextindex = [self nextIndex:selected forTable:self.tableView];
+        if (_getBestPicNext) {
+            nextindex = [NSIndexPath indexPathForRow:0 inSection:0]; // new, always try at top first
+            _getBestPicNext = NO;
+        }
         if (nextindex == Nil)
             return;
         Tweet *object;
@@ -378,6 +427,8 @@ static NSMutableArray* urlQueue = Nil;
     @try {
         NSLog(@"FIRST New TWEET");
         NSIndexPath* selected = [NSIndexPath indexPathForRow:0 inSection:0];
+        if (selected) [_prevTweets insertObject:selected atIndex:0];
+        if ([_prevTweets count] > 50) [_prevTweets removeObjectAtIndex:[_prevTweets count]-1];
         NSIndexPath* nextindex = selected;
         if (nextindex == Nil)
             return;
@@ -445,6 +496,15 @@ static NSMutableArray* urlQueue = Nil;
         NSIndexPath* nextindex = [self prevIndex:selected forTable:self.tableView];
         if (nextindex == Nil)
             return;
+        if ([_prevTweets count] > 0) {
+            nextindex = [_prevTweets objectAtIndex:0];
+            [_prevTweets removeObjectAtIndex:0];
+            if (([nextindex row] == [selected row]) &&
+                ([_prevTweets count] > 0)){
+                nextindex = [_prevTweets objectAtIndex:0];
+                [_prevTweets removeObjectAtIndex:0];
+            }
+        }
         @try {
             [self.tableView selectRowAtIndexPath:nextindex
                                         animated:YES
@@ -659,7 +719,7 @@ static NSMutableArray* urlQueue = Nil;
 - (void)queueTweetGet:(NSNumber*)listID
 {
     @try {
-        if (_theQueue) {
+        if (_singleOpQueue) {
             if ([[self.detailViewController activityLabel] isHidden]) {
                 [UIView animateWithDuration:0.4 animations:^{
                     [self.detailViewController activityLabel].hidden = NO;
@@ -695,8 +755,8 @@ static NSMutableArray* urlQueue = Nil;
                 [self deleteTweetDataFile];
             //[self setMinMaxIDs:listID min:_twitterIDMin max:_twitterIDMax next:_nextIDMax numToGet:_maxTweetsToGet];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:listID];
-            [_webQueue setSuspended:NO];
-            [_webQueue addOperation:getTweetOp];
+            [_multipleOpQueue setSuspended:NO];
+            [_multipleOpQueue addOperation:getTweetOp];
         }
     } @catch (NSException *eee) {
         NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
@@ -739,7 +799,9 @@ static NSMutableArray* urlQueue = Nil;
                     self->twitterAccount = account;
             }
             
-            [self refreshTweets:Nil];
+            // not going to auto do this [self refreshTweets:Nil];
+            [self getMinMaxIDs:Nil]; [self firstNewTweet:Nil]; // do this instead
+            [[_detailViewController activityLabel] setHidden:YES];
         }
         
         if (self->twitterAccount != Nil)
@@ -776,11 +838,6 @@ static NSMutableArray* urlQueue = Nil;
         if ([alertView tag] == ALERT_NOTWITTER) {
             // not allowed to exit
             NSLog(@"No twitter accounts.  I'm going to sit and stew.");
-            if (_googleReaderLibrary) {
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
-                [_webQueue addOperation:googleOp];
-                [_webQueue setSuspended:NO];
-            }
         }
         if ([alertView tag] == ALERT_SELECTACCOUNT) {
             NSString* accountName = [alertView buttonTitleAtIndex:buttonIndex];
@@ -814,6 +871,25 @@ static NSMutableArray* urlQueue = Nil;
                 NSLog(@"YES set all to read");
                 [self allTweetsNeedToBeSetToRead:Nil];
             } else if ([buttonNameHit isEqualToString:@"PARTIAL SET2READ"]) {
+                [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                    NSString* username = [[_detailViewController detailItem] username];
+                    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Choose a partial pruning" message:@"Set some tweets to READ, by name or size?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:[NSString stringWithFormat:@"KILL USER %@", username], @"SMALL PHOTO PRUNING", nil];
+                    [alert setTag:ALERT_PATRIALSETREAD];
+                    [alert show];
+                }];
+            } else if ([buttonNameHit isEqualToString:@"DELETE IMAGES"]) {
+                NSLog(@"deleting all images");
+                [_singleOpQueue addOperationWithBlock:^{
+                    [self deleteImageData:Nil]; // removes all image data
+                    [self checkForMaxTweets];
+                }];
+            }
+        }
+        if ([alertView tag] == ALERT_PATRIALSETREAD) {
+            NSString* buttonNameHit = [alertView buttonTitleAtIndex:buttonIndex];
+            if ([buttonNameHit isEqualToString:@"CANCEL"])
+                NSLog(@"don't set all to read");
+            else if ([buttonNameHit rangeOfString:@"KILL"].location != NSNotFound) {
                 NSString* username = [[_detailViewController detailItem] username];
                 [self allTweetsNeedToBeSetToRead:username];
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
@@ -821,11 +897,13 @@ static NSMutableArray* urlQueue = Nil;
                     [alert setTag:ALERT_DUMMY];
                     [alert show];
                 }];
-            } else if ([buttonNameHit isEqualToString:@"DELETE IMAGES"]) {
-                NSLog(@"deleting all images");
-                [_theQueue addOperationWithBlock:^{
-                    [self deleteImageData:Nil]; // removes all image data
-                    [self checkForMaxTweets];
+            } else if ([buttonNameHit rangeOfString:@"SMALL PHOTO"].location != NSNotFound) {
+                NSNumber* picSize = [NSNumber numberWithInt:899];
+                [self allTweetsNeedToBeSetToRead:picSize];
+                [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Setting tweets to read" message:[NSString stringWithFormat:@"setting all tweets smaller than %@ to read",picSize] delegate:self cancelButtonTitle:@"okay" otherButtonTitles: nil];
+                    [alert setTag:ALERT_DUMMY];
+                    [alert show];
                 }];
             }
         }
@@ -839,16 +917,6 @@ static NSMutableArray* urlQueue = Nil;
                 [self otherAccountRefreshTweets];
             } else if ([buttonNameHit isEqualToString:@"Geek Statistics" ]) {
                 [self geekStatistics];
-            } else if ([buttonNameHit isEqualToString:@"Google"]) {
-                if ([[self.detailViewController activityLabel] isHidden]) {
-                    [UIView animateWithDuration:0.4 animations:^{
-                        [self.detailViewController activityLabel].hidden = NO;
-                    }];
-                    [[self.detailViewController activityLabel] setText:@"Getting Google Items:"];
-                }
-                GoogleOperation* googleOp = [[GoogleOperation alloc] initWithMaster:self rssFeed:Nil orSubscriptions:Nil andStream:Nil];
-                [_webQueue addOperation:googleOp];
-                [_webQueue setSuspended:NO];
             }
         }
     } @catch (NSException *eee) {
@@ -897,8 +965,23 @@ static NSMutableArray* urlQueue = Nil;
         [keys enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             NSString* user = obj;
             NSNumber* num = [usernameDict valueForKey:user];
-            [geekString appendString:[NSString stringWithFormat:@"(%d) posted by %@\n",[num intValue],user]];
+            NSNumber* score = [[self scoringDictionary] objectForKey:user];
+            NSString* scoreString = @"";
+            if (score != Nil)
+                scoreString = [NSString stringWithFormat:@" [SCORE %d]", [score intValue]];
+            [geekString appendString:[NSString stringWithFormat:@"(%d) posted by %@ %@\n",[num intValue],user,scoreString]];
         }];
+        
+        [geekString appendString:@"\n\nCURRENT SCORES:\n"];
+        // report all scores
+        keys = [[self scoringDictionary] keysSortedByValueUsingSelector:@selector(compare:)];
+        keys = [[keys reverseObjectEnumerator] allObjects];
+        [keys enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* user = obj;
+            NSNumber* num = [[self scoringDictionary] valueForKey:user];
+            [geekString appendString:[NSString stringWithFormat:@" %@ score %d\n",user,[num intValue]]];
+        }];
+
         [[NSOperationQueue mainQueue] addOperationWithBlock:^{
             [[self.detailViewController activityLabel] setText:geekString];
             [[self.detailViewController activityLabel] setHidden:NO];
@@ -1002,6 +1085,8 @@ static NSMutableDictionary* minMaxDict = Nil;
 - (void)stowMinMaxIDs
 {
     @try {
+        if (minMaxDict == nil) return;
+        
         NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
         NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"minMaxIDs.dict"];
         //create file if it doesn't exist
@@ -1089,7 +1174,7 @@ static NSMutableDictionary* minMaxDict = Nil;
                      [self saveTweetDebugToFile:[NSString stringWithFormat:@"received %lu tweets\n", (unsigned long)[timeline count]]];
                      [self saveTweetDataToFile:responseData];
                      
-                     if (_theQueue != Nil) {
+                     if (_singleOpQueue != Nil) {
                          NSLog(@"adding storetweet size=%lu to the Queue", (unsigned long)[timeline count]);
                          StoreTweetOperation* storeTweetOp = [[StoreTweetOperation alloc] initWithMaster:self timeline:timeline andList:listID];
                          [_updateQueue setSuspended:NO];
@@ -1266,6 +1351,8 @@ static NSMutableDictionary* minMaxDict = Nil;
                         [tweet setTweet:theText];
                         [tweet setLatitude:[NSNumber numberWithDouble:latitude]];
                         [tweet setLongitude:[NSNumber numberWithDouble:longitude]];
+                        [tweet setHasPicSize:[NSNumber numberWithInt:0]];
+                        [tweet setUserScore:[NSNumber numberWithInteger:[self scoreForUser:username]]];
                         [tweet setUrl:theUrl];
                         [tweet setOrigURL:[[theUrl componentsSeparatedByString:@"\n"] firstObject]];
                         [tweet setOrigHTML:Nil];
@@ -1280,9 +1367,6 @@ static NSMutableDictionary* minMaxDict = Nil;
                         } else {
                             [tweet setListID:[NSNumber numberWithLongLong:0]];
                         }
-                        [tweet setFromGoogleReader:[NSNumber numberWithBool:YES]];
-                        [tweet setGoogleID:Nil];
-                        [tweet setGoogleStream:Nil];
                         acctString = [NSString stringWithFormat:@"%@/%@/",[self->twitterAccount username],acctString];
                         [tweet setAcountListPrefix:acctString];
                         
@@ -1329,13 +1413,13 @@ static NSMutableDictionary* minMaxDict = Nil;
             [self STATUS:status];
         }];
         
-        if (_theQueue != Nil && storedTweets > 0 &&
+        if (_singleOpQueue != Nil && storedTweets > 0 &&
             !([timeline count] < (TWEETREQUESTSIZE/2) || _maxTweetsToGet < 1)) {
             NSLog(@"adding another getTweet to the Queue");
             [self setMinMaxIDs:theListID min:_twitterIDMin max:_twitterIDMax next:_nextIDMax numToGet:_maxTweetsToGet];
             GetTweetOperation* getTweetOp = [[GetTweetOperation alloc] initWithMaster:self andList:theListID];
-            [_webQueue setSuspended:NO];
-            [_webQueue addOperation:getTweetOp];
+            [_multipleOpQueue setSuspended:NO];
+            [_multipleOpQueue addOperation:getTweetOp];
         } else {
             if (_nextIDMax > 0)
                 _twitterIDMax = _nextIDMax;
@@ -1393,7 +1477,7 @@ static NSMutableDictionary* minMaxDict = Nil;
                         NSEnumerator* e = [[self.fetchedResultsController fetchedObjects] objectEnumerator];
                         Tweet* tweet;
                         while ((tweet = [e nextObject]) != Nil) {
-                            if (_theQueue != Nil && NetworkAccessAllowed &&
+                            if (_singleOpQueue != Nil && NetworkAccessAllowed &&
                                 [[tweet hasBeenRead] boolValue] == NO) {
                                 NSIndexPath* indexPath = [self.fetchedResultsController indexPathForObject:tweet];
                                 if (indexPath != Nil) {
@@ -1401,8 +1485,8 @@ static NSMutableDictionary* minMaxDict = Nil;
                                                                                           index:indexPath
                                                                            masterViewController:self
                                                                                      replaceURL:Nil];
-                                    [_webQueue addOperation:top];
-                                    [_webQueue setSuspended:NO];
+                                    [_multipleOpQueue addOperation:top];
+                                    [_multipleOpQueue setSuspended:NO];
                                 }
                             }
                         }
@@ -1783,9 +1867,15 @@ static NSMutableDictionary* minMaxDict = Nil;
     [alert show];
     return; // don't delete, don't set things to "read" state
 }
-- (void)allTweetsNeedToBeSetToRead:(NSString*)username
+- (void)allTweetsNeedToBeSetToRead:(id)argument
 {
     @try {
+        NSString* username = Nil;
+        NSNumber* picSize = Nil;
+        if ([[argument class] isSubclassOfClass:[NSString class]])
+            username = argument;
+        if ([[argument class] isSubclassOfClass:[NSNumber class]])
+            picSize = argument;
         [_updateQueue addOperationWithBlock:^{
             NSManagedObjectContext *context = [self.fetchedResultsController managedObjectContext];
             NSEntityDescription *entity = [[self.fetchedResultsController fetchRequest] entity];
@@ -1800,17 +1890,40 @@ static NSMutableDictionary* minMaxDict = Nil;
             }
             Tweet* tweet = Nil;
             NSEnumerator* e = [results objectEnumerator];
+            int counter = 0;
             while ((tweet = [e nextObject]) != Nil) {
                 if ([[tweet hasBeenRead] boolValue] == NO) {
                     if ([[tweet locationFromPic] boolValue] == NO) {
-                        if (username == Nil) {
+                        if (username == Nil && picSize == Nil) {
                             [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
                             [self keepTrackofReadURLs:[tweet url]];
-                        } else if ([username isEqualToString:[tweet username]]) {
+                        } else if (username != Nil && [username isEqualToString:[tweet username]]) {
                             [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
                             [self keepTrackofReadURLs:[tweet url]];
+                        } else if (picSize != Nil) {
+                            if ([[tweet hasPicSize] intValue] > 0 && [[tweet hasPicSize] intValue] < [picSize intValue]) {
+                                __block bool hasVideo = NO;
+                                [[URLProcessor getURLs:[tweet origHTML]] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                                    NSString* theURL = obj;
+                                    if ([URLProcessor isVideoFileURL:theURL]){
+                                        hasVideo = *stop = YES;
+                                    }
+                                }];
+                                if (!hasVideo) { // retain movies
+                                    [tweet setHasBeenRead:[NSNumber numberWithBool:YES]];
+                                    [self keepTrackofReadURLs:[tweet url]];
+                                } else
+                                    NSLog(@"KEEPING %@ due to VIDEO %@", [tweet username], [tweet tweet]);
+                            } else
+                                NSLog(@"KEEPING %@ due to PIC SIZE %@", [tweet username], [tweet tweet]);
                         }
                     }
+                }
+                counter++;
+                if ((counter%250) == 0) {
+                    [self.tableView setNeedsDisplay];
+                    [context processPendingChanges];
+                    [NSThread sleepForTimeInterval:0.1];
                 }
             }
             [self.tableView setNeedsDisplay];
@@ -1828,7 +1941,7 @@ static NSMutableDictionary* minMaxDict = Nil;
             } @catch (NSException *eee) {
                 NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
             }
-            if (username == Nil) {
+            if (username == Nil && picSize == Nil) {
                 UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"ALL SET TO READ" message:@"All tweets have been set to READ" delegate:Nil cancelButtonTitle:@"OKAY" otherButtonTitles: nil];
                 [alert setTag:ALERT_DUMMY];
                 [alert show];
@@ -1857,7 +1970,7 @@ static NSMutableDictionary* minMaxDict = Nil;
             [self.tableView reloadData];
             
             [self checkForMaxTweets];
-            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Twitter or Google?" message:@"grab twitter, lists, or otherTwitter?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Lists", @"otherTwitter", @"Geek Statistics", nil];
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"TIMELINE or a list?" message:@"grab twitter, lists, or otherTwitter?" delegate:self cancelButtonTitle:@"CANCEL" otherButtonTitles:@"Twitter", @"Lists", @"otherTwitter", @"Geek Statistics", nil];
             [alert setTag:ALERT_REFRESH];
             [alert show];
         }];
@@ -1966,16 +2079,16 @@ static NSMutableDictionary* minMaxDict = Nil;
                 NSLog(@"sections=%lu row[0]=%d",(unsigned long)[sections count],rows);
                 if (rows > MAXTWEETS) {
                     NSLog(@"More than %d tweets in section %@, going to remove some", MAXTWEETS, [section name]);
-                    for (int i = rows-1; i > MAXTWEETS; i--) {
+                    for (int i = rows-1; i >= 0; i--) {
                         NSIndexPath* indexPath = [NSIndexPath indexPathForItem:i inSection:sect];
                         Tweet *tweet = [self.fetchedResultsController objectAtIndexPath:indexPath];
                         bool deleteMe = [[tweet hasBeenRead] boolValue];
-                        if (i < MAXTWEETS+100) {
+                        /*if (i < MAXTWEETS+100) {
                             if ([[tweet locationFromPic] boolValue] == YES)
                                 deleteMe = NO;
                             if ([[tweet favorite] boolValue] == YES)
                                 deleteMe = NO;
-                        }
+                        }*/
                         if (deleteMe) {
                             //NSLog(@"removing %d tweet %@",i,tweet);
                             __block NSString* url = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];
@@ -2076,6 +2189,7 @@ static NSMutableDictionary* minMaxDict = Nil;
 
 - (void)awakeFromNib
 {
+    [self getImageServer];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
         self.clearsSelectionOnViewWillAppear = NO;
         self.contentSizeForViewInPopover = CGSizeMake(320.0, 600.0);
@@ -2102,7 +2216,10 @@ static NSMutableDictionary* minMaxDict = Nil;
 
 - (void)viewDidLoad
 {
+    [self getImageServer];
+    _prevTweets = [[NSMutableArray alloc] init];
     [super viewDidLoad];
+    _getBestPicNext = YES;
     
     if ([[NSThread currentThread] hash] == [[NSThread mainThread] hash] ) {
         NSLog(@"dummy data imageData controller get:%@",[self imageData:@"dummy url"]);
@@ -2141,11 +2258,10 @@ static NSMutableDictionary* minMaxDict = Nil;
     staticQueueLabel = _queueLabel;
     self->queueGetArray = [[NSMutableArray alloc] initWithCapacity:0];
     _updateQueue = [NSOperationQueue mainQueue];
-    _webQueue = [[NSOperationQueue alloc] init];
-    [_webQueue setMaxConcurrentOperationCount:5];
-    _theQueue = [[NSOperationQueue alloc] init];
-    [_theQueue setMaxConcurrentOperationCount:1];
-    _theOtherQueue = Nil;
+    _multipleOpQueue = [[NSOperationQueue alloc] init];
+    [_multipleOpQueue setMaxConcurrentOperationCount:5];
+    _singleOpQueue = [[NSOperationQueue alloc] init];
+    [_singleOpQueue setMaxConcurrentOperationCount:1];
     
     SCNetworkReachabilityFlags flags;
     BOOL receivedFlags;
@@ -2164,15 +2280,10 @@ static NSMutableDictionary* minMaxDict = Nil;
     }
     
     _tweetLibrary = YES;
-    _googleReaderLibrary = YES;
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* thing = [defaults objectForKey:@"googleLibrary"];
-    NSLog(@"googleLibrary is %@",thing);
-    _googleReaderLibrary = [thing boolValue];
-    _googleReader = [[GoogleReader alloc] init];
     
     if (_tweetLibrary) {
         self->twitterAccount = Nil;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         self->twitterAccountName = [defaults objectForKey:@"twitterAccount"];
         _twitterIDMax = -1;
         _nextIDMax = -1;
@@ -2226,6 +2337,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             }
         }];
     }
+    _getBestPicNext = YES;
 }
 -(void)beginBackgroundTaskHolder {
     backgroundTaskNumber = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
@@ -2296,6 +2408,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    if (indexPath) [_prevTweets insertObject:indexPath atIndex:0];
+    if ([_prevTweets count] > 50) [_prevTweets removeObjectAtIndex:[_prevTweets count]-1];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
         Tweet *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
         self.detailViewController.detailItem = object;
@@ -2326,6 +2440,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         if ([[segue identifier] isEqualToString:@"showDetail"]) {
             NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
+            if (indexPath) [_prevTweets insertObject:indexPath atIndex:0];
+            if ([_prevTweets count] > 50) [_prevTweets removeObjectAtIndex:[_prevTweets count]-1];
             Tweet *object = [[self fetchedResultsController] objectAtIndexPath:indexPath];
             [_updateQueue addOperationWithBlock:^{
                 [object setHasBeenRead:[NSNumber numberWithBool:YES]];
@@ -2396,11 +2512,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
 #pragma mark - Fetched results controller
 - (void)saveContext
 {
-#if (TWIMAGE != TMCache)
-    return [[self getImageServer] saveContext];
-#else
-    
-#endif
+    // nothing to do to save the images, TMCache does it
 }
 
 - (NSFetchedResultsController *)fetchedResultsController
@@ -2417,11 +2529,12 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             [fetchRequest setFetchBatchSize:20];
             
             // Edit the sort key as appropriate.
-            //NSSortDescriptor *sortDescriptorUsername = [[NSSortDescriptor alloc] initWithKey:@"username" ascending:YES selector:@selector(caseInsensitiveCompare:)];
             //NSSortDescriptor *sortDescriptorhasGPS = [[NSSortDescriptor alloc] initWithKey:@"locationFromPic" ascending:NO];
-            //NSSortDescriptor *sortDescriptorFavorite = [[NSSortDescriptor alloc] initWithKey:@"favorite" ascending:NO];
+            NSSortDescriptor *sortDescriptorPicSize = [[NSSortDescriptor alloc] initWithKey:@"hasPicSize" ascending:NO];
+            //NSSortDescriptor *sortDescriptorUserScore = [[NSSortDescriptor alloc] initWithKey:@"userScore" ascending:NO];
+            //NSSortDescriptor *sortDescriptorhasBeenRead = [[NSSortDescriptor alloc] initWithKey:@"hasBeenRead" ascending:YES];
             NSSortDescriptor *sortDescriptorID = [[NSSortDescriptor alloc] initWithKey:@"tweetID" ascending:NO];
-            NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorID, nil];
+            NSArray *sortDescriptors = [[NSArray alloc] initWithObjects: sortDescriptorPicSize,sortDescriptorID, nil];
             
             [fetchRequest setSortDescriptors:sortDescriptors];
             
@@ -2594,6 +2707,131 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     }
 }
 
+#pragma mark SCORING SECTION
+static NSMutableDictionary* scoring = Nil;
+static NSLock* scoringLock = Nil;
+
+- (NSMutableDictionary*)scoringDictionary
+{
+    if (scoring == Nil) {
+        @try {
+            if (scoringLock == Nil)
+                scoringLock = [[NSLock alloc] init];
+            int count = 5;
+            while ((![scoringLock tryLock]) && (count > 0)) {
+                NSLog(@"BOO BOO cannot lock scoring %d",count);
+                [NSThread sleepForTimeInterval:1.0];
+                count --;
+            }
+            NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+            NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"scoring.txt"];
+            NSLog(@"READING %@",fileName);
+            
+            //read the whole file as a single string
+            NSData *content = [NSData dataWithContentsOfFile:fileName];
+            NSString* jsonString = [[NSString alloc] initWithBytes:[content bytes] length:[content length] encoding:NSUTF8StringEncoding];
+            NSLog(@"STRING SCORING: %@",jsonString);
+            if (content == Nil) {
+                [scoringLock unlock];
+                return scoring = [[NSMutableDictionary alloc] initWithCapacity:1];
+            } else {
+                NSError *jsonError;
+                id json = [NSJSONSerialization JSONObjectWithData:content
+                                                          options:NSJSONReadingMutableLeaves
+                                                            error:&jsonError];
+                if (json != Nil) {
+                    while (json != Nil && [[json class] isSubclassOfClass:[NSArray class]]) {
+                        NSArray* arr = json;
+                        if ([arr count] > 0)
+                            json = [arr objectAtIndex:0];
+                        else
+                            json = Nil;
+                    }
+                    if (json != Nil && [[json class] isSubclassOfClass:[NSDictionary class]]) {
+                        scoring = [[NSMutableDictionary alloc] initWithDictionary:json];
+                        NSLog(@"SCORING READ: %@",scoring);
+                        //[self pruneBookmarks];
+                        //NSLog(@"BOOKMARKS READ, after pruning: %@",bookmarks);
+                    } else {
+                        [scoringLock unlock];
+                        return scoring = [[NSMutableDictionary alloc] initWithCapacity:1];
+                    }
+                }
+                else {
+                    // inspect the contents of jsonError
+                    NSLog(@"GET SCORING JSON err=%@", jsonError);
+                    [scoringLock unlock];
+                    return scoring = [[NSMutableDictionary alloc] initWithCapacity:1];
+                }
+            }
+            [scoringLock unlock];
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+            scoring = Nil;
+            [scoringLock unlock];
+        }
+    }
+    return scoring;
+}
+- (void)addScore:(NSInteger)addScore toName:(NSString*)username
+{
+    @try {
+        NSString* scoreKey = username;
+        NSNumber* score = [NSNumber numberWithInteger:addScore];
+        NSNumber* oldScore = [[self scoringDictionary] objectForKey:scoreKey];
+        if (oldScore != Nil)
+            score = [NSNumber numberWithInteger:(addScore + [oldScore integerValue])];
+        [[self scoringDictionary] setObject:score forKey:scoreKey];
+        NSLog(@"*** SCORE%c%d val=%@ key=%@",addScore<0 ? '-' : '+',(int)addScore,score,scoreKey);
+        [self saveScores];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        scoring = Nil;
+    }
+}
+- (void)saveScores
+{
+    @try {
+        if (scoringLock == Nil)
+            scoringLock = [[NSLock alloc] init];
+        if (! [scoringLock tryLock]) {
+            NSLog(@"BOO BOO cannot save scoring");
+            return;
+        }
+        NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        NSString *fileName = [documentsDirectory stringByAppendingPathComponent:@"scoring.txt"];
+        NSLog(@"WRITING %@",fileName);
+        
+        //create file if it doesn't exist
+        if(![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+            [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
+        
+        //append text to file (you'll probably want to add a newline every write)
+        NSData* jsonData = [NSJSONSerialization dataWithJSONObject:[self scoringDictionary] options:NSJSONWritingPrettyPrinted error:nil];
+        NSString* jsonString = [[NSString alloc] initWithBytes:[jsonData bytes] length:[jsonData length] encoding:NSUTF8StringEncoding];
+        //NSLog(@"SAVING BOOKMARKS: %@", jsonString);
+        NSError *error;
+        [jsonString writeToFile:fileName atomically:YES encoding:NSUTF8StringEncoding error:&error];
+        //NSLog(@"WROTE ERR=%@",error);
+        
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        scoring = Nil;
+    }
+    [scoringLock unlock];
+}
+- (NSInteger)scoreForUser:(NSString*)username
+{
+    @try {
+        NSNumber* score = [[self scoringDictionary] objectForKey:username];
+        return [score integerValue];
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        scoring = Nil;
+    }
+    return 0;
+}
+
 @end
 
 #pragma mark TWEETOPERATION background queue task
@@ -2635,6 +2873,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         if ([[tweet hasBeenRead] boolValue] == YES) {
             [TWLocMasterViewController decrementTasks];
+            //[[self->master detailViewController] updateTitle];
             executing = NO; finished = YES;
             return;
         }
@@ -2654,6 +2893,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 ([replaceURL length] < 4) /*||
                                            ([master imageData:replaceURL] != Nil)*/) {
                                                [TWLocMasterViewController decrementTasks];
+                                               //[[self->master detailViewController] updateTitle];
                                                executing = NO; finished = YES;
                                                return;
                                            }
@@ -2701,8 +2941,8 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                                                                    masterViewController:master
                                                                              replaceURL:replaceURL];
                             [top setQueuePriority:NSOperationQueuePriorityLow];
-                            [[master webQueue] addOperation:top];
-                            [[master webQueue] setSuspended:NO];
+                            [[master multipleOpQueue] addOperation:top];
+                            [[master multipleOpQueue] setSuspended:NO];
                         }
                     } else
                         NSLog(@"URL_DEADEND %@ links",replaceURL);
@@ -2723,6 +2963,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     }
     
     [TWLocMasterViewController decrementTasks];
+    [[self->master detailViewController] updateTitle];
     executing = NO; finished = YES;
 }
 
@@ -2796,10 +3037,36 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
                 [[NSOperationQueue mainQueue] addOperationWithBlock:^{
                     [master cellSetup:[[master tableView] cellForRowAtIndexPath:index] forTweet:tweet];
                 }];
-                [[master.fetchedResultsController managedObjectContext] processPendingChanges];
             }];
         }
         [master imageData:imageData forURL:replaceURL];
+        
+        __block bool hasVideo = NO;
+        [[URLProcessor getURLs:[tweet origHTML]] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSString* theURL = obj;
+            if ([URLProcessor isVideoFileURL:theURL]){
+                hasVideo = *stop = YES;
+            }
+        }];
+        NSInteger score = -1;
+        CGSize size = [[UIImage imageWithData:imageData] size];
+        if (size.height > 900) score +=5;
+        if (size.width > 900) score += 5;
+        if (lat > -900 && lon > -900) score += 100;
+        if (hasVideo) score += 25;
+        [self->master addScore:score toName:[tweet username]];
+        int picSize = MAX(size.height, size.width);
+        if ([PhotoGetter isGIFtype:replaceURL])
+            picSize *= 2;
+        if (lat > -900 && lon > -900) picSize += 5000;
+        if (hasVideo) picSize += 500;
+        [tweet setHasPicSize:[NSNumber numberWithInt:picSize]];
+        [tweet setUserScore:[NSNumber numberWithInteger:[self->master scoreForUser:[tweet username]]]];
+        [[master updateQueue] addOperationWithBlock:^{
+            [[master.fetchedResultsController managedObjectContext] processPendingChanges];
+            [[master tableView] reloadData];
+        }];
+        
         if ([[[master detailViewController] class] isSubclassOfClass:[TWLocCollectionViewController class]])
         {
             TWLocCollectionViewController* colView = (TWLocCollectionViewController*)[master detailViewController];
@@ -2822,6 +3089,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     @try {
         if ([[tweet hasBeenRead] boolValue] == YES) {
             [TWLocMasterViewController decrementTasks];
+            //[[self->master detailViewController] updateTitle];
             executing = NO; finished = YES;
             return;
         }
@@ -2831,11 +3099,13 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
             ([replaceURL length] < 4) ||
             ([master imageData:replaceURL] != Nil) ) {
             [TWLocMasterViewController decrementTasks];
+            //[[self->master detailViewController] updateTitle];
             executing = NO; finished = YES;
             return;
         }
         if ([URLProcessor imageExtensionURL:replaceURL]) {
-            [self tryImage];
+            if ([master imageData:replaceURL] == Nil)
+                [self tryImage];
         }
         
         [[master updateQueue] addOperationWithBlock:^{
@@ -2851,6 +3121,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     }
     
     [TWLocMasterViewController decrementTasks];
+    [[self->master detailViewController] updateTitle];
     executing = NO; finished = YES;
 }
 
@@ -2879,6 +3150,7 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
     executing = YES;
     [master getTweets:listID];
     [TWLocMasterViewController decrementTasks];
+    [[self->master detailViewController] updateTitle];
     executing = NO; finished = YES;
 }
 
@@ -2914,208 +3186,11 @@ static UIBackgroundTaskIdentifier backgroundTaskNumber;
         }
     }
     [TWLocMasterViewController decrementTasks];
+    [[self->master detailViewController] updateTitle];
     executing = NO; finished = YES;
 }
 
 
 @end
 
-#pragma mark GOOGLEOPERATION background queue task
-@implementation GoogleOperation
 
-- (id)initWithMaster:(TWLocMasterViewController*)theMaster rssFeed:(NSArray*)theFeed orSubscriptions:(NSArray*)theSubscriptions andStream:(NSString*)theStreamName
-{
-    self = [super init];
-    executing = finished = NO;
-    master = theMaster;
-    rssFeed = theFeed;
-    subscriptions = theSubscriptions;
-    subscriptionName = Nil;
-    streamName = theStreamName;
-    [self setQueuePriority:NSOperationQueuePriorityLow];
-    [TWLocMasterViewController incrementTasks];
-    return self;
-}
-- (BOOL)isReady { return YES; }
-- (BOOL)isExecuting { return executing; }
-- (BOOL)isFinished { return finished; }
-
-int googleAddedItems = 0;
-
-- (void)main
-{
-    executing = YES;
-    
-    if (rssFeed != Nil) {
-        // handle the rss contents if there are any
-    } else if (subscriptions != Nil) {
-        // queue grabbing the subscription contents
-        if ([[subscriptions class] isSubclassOfClass:[NSArray class]]) {
-            @try {
-                NSEnumerator* e = [subscriptions objectEnumerator];
-                NSDictionary* subscription = Nil;
-                tweetsToProcess = [[NSMutableArray alloc] initWithCapacity:100];
-                while ((subscription = [e nextObject]) != Nil &&
-                       [tweetsToProcess count] < 100) {
-                    subscriptionName = [subscription objectForKey:@"title"];
-                    [self getItems:[subscription objectForKey:@"id"]];
-                }
-                NSString* stat = [NSString stringWithFormat:@"Have retrieved %lu Google items",(unsigned long)[tweetsToProcess count]];
-                [[master updateQueue] addOperationWithBlock:^{
-                    NSString* status = [[master.detailViewController activityLabel] text];
-                    [[master.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\n%@",status,stat]];
-                    [master STATUS:stat];
-                }];
-                // TODO: need to sort the processing top-to-bottom
-                NSLog(@"sorting the new items");
-                [tweetsToProcess sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-                    Tweet* t1 = obj1;
-                    Tweet* t2 = obj2;
-                    long long a1 = [[t1 tweetID] longLongValue];
-                    long long a2 = [[t2 tweetID] longLongValue];
-                    if (a1 > a2) return NSOrderedAscending;
-                    if (a1 == a2) return NSOrderedSame;
-                    return NSOrderedDescending;
-                }];
-                NSLog(@"sorted the %lu new items",(unsigned long)[tweetsToProcess count]);
-                if ([tweetsToProcess count] > 4)
-                    for (int i=0; i < 4; i++)
-                        NSLog(@"Item %d: %@", i, [(Tweet*)[tweetsToProcess objectAtIndex:i] tweetID]);
-                e = [tweetsToProcess objectEnumerator];
-                Tweet* theTweet = Nil;
-                while ((theTweet = [e nextObject]) != Nil) {
-                    if ([master theQueue] != Nil && NetworkAccessAllowed &&
-                        [[theTweet hasBeenRead] boolValue] == NO) {
-                        @try {
-                            TweetOperation* top = [[TweetOperation alloc] initWithTweet:theTweet
-                                                                                  index:Nil
-                                                                   masterViewController:master
-                                                                             replaceURL:Nil];
-                            [[master webQueue] addOperation:top];
-                            [[master webQueue] setSuspended:NO];
-                        } @catch (NSException *eee) {
-                            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
-                        }
-                    }
-                }
-                NSLog(@"added %lu TweetOperations",(unsigned long)[tweetsToProcess count]);
-                [[master updateQueue] addOperationWithBlock:^{
-                    [master STATUS:[NSString stringWithFormat:@"%lu tweets: %d images %0.2fMB",(unsigned long)[[master idSet] count],[master numImages], [master sizeImages]/1024.0/1024.0]];
-                }];
-            } @catch (NSException *eee) {
-                NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
-            }
-        }
-    } else {
-        @try {
-            // if no feed, and no subscription identity, we should go grab the subscriptions
-            GoogleReader* reader = [master googleReader];
-            NSArray* subscriptionArray = [reader getStreams];
-            GoogleOperation* itemGetter = [[GoogleOperation alloc] initWithMaster:master rssFeed:nil orSubscriptions:subscriptionArray andStream:Nil];
-            [[NSOperationQueue currentQueue] addOperation:itemGetter];
-        } @catch (NSException *eee) {
-            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
-        }
-    }
-    
-    [TWLocMasterViewController decrementTasks];
-    executing = NO; finished = YES;
-}
-
-- (NSUInteger)getItems:(NSString*)theID
-{
-    GoogleReader* reader = [master googleReader];
-    NSArray* items = [reader unreadItems:theID];
-    NSLog(@"item %@ contains %lu items",theID,(unsigned long)[items count]);
-    
-    NSEnumerator* e = [items objectEnumerator];
-    NSDictionary* item;
-    //googleAddedItems = [items count];
-    googleAddedItems = 0;
-    while ((item = [e nextObject]) != Nil &&
-           googleAddedItems < 100) {
-        googleAddedItems++;
-        [self performSelectorOnMainThread:@selector(addItem:) withObject:item waitUntilDone:YES];
-    }
-    if (googleAddedItems > 0) {
-        NSString* stat = [NSString stringWithFormat:@"Added %d items from %@",googleAddedItems,subscriptionName];
-        [[master updateQueue] addOperationWithBlock:^{
-            NSString* status = [[master.detailViewController activityLabel] text];
-            [[master.detailViewController activityLabel] setText:[NSString stringWithFormat:@"%@\n%@",status,stat]];
-            [master STATUS:stat];
-        }];
-    }
-    return googleAddedItems;
-}
-
-- (void)addItem:(NSDictionary*)item
-{
-    @try {
-        NSString* timestamp = [item objectForKey:@"timestampUsec"];
-        NSString* username = subscriptionName;
-        NSString* title = [item objectForKey:@"title"];
-        NSDictionary* summary = [item objectForKey:@"summary"];
-        NSString* contents = [summary objectForKey:@"content"];
-        NSDictionary* origin = [item objectForKey:@"origin"];
-        NSString* htmlURL = [origin objectForKey:@"htmlUrl"];
-        NSString* streamID = [origin objectForKey:@"streamId"];
-        NSArray* alternate = [item objectForKey:@"alternate"];
-        if (alternate && [alternate count] > 0) {
-            NSDictionary* altitem = [alternate objectAtIndex:0];
-            htmlURL = [altitem objectForKey:@"href"];
-            if ([alternate count] > 1)
-                NSLog(@"choosing first item in alternate list %@", alternate);
-        }
-        NSString* googleID = [item objectForKey:@"id"];
-        
-        BOOL duplicate = NO;
-        NSSet* dups = Nil;
-        NSNumber* theID = [NSNumber numberWithLongLong:[timestamp longLongValue]];
-        if (!duplicate) {
-            dups = [[master idSet] objectsPassingTest:^BOOL(id obj, BOOL *stop) {
-                *stop = ([(NSNumber*)obj isEqualToNumber:theID]);
-                return *stop;
-            }];
-            if (dups != Nil && [dups count] > 0)
-                duplicate = YES;
-        }
-        if (duplicate) {
-            NSLog(@"refusing duplicate %@ in %@",theID,username);
-            googleAddedItems--;
-            if (googleAddedItems < 0) googleAddedItems = 0;
-            return;
-        }
-        
-        //NSLog(@"adding item from %@: %@",username,title);
-        NSManagedObjectContext *context = [master.fetchedResultsController managedObjectContext];
-        NSEntityDescription *entity = [[master.fetchedResultsController fetchRequest] entity];
-        Tweet* tweet = [NSEntityDescription insertNewObjectForEntityForName:[entity name]
-                                                     inManagedObjectContext:context];
-        [tweet setSourceDict:[NSKeyedArchiver archivedDataWithRootObject:item]];
-        [tweet setTweetID:theID];
-        [tweet setFavorite:NO];
-        [tweet setTimestamp:timestamp];
-        [tweet setUsername:username];
-        [tweet setTweet:[NSString stringWithFormat:@"%@\n%@",title,contents]];
-        [tweet setLatitude:[NSNumber numberWithDouble:-900]];
-        [tweet setLongitude:[NSNumber numberWithDouble:-900]];
-        [tweet setUrl:htmlURL];
-        [tweet setOrigURL:htmlURL];
-        [tweet setOrigHTML:Nil];
-        [tweet setLocationFromPic:[NSNumber numberWithBool:NO]];
-        [tweet setHasBeenRead:[NSNumber numberWithBool:NO]];
-        [tweet setListID:[NSNumber numberWithLongLong:0]];
-        [tweet setFromGoogleReader:[NSNumber numberWithBool:YES]];
-        [tweet setGoogleID:googleID];
-        [tweet setGoogleStream:streamID];
-        
-        [tweetsToProcess addObject:tweet];
-        [[master idSet] addObject:theID];
-        [[master.fetchedResultsController managedObjectContext] processPendingChanges];
-        [[master tableView] setNeedsLayout];
-        [[master tableView] setNeedsDisplay];
-    } @catch (NSException *eee) {
-        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
-    }
-}
-@end

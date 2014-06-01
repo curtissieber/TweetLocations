@@ -11,6 +11,7 @@
 #import "PhotoGetter.h"
 #import "URLFetcher.h"
 #import "WebViewController.h"
+#import "Tweet.h"
 
 @interface TWLocCollectionViewController ()
 
@@ -29,7 +30,7 @@
         NSString* urlstr = [[[tweet url] componentsSeparatedByString:@"\n"] firstObject];
         if (urlstr == Nil)
             return cell;
-        [[[self master] webQueue] addOperationWithBlock:^{
+        [[[self master] multipleOpQueue] addOperationWithBlock:^{
             [self collectionCellPicture:urlstr imageView:[cell theImage] tweet:tweet cell:cell];
         }];
         return cell;
@@ -52,7 +53,7 @@
                           scroll:Nil
                        sizelabel:Nil
                         callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
-                            [[[self master] webQueue] addOperationWithBlock:^{
+                            [[[self master] multipleOpQueue] addOperationWithBlock:^{
                                 [[self master] imageData:imageData forURL:urlstr];
                                 [self collectionCellPicture:urlstr imageView:iview tweet:tweet cell:cell];
                             }];
@@ -173,8 +174,8 @@ static NSString* videoURL = Nil;
                 TweetOperation* top = [[TweetOperation alloc] initWithTweet:tweet index:indexPath masterViewController:[self master] replaceURL:Nil];
                 [top setQueuePriority:NSOperationQueuePriorityLow];
                 [TWLocMasterViewController incrementTasks];
-                [[[self master] webQueue] addOperation:top];
-                [[[self master] webQueue] setSuspended:NO];
+                [[[self master] multipleOpQueue] addOperation:top];
+                [[[self master] multipleOpQueue] setSuspended:NO];
                 
                 PhotoGetter* getter = [[PhotoGetter alloc] init];
                 [getter getPhoto:[NSURL URLWithString:url]
@@ -182,7 +183,7 @@ static NSString* videoURL = Nil;
                           scroll:Nil
                        sizelabel:Nil
                         callback:^(float latitude, float longitude, NSString *timestamp, NSData *imageData) {
-                            [[[self master] webQueue] addOperationWithBlock:^{
+                            [[[self master] multipleOpQueue] addOperationWithBlock:^{
                                 [[self master] imageData:imageData forURL:url];
                                 [self collectionCellPicture:url imageView:[cell theImage] tweet:tweet cell:cell];
                             }];
@@ -210,7 +211,7 @@ static NSString* videoURL = Nil;
     [super viewDidLoad];
 	// Do any additional setup after loading the view.
     [[self imageView] setHidden:YES];
-    
+        
     UITapGestureRecognizer* statusTouch = [[UITapGestureRecognizer alloc]
                                            initWithTarget:self
                                            action:@selector(touchedStatus:)];
@@ -238,6 +239,40 @@ static NSString* videoURL = Nil;
 {
     [[self imageView] setHidden:YES];
 }
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    @try {
+        if ([[segue identifier] isEqualToString:@"CollectionSelection"]) {
+            NSIndexPath *indexPath = [[self.collectionView indexPathsForSelectedItems] objectAtIndex:0];
+            Tweet *object = [[self.master fetchedResultsController] objectAtIndexPath:indexPath];
+            [[self.master updateQueue] addOperationWithBlock:^{
+                [object setHasBeenRead:[NSNumber numberWithBool:YES]];
+                [self.master keepTrackofReadURLs:[object url]];
+            }];
+            [[segue destinationViewController] setDetailItem:object];
+            self.bigDetail = [segue destinationViewController];
+            [self.bigDetail setMaster:self.master];
+        }
+    } @catch (NSException *eee) {
+        NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+    }
+    [[self.master updateQueue] addOperationWithBlock:^{
+        @try {
+            // Save the context.  But I keep having the queue stop dead at this point BOO
+            NSManagedObjectContext *context = [self.master.fetchedResultsController managedObjectContext];
+            NSError *error = [[NSError alloc] init];
+            if (![context save:&error]) {
+                NSLog(@"Unresolved error saving the context %@, %@", error, [error userInfo]);
+            }
+            NSLog(@"Got a chance to save, YAY!");
+        } @catch (NSException *eee) {
+            NSLog(@"Exception %@ %@", [eee description], [NSThread callStackSymbols]);
+        }
+    }];
+}
+
+
 
 - (void)didReceiveMemoryWarning
 {
